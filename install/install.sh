@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.3"
+PACK_VERSION="0.2.4"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -12,6 +12,7 @@ SELECT_CLAUDE=0
 PLATFORM_SELECTION_SEEN=0
 
 CORE_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery profile-project-engineering research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
+LEGACY_CODEX_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
 
 usage() {
   printf '%s\n' "Usage: install.sh [install|update|uninstall] [--cursor] [--codex] [--claude] [--all] [--target PATH] [--source PATH] [--profile core]"
@@ -165,6 +166,28 @@ is_managed_cursor_rule() {
     && grep -q 'orchestrate-ai-delivery' "$candidate_rule"
 }
 
+is_managed_claude_entry() {
+  candidate_entry="$1"
+  is_managed_skill "$candidate_entry" && return 0
+  [ -f "$candidate_entry/SKILL.md" ] || return 1
+  grep -q '^name: ai-flow$' "$candidate_entry/SKILL.md" \
+    && grep -q '^# AI Flow Claude Entry$' "$candidate_entry/SKILL.md" \
+    && grep -q 'orchestrate-ai-delivery/SKILL.md' "$candidate_entry/SKILL.md" \
+    && grep -q '\.ai-flow/manifest.yaml' "$candidate_entry/SKILL.md"
+}
+
+is_legacy_codex_pack() {
+  legacy_root="$1"
+  for legacy_skill in $LEGACY_CODEX_SKILLS; do
+    legacy_file="$legacy_root/$legacy_skill/SKILL.md"
+    [ -f "$legacy_file" ] || return 1
+    grep -q "^name: $legacy_skill$" "$legacy_file" || return 1
+  done
+  grep -q '\.ai-flow/manifest.yaml' "$legacy_root/orchestrate-ai-delivery/SKILL.md" \
+    && grep -q 'flowctl project init' "$legacy_root/initialize-ai-project/SKILL.md" \
+    && grep -q '^# Sync Project Knowledge$' "$legacy_root/sync-project-knowledge/SKILL.md"
+}
+
 INSTALL_MARKER="$TARGET_DIR/.ai-flow/install/version"
 if [ "$COMMAND" = "update" ] || [ "$COMMAND" = "uninstall" ]; then
   [ -f "$INSTALL_MARKER" ] || fail "no managed AI Flow installation found at target"
@@ -182,18 +205,33 @@ if [ "$PLATFORM_SELECTION_SEEN" -eq 0 ]; then
   fi
 fi
 
+# Platform flags add capabilities to an existing installation. Always refresh
+# every previously active platform so their generated Skill copies cannot drift
+# from the shared runtime version.
+if [ "$COMMAND" != "uninstall" ] && [ -f "$TARGET_DIR/.ai-flow/install/platforms" ]; then
+  parse_platform_selection "$(tr '\n' ',' < "$TARGET_DIR/.ai-flow/install/platforms")"
+fi
+
 if [ "$COMMAND" = "install" ] && [ ! -f "$INSTALL_MARKER" ]; then
+  LEGACY_CODEX_PACK=0
+  if [ "$SELECT_CODEX" -eq 1 ] && is_legacy_codex_pack "$TARGET_DIR/.agents/skills"; then
+    LEGACY_CODEX_PACK=1
+  fi
   for skill_name in $CORE_SKILLS; do
     codex_skill="$TARGET_DIR/.agents/skills/$skill_name"
     cursor_skill="$TARGET_DIR/.cursor/skills/$skill_name"
     claude_skill="$TARGET_DIR/.claude/skills/$skill_name"
-    [ "$SELECT_CODEX" -eq 0 ] || [ ! -e "$codex_skill" ] || is_managed_skill "$codex_skill" || fail "existing unmanaged Skill would be overwritten: .agents/skills/$skill_name"
+    LEGACY_CODEX_SKILL=0
+    case " $LEGACY_CODEX_SKILLS " in
+      *" $skill_name "*) [ "$LEGACY_CODEX_PACK" -eq 0 ] || LEGACY_CODEX_SKILL=1 ;;
+    esac
+    [ "$SELECT_CODEX" -eq 0 ] || [ ! -e "$codex_skill" ] || is_managed_skill "$codex_skill" || [ "$LEGACY_CODEX_SKILL" -eq 1 ] || fail "existing unmanaged Skill would be overwritten: .agents/skills/$skill_name"
     [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$cursor_skill" ] || is_managed_skill "$cursor_skill" || fail "existing unmanaged Skill would be overwritten: .cursor/skills/$skill_name"
     [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$claude_skill" ] || is_managed_skill "$claude_skill" || fail "existing unmanaged Skill would be overwritten: .claude/skills/$skill_name"
   done
   claude_entry="$TARGET_DIR/.claude/skills/ai-flow"
   cursor_rule="$TARGET_DIR/.cursor/rules/ai-flow.mdc"
-  [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$claude_entry" ] || is_managed_skill "$claude_entry" || fail "existing unmanaged Claude ai-flow entry would be overwritten"
+  [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$claude_entry" ] || is_managed_claude_entry "$claude_entry" || fail "existing unmanaged Claude ai-flow entry would be overwritten"
   [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$cursor_rule" ] || is_managed_cursor_rule "$cursor_rule" || fail "existing unmanaged Cursor ai-flow rule would be overwritten"
 fi
 
@@ -215,6 +253,14 @@ if [ -f "$INSTALL_MARKER" ]; then
       fi
     fi
   done
+  if [ "$SELECT_CURSOR" -eq 1 ]; then
+    cursor_rule="$TARGET_DIR/.cursor/rules/ai-flow.mdc"
+    [ ! -e "$cursor_rule" ] || is_managed_cursor_rule "$cursor_rule" || fail "existing unmanaged Cursor ai-flow rule would be overwritten"
+  fi
+  if [ "$SELECT_CLAUDE" -eq 1 ]; then
+    claude_entry="$TARGET_DIR/.claude/skills/ai-flow"
+    [ ! -e "$claude_entry" ] || is_managed_claude_entry "$claude_entry" || fail "existing unmanaged Claude ai-flow entry would be overwritten"
+  fi
 fi
 
 if [ "$COMMAND" = "uninstall" ]; then
@@ -317,5 +363,7 @@ platform_file="$TARGET_DIR/.ai-flow/install/platforms"
 printf 'schema_version: 1\nprofile: %s\nplatforms:\n  cursor: %s\n  codex: %s\n  claude_code: %s\n' "$PROFILE" "$ACTIVE_CURSOR" "$ACTIVE_CODEX" "$ACTIVE_CLAUDE" > "$TARGET_DIR/.ai-flow/capabilities.yaml"
 
 "$TARGET_DIR/.ai-flow/bin/flowctl" doctor --root "$TARGET_DIR"
+active_platform_display=$(tr '\n' ',' < "$platform_file" | sed 's/,$//')
+printf 'Active IDE platforms: %s\n' "$active_platform_display"
 printf 'AI Flow %s %s completed at %s\n' "$PACK_VERSION" "$COMMAND" "$TARGET_DIR"
 printf '%s\n' "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."

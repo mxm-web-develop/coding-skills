@@ -38,7 +38,7 @@ curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --claude
 ```
 
-可以组合 `--cursor --codex`。不传平台参数时默认安装全部，兼容旧命令。
+可以组合 `--cursor --codex`。也可以先安装任意一个 IDE，之后用相同命令增加另一个；安装顺序不影响结果，已有平台会同步刷新到同一版本，`.ai-flow/` 状态和 `docs/board/` 都会保留。不传平台参数时默认安装全部，兼容旧命令。
 
 ### Windows PowerShell
 
@@ -215,7 +215,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.2.3 sh
+  | AI_FLOW_VERSION=v0.2.4 sh
 ```
 
 ## 卸载
@@ -261,4 +261,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.2.3` 提供 14 个 Core Skills 和 15 个 JSON Schema，并将人读看板升级为自然语言管理视图，同时支持在安装标记被部分删除后安全识别并接管旧版 AI Flow Cursor 规则。真正由用户维护的同名 Rule 或 Skill 仍不会被覆盖。
+`v0.2.4` 提供 14 个 Core Skills 和 15 个 JSON Schema，支持 Cursor、Codex、Claude Code 按任意顺序逐次加入同一工作区并共享唯一 `.ai-flow/` 与 `docs/board/`。三端旧安装均可安全恢复，真正由用户维护的同名 Rule 或 Skill 仍不会被覆盖。

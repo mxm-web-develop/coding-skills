@@ -33,6 +33,20 @@ curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/
 
 不传 `--cursor`、`--codex`、`--claude` 时默认安装全部，保持向后兼容。`--all` 也可以显式选择全部平台。
 
+### 已安装一个 IDE 后增加其他 IDE
+
+不需要卸载，也不要删除 `.ai-flow/`。直接在同一项目根目录重复安装命令并换成要增加的平台：
+
+```bash
+# 已有 Cursor，增加 Codex
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --codex
+
+# 再增加 Claude Code
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --claude
+```
+
+反向顺序同样有效。平台参数表示把该平台加入 `.ai-flow/install/platforms`；此前平台不会被移除，并会在本次操作中一起刷新到同一个 Skill Pack 版本，避免三个 IDE 的规则副本漂移。三个 IDE 共用同一个 `.ai-flow/bin/flowctl`、机读状态和 `docs/board/`，不会分别初始化项目或生成三套追踪文档。输出中的 `Active IDE platforms` 可用于确认最终平台集合。
+
 ### Windows PowerShell
 
 ```powershell
@@ -60,21 +74,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.3 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.4 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.3 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.4 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.3"
+$env:AI_FLOW_VERSION="v0.2.4"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
@@ -172,7 +186,7 @@ git pull --ff-only
 ./install/install.sh update --target /path/to/project --source .
 ```
 
-带平台参数的更新只更新所选平台，并保留此前安装的其他平台；例如在 Cursor 安装上运行 `update --codex` 会增加 Codex 支持。更新不会修改项目对象和人读看板。
+平台参数采用“加入并同步”语义；例如在 Cursor 安装上运行 `update --codex` 会增加 Codex 支持，同时把 Cursor 和 Codex 的受管 Skill 刷新到相同版本。更新不会修改项目对象和人读看板。
 
 ## 8. 卸载
 
@@ -221,7 +235,7 @@ git pull --ff-only
 
 ### 重新安装提示 `existing unmanaged Cursor ai-flow rule`
 
-从 `v0.2.3` 起，安装器可以识别旧版本生成的 `.cursor/rules/ai-flow.mdc`，即使中心安装标记已被删除，也可以直接重新执行安装。若仍出现该错误，说明该文件不符合 AI Flow 生成规则的签名，安装器会保护它不被覆盖；请先查看内容并决定是否重命名或人工合并。
+从 `v0.2.3` 起，安装器可以识别旧版本生成的 `.cursor/rules/ai-flow.mdc`；`v0.2.4` 将同样的恢复与冲突保护扩展到 Codex 和 Claude Code。即使中心安装标记已被删除，也可以直接重新执行安装。若仍出现 unmanaged 错误，说明同名文件不符合 AI Flow 生成内容或管理标记，安装器会保护它不被覆盖；请先查看内容并决定是否重命名或人工合并。
 
 ### 找不到 Release
 

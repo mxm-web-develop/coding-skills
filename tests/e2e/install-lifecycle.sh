@@ -8,9 +8,11 @@ CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-conflict-e2e.XXXXXX")
 NATIVE_CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-native-conflict-e2e.XXXXXX")
 RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-recovery-e2e.XXXXXX")
 RULE_CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-rule-conflict-e2e.XXXXXX")
+CODEX_RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-codex-recovery-e2e.XXXXXX")
+CLAUDE_RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-claude-recovery-e2e.XXXXXX")
 
 cleanup() {
-  rm -rf "$TEST_ROOT" "$CONFLICT_ROOT" "$NATIVE_CONFLICT_ROOT" "$RECOVERY_ROOT" "$RULE_CONFLICT_ROOT"
+  rm -rf "$TEST_ROOT" "$CONFLICT_ROOT" "$NATIVE_CONFLICT_ROOT" "$RECOVERY_ROOT" "$RULE_CONFLICT_ROOT" "$CODEX_RECOVERY_ROOT" "$CLAUDE_RECOVERY_ROOT"
 }
 trap cleanup EXIT HUP INT TERM
 
@@ -98,5 +100,33 @@ if "$REPO_ROOT/install/install.sh" install --cursor --target "$RULE_CONFLICT_ROO
   exit 1
 fi
 grep -q "user-owned Cursor rule" "$RULE_CONFLICT_ROOT/.cursor/rules/ai-flow.mdc"
+
+# A v0.1-style Codex pack had no per-Skill markers. Recover it only when the
+# complete known pack and stable AI Flow signatures are present.
+legacy_codex_skills="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
+mkdir -p "$CODEX_RECOVERY_ROOT/.agents/skills"
+for skill_name in $legacy_codex_skills; do
+  cp -R "$REPO_ROOT/skills/$skill_name" "$CODEX_RECOVERY_ROOT/.agents/skills/$skill_name"
+  rm -f "$CODEX_RECOVERY_ROOT/.agents/skills/$skill_name/.ai-flow-managed"
+done
+mkdir -p "$CODEX_RECOVERY_ROOT/.agents/skills/profile-project-engineering"
+printf '%s\n' "user-owned new Skill" > "$CODEX_RECOVERY_ROOT/.agents/skills/profile-project-engineering/SKILL.md"
+if "$REPO_ROOT/install/install.sh" install --codex --target "$CODEX_RECOVERY_ROOT" --source "$REPO_ROOT" >/dev/null 2>&1; then
+  printf '%s\n' "legacy migration unexpectedly overwrote a user-owned newer Codex Skill" >&2
+  exit 1
+fi
+grep -q 'user-owned new Skill' "$CODEX_RECOVERY_ROOT/.agents/skills/profile-project-engineering/SKILL.md"
+rm -rf "$CODEX_RECOVERY_ROOT/.agents/skills/profile-project-engineering"
+"$REPO_ROOT/install/install.sh" install --codex --target "$CODEX_RECOVERY_ROOT" --source "$REPO_ROOT" >/dev/null
+[ -f "$CODEX_RECOVERY_ROOT/.agents/skills/profile-project-engineering/.ai-flow-managed" ]
+[ "$(sed -n '1p' "$CODEX_RECOVERY_ROOT/.ai-flow/install/platforms")" = "codex" ]
+
+# A legacy Claude entry can be recovered by its dedicated AI Flow signature.
+mkdir -p "$CLAUDE_RECOVERY_ROOT/.claude/skills"
+cp -R "$REPO_ROOT/adapters/claude/ai-flow" "$CLAUDE_RECOVERY_ROOT/.claude/skills/ai-flow"
+rm -f "$CLAUDE_RECOVERY_ROOT/.claude/skills/ai-flow/.ai-flow-managed"
+"$REPO_ROOT/install/install.sh" install --claude --target "$CLAUDE_RECOVERY_ROOT" --source "$REPO_ROOT" >/dev/null
+[ -f "$CLAUDE_RECOVERY_ROOT/.claude/skills/ai-flow/.ai-flow-managed" ]
+[ "$(sed -n '1p' "$CLAUDE_RECOVERY_ROOT/.ai-flow/install/platforms")" = "claude" ]
 
 printf '%s\n' "AI Flow install lifecycle E2E passed"

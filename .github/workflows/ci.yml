@@ -28,3 +28,15 @@ jobs:
       - name: Run end-to-end workflow
         run: |
           for script in tests/e2e/*.sh; do "$script"; done
+
+  windows-installer:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Validate PowerShell installer and multi-IDE order
+        shell: pwsh
+        run: ./tests/e2e/platform-selection.ps1

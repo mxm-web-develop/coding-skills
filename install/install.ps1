@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.2.3"
+$PackVersion = "0.2.4"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -21,6 +21,21 @@ $CoreSkills = @(
     "discover-product-goal",
     "plan-product-delivery",
     "profile-project-engineering",
+    "research-and-design-solution",
+    "specify-tests",
+    "implement-work-item",
+    "diagnose-and-verify",
+    "review-change",
+    "integrate-git-change",
+    "manage-release",
+    "sync-project-knowledge"
+)
+$LegacyCodexSkills = @(
+    "initialize-ai-project",
+    "orchestrate-ai-delivery",
+    "adopt-existing-project",
+    "discover-product-goal",
+    "plan-product-delivery",
     "research-and-design-solution",
     "specify-tests",
     "implement-work-item",
@@ -95,6 +110,32 @@ function Test-ManagedCursorRule([string]$Path) {
         -and $content.Contains("orchestrate-ai-delivery")
 }
 
+function Test-ManagedClaudeEntry([string]$Path) {
+    if (Test-ManagedSkill $Path) { return $true }
+    $skillPath = Join-Path $Path "SKILL.md"
+    if (-not (Test-Path -LiteralPath $skillPath -PathType Leaf)) { return $false }
+    $content = Get-Content -LiteralPath $skillPath -Raw
+    return $content.Contains("name: ai-flow") `
+        -and $content.Contains("# AI Flow Claude Entry") `
+        -and $content.Contains("orchestrate-ai-delivery/SKILL.md") `
+        -and $content.Contains(".ai-flow/manifest.yaml")
+}
+
+function Test-LegacyCodexPack([string]$Path) {
+    foreach ($skillName in $LegacyCodexSkills) {
+        $skillPath = Join-Path $Path "$skillName/SKILL.md"
+        if (-not (Test-Path -LiteralPath $skillPath -PathType Leaf)) { return $false }
+        $content = Get-Content -LiteralPath $skillPath -Raw
+        if (-not $content.Contains("name: $skillName")) { return $false }
+    }
+    $orchestrator = Get-Content -LiteralPath (Join-Path $Path "orchestrate-ai-delivery/SKILL.md") -Raw
+    $initializer = Get-Content -LiteralPath (Join-Path $Path "initialize-ai-project/SKILL.md") -Raw
+    $synchronizer = Get-Content -LiteralPath (Join-Path $Path "sync-project-knowledge/SKILL.md") -Raw
+    return $orchestrator.Contains(".ai-flow/manifest.yaml") `
+        -and $initializer.Contains("flowctl project init") `
+        -and $synchronizer.Contains("# Sync Project Knowledge")
+}
+
 $TargetPath = (Resolve-Path -LiteralPath $Target).Path
 if ($TargetPath -eq [System.IO.Path]::GetPathRoot($TargetPath)) {
     throw "Refusing to install at filesystem root"
@@ -151,6 +192,14 @@ if ($SelectedPlatforms.Count -eq 0) {
         [void]$SelectedPlatforms.Add("claude")
     }
 }
+if ($Command -ne "uninstall") {
+    $existingPlatformsFile = Join-Path $TargetPath ".ai-flow/install/platforms"
+    if (Test-Path -LiteralPath $existingPlatformsFile -PathType Leaf) {
+        foreach ($platform in (Get-Content -LiteralPath $existingPlatformsFile)) {
+            if ($platform -in @("cursor", "codex", "claude")) { [void]$SelectedPlatforms.Add($platform) }
+        }
+    }
+}
 $SelectCursor = $SelectedPlatforms.Contains("cursor")
 $SelectCodex = $SelectedPlatforms.Contains("codex")
 $SelectClaude = $SelectedPlatforms.Contains("claude")
@@ -160,16 +209,18 @@ if ($SelectCursor) { $SelectedSkillRoots += ".cursor/skills" }
 if ($SelectClaude) { $SelectedSkillRoots += ".claude/skills" }
 
 if ($Command -eq "install" -and -not (Test-Path -LiteralPath $InstallMarker -PathType Leaf)) {
+    $legacyCodexPack = $SelectCodex -and (Test-LegacyCodexPack (Join-Path $TargetPath ".agents/skills"))
     foreach ($skillName in $CoreSkills) {
         foreach ($skillRoot in $SelectedSkillRoots) {
             $existingSkill = Join-Path $TargetPath "$skillRoot/$skillName"
-            if ((Test-Path -LiteralPath $existingSkill) -and -not (Test-ManagedSkill $existingSkill)) {
+            $legacyCodexSkill = $skillRoot -eq ".agents/skills" -and $legacyCodexPack -and ($LegacyCodexSkills -contains $skillName)
+            if ((Test-Path -LiteralPath $existingSkill) -and -not (Test-ManagedSkill $existingSkill) -and -not $legacyCodexSkill) {
                 throw "Existing unmanaged Skill would be overwritten: $skillRoot/$skillName"
             }
         }
     }
     $claudeEntry = Join-Path $TargetPath ".claude/skills/ai-flow"
-    if ($SelectClaude -and (Test-Path -LiteralPath $claudeEntry) -and -not (Test-ManagedSkill $claudeEntry)) {
+    if ($SelectClaude -and (Test-Path -LiteralPath $claudeEntry) -and -not (Test-ManagedClaudeEntry $claudeEntry)) {
         throw "Existing unmanaged Claude ai-flow entry would be overwritten"
     }
     $cursorRule = Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"
@@ -189,6 +240,18 @@ if (Test-Path -LiteralPath $InstallMarker -PathType Leaf) {
                     throw "Existing unmanaged native Skill would be overwritten: $skillRoot/$skillName"
                 }
             }
+        }
+    }
+    if ($SelectCursor) {
+        $cursorRule = Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"
+        if ((Test-Path -LiteralPath $cursorRule) -and -not (Test-ManagedCursorRule $cursorRule)) {
+            throw "Existing unmanaged Cursor ai-flow rule would be overwritten"
+        }
+    }
+    if ($SelectClaude) {
+        $claudeEntry = Join-Path $TargetPath ".claude/skills/ai-flow"
+        if ((Test-Path -LiteralPath $claudeEntry) -and -not (Test-ManagedClaudeEntry $claudeEntry)) {
+            throw "Existing unmanaged Claude ai-flow entry would be overwritten"
         }
     }
 }
@@ -288,5 +351,6 @@ Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/capabilities.yaml") -V
 ) -Encoding utf8
 
 & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") doctor --root $TargetPath
+Write-Host "Active IDE platforms: $($activePlatformLines -join ',')"
 Write-Host "AI Flow $PackVersion $Command completed at $TargetPath"
 Write-Host "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."
