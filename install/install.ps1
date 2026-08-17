@@ -4,11 +4,16 @@ param(
     [string]$Target = (Get-Location).Path,
     [string]$Source = $env:AI_FLOW_SOURCE,
     [ValidateSet("core")]
-    [string]$Profile = "core"
+    [string]$Profile = "core",
+    [switch]$Cursor,
+    [switch]$Codex,
+    [switch]$Claude,
+    [switch]$All,
+    [string]$Platforms = $env:AI_FLOW_PLATFORMS
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.1.1"
+$PackVersion = "0.1.2"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -24,6 +29,34 @@ $CoreSkills = @(
     "manage-release",
     "sync-project-knowledge"
 )
+
+$SelectedPlatforms = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+if (-not [string]::IsNullOrWhiteSpace($Platforms)) {
+    foreach ($platform in ($Platforms -split '[,\s]+')) {
+        if ([string]::IsNullOrWhiteSpace($platform)) { continue }
+        switch ($platform.ToLowerInvariant()) {
+            "cursor" { [void]$SelectedPlatforms.Add("cursor") }
+            "codex" { [void]$SelectedPlatforms.Add("codex") }
+            "claude" { [void]$SelectedPlatforms.Add("claude") }
+            "claude-code" { [void]$SelectedPlatforms.Add("claude") }
+            "all" {
+                [void]$SelectedPlatforms.Add("cursor")
+                [void]$SelectedPlatforms.Add("codex")
+                [void]$SelectedPlatforms.Add("claude")
+            }
+            default { throw "Unsupported platform: $platform" }
+        }
+    }
+}
+if ($Cursor) { [void]$SelectedPlatforms.Add("cursor") }
+if ($Codex) { [void]$SelectedPlatforms.Add("codex") }
+if ($Claude) { [void]$SelectedPlatforms.Add("claude") }
+if ($All) {
+    [void]$SelectedPlatforms.Add("cursor")
+    [void]$SelectedPlatforms.Add("codex")
+    [void]$SelectedPlatforms.Add("claude")
+}
+$PlatformSelectionExplicit = $SelectedPlatforms.Count -gt 0
 
 function Remove-AIFlowBlock([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return }
@@ -70,6 +103,7 @@ function Remove-ManagedFiles {
         ".ai-flow/bin/flowctl",
         ".ai-flow/install/version",
         ".ai-flow/install/profile",
+        ".ai-flow/install/platforms",
         ".ai-flow/runtime/schemas"
     )
     foreach ($relativePath in $managedPaths) {
@@ -84,30 +118,56 @@ $InstallMarker = Join-Path $TargetPath ".ai-flow/install/version"
 if (($Command -eq "update" -or $Command -eq "uninstall") -and -not (Test-Path -LiteralPath $InstallMarker -PathType Leaf)) {
     throw "No managed AI Flow installation found at target"
 }
+if ($Command -eq "uninstall" -and $PlatformSelectionExplicit) {
+    throw "Platform switches are not supported with uninstall; uninstall removes the complete managed installation"
+}
+
+if ($SelectedPlatforms.Count -eq 0) {
+    $existingPlatformsFile = Join-Path $TargetPath ".ai-flow/install/platforms"
+    if ($Command -eq "update" -and (Test-Path -LiteralPath $existingPlatformsFile -PathType Leaf)) {
+        foreach ($platform in (Get-Content -LiteralPath $existingPlatformsFile)) {
+            if ($platform -in @("cursor", "codex", "claude")) { [void]$SelectedPlatforms.Add($platform) }
+        }
+    } else {
+        [void]$SelectedPlatforms.Add("cursor")
+        [void]$SelectedPlatforms.Add("codex")
+        [void]$SelectedPlatforms.Add("claude")
+    }
+}
+$SelectCursor = $SelectedPlatforms.Contains("cursor")
+$SelectCodex = $SelectedPlatforms.Contains("codex")
+$SelectClaude = $SelectedPlatforms.Contains("claude")
+$SelectedSkillRoots = @()
+if ($SelectCodex) { $SelectedSkillRoots += ".agents/skills" }
+if ($SelectCursor) { $SelectedSkillRoots += ".cursor/skills" }
+if ($SelectClaude) { $SelectedSkillRoots += ".claude/skills" }
 
 if ($Command -eq "install" -and -not (Test-Path -LiteralPath $InstallMarker -PathType Leaf)) {
     foreach ($skillName in $CoreSkills) {
-        foreach ($skillRoot in @(".agents/skills", ".cursor/skills", ".claude/skills")) {
+        foreach ($skillRoot in $SelectedSkillRoots) {
             if (Test-Path -LiteralPath (Join-Path $TargetPath "$skillRoot/$skillName")) {
                 throw "Existing unmanaged Skill would be overwritten: $skillRoot/$skillName"
             }
         }
     }
-    if (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow")) {
+    if ($SelectClaude -and (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow"))) {
         throw "Existing unmanaged Claude ai-flow entry would be overwritten"
     }
-    if (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc")) {
+    if ($SelectCursor -and (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"))) {
         throw "Existing unmanaged Cursor ai-flow rule would be overwritten"
     }
 }
 
 if (Test-Path -LiteralPath $InstallMarker -PathType Leaf) {
+    $installedPackVersion = (Get-Content -LiteralPath $InstallMarker | Select-Object -First 1).Trim()
     foreach ($skillName in $CoreSkills) {
-        foreach ($skillRoot in @(".cursor/skills", ".claude/skills")) {
+        foreach ($skillRoot in $SelectedSkillRoots) {
             $nativeSkill = Join-Path $TargetPath "$skillRoot/$skillName"
             $managedMarker = Join-Path $nativeSkill ".ai-flow-managed"
             if ((Test-Path -LiteralPath $nativeSkill) -and -not (Test-Path -LiteralPath $managedMarker -PathType Leaf)) {
-                throw "Existing unmanaged native Skill would be overwritten: $skillRoot/$skillName"
+                if (-not ($skillRoot -eq ".agents/skills" -and $installedPackVersion -eq "0.1.0")) {
+                    throw "Existing unmanaged native Skill would be overwritten: $skillRoot/$skillName"
+                }
             }
         }
     }
@@ -140,7 +200,10 @@ if (-not (Test-Path -LiteralPath $runtimePath -PathType Leaf)) {
     try { & go build -o $runtimePath ./cmd/flowctl } finally { Pop-Location }
 }
 
-$directories = @(".agents/skills", ".cursor/skills", ".claude/skills", ".cursor/rules", ".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
+$directories = @(".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
+if ($SelectCodex) { $directories += ".agents/skills" }
+if ($SelectCursor) { $directories += @(".cursor/skills", ".cursor/rules") }
+if ($SelectClaude) { $directories += ".claude/skills" }
 foreach ($relativePath in $directories) {
     New-Item -ItemType Directory -Path (Join-Path $TargetPath $relativePath) -Force | Out-Null
 }
@@ -148,7 +211,7 @@ foreach ($relativePath in $directories) {
 foreach ($skillName in $CoreSkills) {
     $sourceSkill = Join-Path $SourcePath "skills/$skillName"
     if (-not (Test-Path -LiteralPath (Join-Path $sourceSkill "SKILL.md"))) { throw "Missing source Skill: $skillName" }
-    foreach ($skillRoot in @(".agents/skills", ".cursor/skills", ".claude/skills")) {
+    foreach ($skillRoot in $SelectedSkillRoots) {
         $targetSkill = Join-Path $TargetPath "$skillRoot/$skillName"
         if (Test-Path -LiteralPath $targetSkill) { Remove-Item -LiteralPath $targetSkill -Recurse -Force }
         Copy-Item -LiteralPath $sourceSkill -Destination $targetSkill -Recurse
@@ -156,28 +219,49 @@ foreach ($skillName in $CoreSkills) {
     }
 }
 
-$claudeTarget = Join-Path $TargetPath ".claude/skills/ai-flow"
-if (Test-Path -LiteralPath $claudeTarget) { Remove-Item -LiteralPath $claudeTarget -Recurse -Force }
-Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/claude/ai-flow") -Destination $claudeTarget -Recurse
-Set-Content -LiteralPath (Join-Path $claudeTarget ".ai-flow-managed") -Value $PackVersion -Encoding utf8
-Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/cursor/ai-flow.mdc") -Destination (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc") -Force
+if ($SelectClaude) {
+    $claudeTarget = Join-Path $TargetPath ".claude/skills/ai-flow"
+    if (Test-Path -LiteralPath $claudeTarget) { Remove-Item -LiteralPath $claudeTarget -Recurse -Force }
+    Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/claude/ai-flow") -Destination $claudeTarget -Recurse
+    Set-Content -LiteralPath (Join-Path $claudeTarget ".ai-flow-managed") -Value $PackVersion -Encoding utf8
+}
+if ($SelectCursor) {
+    Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/cursor/ai-flow.mdc") -Destination (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc") -Force
+}
 Copy-Item -LiteralPath $runtimePath -Destination (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") -Force
 $schemaTarget = Join-Path $TargetPath ".ai-flow/runtime/schemas"
 if (Test-Path -LiteralPath $schemaTarget) { Remove-Item -LiteralPath $schemaTarget -Recurse -Force }
 Copy-Item -LiteralPath (Join-Path $SourcePath "schemas") -Destination $schemaTarget -Recurse
 
-Set-AIFlowBlock (Join-Path $TargetPath "AGENTS.md") (Join-Path $SourcePath "adapters/codex/AGENTS.block.md")
-Set-AIFlowBlock (Join-Path $TargetPath "CLAUDE.md") (Join-Path $SourcePath "adapters/claude/CLAUDE.block.md")
+if ($SelectCodex) { Set-AIFlowBlock (Join-Path $TargetPath "AGENTS.md") (Join-Path $SourcePath "adapters/codex/AGENTS.block.md") }
+if ($SelectClaude) { Set-AIFlowBlock (Join-Path $TargetPath "CLAUDE.md") (Join-Path $SourcePath "adapters/claude/CLAUDE.block.md") }
 
 Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/install/version") -Value $PackVersion -Encoding utf8
 Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/install/profile") -Value $Profile -Encoding utf8
+$ActivePlatforms = [System.Collections.Generic.HashSet[string]]::new($SelectedPlatforms, [System.StringComparer]::OrdinalIgnoreCase)
+$platformFile = Join-Path $TargetPath ".ai-flow/install/platforms"
+if (Test-Path -LiteralPath $platformFile -PathType Leaf) {
+    foreach ($platform in (Get-Content -LiteralPath $platformFile)) {
+        if ($platform -in @("cursor", "codex", "claude")) { [void]$ActivePlatforms.Add($platform) }
+    }
+} else {
+    if (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc")) { [void]$ActivePlatforms.Add("cursor") }
+    $agentsPath = Join-Path $TargetPath "AGENTS.md"
+    if ((Test-Path -LiteralPath $agentsPath) -and (Select-String -LiteralPath $agentsPath -SimpleMatch '<!-- ai-flow:start -->' -Quiet)) { [void]$ActivePlatforms.Add("codex") }
+    if (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow/SKILL.md")) { [void]$ActivePlatforms.Add("claude") }
+}
+$activePlatformLines = @("cursor", "codex", "claude") | Where-Object { $ActivePlatforms.Contains($_) }
+Set-Content -LiteralPath $platformFile -Value $activePlatformLines -Encoding utf8
+$cursorState = [int]($ActivePlatforms.Contains("cursor"))
+$codexState = [int]($ActivePlatforms.Contains("codex"))
+$claudeState = [int]($ActivePlatforms.Contains("claude"))
 Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/capabilities.yaml") -Value @(
     "schema_version: 1",
     "profile: $Profile",
     "platforms:",
-    "  cursor: detected",
-    "  codex: detected",
-    "  claude_code: adapter"
+    "  cursor: $cursorState",
+    "  codex: $codexState",
+    "  claude_code: $claudeState"
 ) -Encoding utf8
 
 & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") doctor --root $TargetPath

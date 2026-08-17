@@ -1,8 +1,8 @@
 # AI Flow 系统架构
 
-状态：v0.1.1 实现基线
+状态：v0.1.2 实现基线
 
-目标版本：v0.1.1
+目标版本：v0.1.2
 适用平台：Cursor、Codex、Claude Code
 
 ## 1. 结论
@@ -143,7 +143,7 @@ flowchart TB
 - Templates：空白项目与既有项目的初始机读/人读资料。
 - CI：在 Agent 之外再次验证 Schema、追踪关系、文档新鲜度和测试证据。
 
-## 7. v0.1.1 仓库结构
+## 7. v0.1.2 仓库结构
 
 ```text
 coding-skills/

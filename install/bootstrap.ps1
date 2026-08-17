@@ -2,11 +2,23 @@ param(
     [ValidateSet("install", "update")]
     [string]$Command = $(if ($env:AI_FLOW_COMMAND) { $env:AI_FLOW_COMMAND } else { "install" }),
     [string]$Version = $(if ($env:AI_FLOW_VERSION) { $env:AI_FLOW_VERSION } else { "latest" }),
-    [string]$Target = $(if ($env:AI_FLOW_TARGET) { $env:AI_FLOW_TARGET } else { (Get-Location).Path })
+    [string]$Target = $(if ($env:AI_FLOW_TARGET) { $env:AI_FLOW_TARGET } else { (Get-Location).Path }),
+    [switch]$Cursor,
+    [switch]$Codex,
+    [switch]$Claude,
+    [switch]$All,
+    [string]$Platforms = $env:AI_FLOW_PLATFORMS
 )
 
 $ErrorActionPreference = "Stop"
 $Repository = "mxm-web-develop/coding-skills"
+$platformValues = @()
+if (-not [string]::IsNullOrWhiteSpace($Platforms)) { $platformValues += $Platforms }
+if ($Cursor) { $platformValues += "cursor" }
+if ($Codex) { $platformValues += "codex" }
+if ($Claude) { $platformValues += "claude" }
+if ($All) { $platformValues += "all" }
+$platformSelection = $platformValues -join ","
 
 if ($Version -eq "latest") {
     $downloadBase = "https://github.com/$Repository/releases/latest/download"
@@ -36,7 +48,7 @@ try {
     $sourceDir = Join-Path $bootstrapDir "coding-skills"
     $installer = Join-Path $sourceDir "install/install.ps1"
     if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Release package is incomplete" }
-    & $installer -Command $Command -Target $targetPath -Source $sourceDir -Profile core
+    & $installer -Command $Command -Target $targetPath -Source $sourceDir -Profile core -Platforms $platformSelection
 } finally {
     if (Test-Path -LiteralPath $bootstrapDir) { Remove-Item -LiteralPath $bootstrapDir -Recurse -Force }
 }

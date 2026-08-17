@@ -14,7 +14,7 @@ import (
 
 const packName = "mxm-ai-flow"
 
-var packVersion = "0.1.1"
+var packVersion = "0.1.2"
 
 var coreSkills = []string{
 	"initialize-ai-project",
@@ -259,24 +259,27 @@ func runDoctor(args []string) error {
 	_, flowctlErr := os.Stat(flowctlPath)
 	add("flowctl", flowctlErr == nil, false, flowctlPath)
 
-	skillRoots := []struct {
-		name string
-		path string
-	}{
-		{name: "codex-skills", path: filepath.Join(".agents", "skills")},
-		{name: "cursor-skills", path: filepath.Join(".cursor", "skills")},
-		{name: "claude-skills", path: filepath.Join(".claude", "skills")},
-	}
-	for _, skillRoot := range skillRoots {
-		missing := missingCoreSkills(root, skillRoot.path)
-		add(skillRoot.name, len(missing) == 0, false, missingMessage(missing))
-	}
-
-	entries := []string{
-		filepath.Join(root, "AGENTS.md"),
-		filepath.Join(root, "CLAUDE.md"),
-		filepath.Join(root, ".cursor", "rules", "ai-flow.mdc"),
-		filepath.Join(root, ".claude", "skills", "ai-flow", "SKILL.md"),
+	platforms := installedPlatforms(root)
+	add("platforms", len(platforms) > 0, false, strings.Join(platforms, ", "))
+	entries := []string{}
+	for _, platform := range platforms {
+		var checkName, skillRoot string
+		switch platform {
+		case "codex":
+			checkName = "codex-skills"
+			skillRoot = filepath.Join(".agents", "skills")
+			entries = append(entries, filepath.Join(root, "AGENTS.md"))
+		case "cursor":
+			checkName = "cursor-skills"
+			skillRoot = filepath.Join(".cursor", "skills")
+			entries = append(entries, filepath.Join(root, ".cursor", "rules", "ai-flow.mdc"))
+		case "claude":
+			checkName = "claude-skills"
+			skillRoot = filepath.Join(".claude", "skills")
+			entries = append(entries, filepath.Join(root, "CLAUDE.md"), filepath.Join(root, ".claude", "skills", "ai-flow", "SKILL.md"))
+		}
+		missing := missingCoreSkills(root, skillRoot)
+		add(checkName, len(missing) == 0, false, missingMessage(missing))
 	}
 	entryMissing := []string{}
 	for _, path := range entries {
@@ -311,6 +314,38 @@ func runDoctor(args []string) error {
 		}
 	}
 	return nil
+}
+
+func installedPlatforms(root string) []string {
+	path := filepath.Join(root, ".ai-flow", "install", "platforms")
+	if data, err := os.ReadFile(path); err == nil {
+		selected := []string{}
+		for _, value := range strings.FieldsFunc(string(data), func(r rune) bool {
+			return r == ',' || r == '\n' || r == '\r' || r == ' ' || r == '\t'
+		}) {
+			value = strings.TrimPrefix(value, "\ufeff")
+			if contains([]string{"cursor", "codex", "claude"}, value) && !contains(selected, value) {
+				selected = append(selected, value)
+			}
+		}
+		if len(selected) > 0 {
+			sort.Strings(selected)
+			return selected
+		}
+	}
+
+	detected := []string{}
+	locations := map[string]string{
+		"codex":  filepath.Join(root, ".agents", "skills", "initialize-ai-project", "SKILL.md"),
+		"cursor": filepath.Join(root, ".cursor", "skills", "initialize-ai-project", "SKILL.md"),
+		"claude": filepath.Join(root, ".claude", "skills", "initialize-ai-project", "SKILL.md"),
+	}
+	for _, platform := range []string{"claude", "codex", "cursor"} {
+		if _, err := os.Stat(locations[platform]); err == nil {
+			detected = append(detected, platform)
+		}
+	}
+	return detected
 }
 
 func missingCoreSkills(root, relativeRoot string) []string {

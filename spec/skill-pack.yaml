@@ -1,7 +1,7 @@
 schema_version: 1
 pack:
   name: mxm-ai-flow
-  version: 0.1.1
+  version: 0.1.2
   canonical_skill_root: skills
   target_skill_roots:
     codex: .agents/skills
@@ -21,6 +21,17 @@ compatibility:
     - mandatory_mcp
     - mandatory_subagents
     - mandatory_hooks
+
+installation:
+  platform_flags:
+    cursor: --cursor
+    codex: --codex
+    claude_code: --claude
+    all: --all
+  flags_are_composable: true
+  install_default: all
+  update_default: installed_platforms
+  platform_state_file: .ai-flow/install/platforms
 
 profiles:
   core:

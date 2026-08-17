@@ -5,10 +5,19 @@ REPOSITORY="mxm-web-develop/coding-skills"
 VERSION="${AI_FLOW_VERSION:-latest}"
 TARGET_DIR="${AI_FLOW_TARGET:-$(pwd -P)}"
 COMMAND="${AI_FLOW_COMMAND:-install}"
+PLATFORM_SELECTION="${AI_FLOW_PLATFORMS:-}"
 
 fail() {
   printf 'ai-flow bootstrap: %s\n' "$1" >&2
   exit 1
+}
+
+append_platform() {
+  if [ -z "$PLATFORM_SELECTION" ]; then
+    PLATFORM_SELECTION="$1"
+  else
+    PLATFORM_SELECTION="$PLATFORM_SELECTION,$1"
+  fi
 }
 
 while [ "$#" -gt 0 ]; do
@@ -27,8 +36,24 @@ while [ "$#" -gt 0 ]; do
       COMMAND="$1"
       shift
       ;;
+    --cursor)
+      append_platform cursor
+      shift
+      ;;
+    --codex)
+      append_platform codex
+      shift
+      ;;
+    --claude|--claude-code)
+      append_platform claude
+      shift
+      ;;
+    --all)
+      append_platform all
+      shift
+      ;;
     -h|--help)
-      printf '%s\n' "Usage: bootstrap.sh [install|update] [--version latest|vX.Y.Z] [--target PATH]"
+      printf '%s\n' "Usage: bootstrap.sh [install|update] [--cursor] [--codex] [--claude] [--all] [--version latest|vX.Y.Z] [--target PATH]"
       exit 0
       ;;
     *)
@@ -74,4 +99,4 @@ tar -xzf "$BOOTSTRAP_DIR/coding-skills.tar.gz" -C "$BOOTSTRAP_DIR"
 SOURCE_DIR="$BOOTSTRAP_DIR/coding-skills"
 [ -x "$SOURCE_DIR/install/install.sh" ] || fail "release package is incomplete"
 
-"$SOURCE_DIR/install/install.sh" "$COMMAND" --target "$TARGET_DIR" --source "$SOURCE_DIR"
+AI_FLOW_PLATFORMS="$PLATFORM_SELECTION" "$SOURCE_DIR/install/install.sh" "$COMMAND" --target "$TARGET_DIR" --source "$SOURCE_DIR"

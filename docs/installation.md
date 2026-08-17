@@ -17,14 +17,29 @@ Release 包内包含静态 Go 二进制，目标项目无需安装 Go、Node.js 
 ### macOS / Linux / WSL
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --cursor
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --codex
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --claude
 ```
+
+多个 IDE 共用一个工作区时可以组合：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | sh -s -- --cursor --codex
+```
+
+不传 `--cursor`、`--codex`、`--claude` 时默认安装全部，保持向后兼容。`--all` 也可以显式选择全部平台。
 
 ### Windows PowerShell
 
 ```powershell
+$env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+Remove-Item Env:AI_FLOW_PLATFORMS
 ```
+
+PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cursor,codex`。下载脚本后直接执行时，也支持 `-Cursor`、`-Codex`、`-Claude` 和 `-All` switch。
 
 远程 bootstrap 过程：
 
@@ -43,24 +58,26 @@ irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.1.1 sh
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.1.2 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.1.1 --target /path/to/project
+  | sh -s -- --version v0.1.2 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.1.1"
+$env:AI_FLOW_VERSION="v0.1.2"
+$env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
 Remove-Item Env:AI_FLOW_VERSION
+Remove-Item Env:AI_FLOW_PLATFORMS
 ```
 
 ## 4. 从 Git clone 安装
@@ -68,7 +85,7 @@ Remove-Item Env:AI_FLOW_VERSION
 ```bash
 git clone https://github.com/mxm-web-develop/coding-skills.git
 cd coding-skills
-./install/install.sh install --target /path/to/project --source .
+./install/install.sh install --cursor --target /path/to/project --source .
 ```
 
 PowerShell：
@@ -76,12 +93,14 @@ PowerShell：
 ```powershell
 git clone https://github.com/mxm-web-develop/coding-skills.git
 cd coding-skills
-.\install\install.ps1 -Command install -Target C:\work\my-project -Source .
+.\install\install.ps1 -Command install -Cursor -Target C:\work\my-project -Source .
 ```
 
 源码安装优先使用 `dist/` 中与当前系统匹配的二进制。没有匹配二进制时，如果本机安装了 Go，则现场构建。
 
 ## 5. 安装内容
+
+以下路径按选择的平台生成；不会为未选择的 IDE 创建 Skill 或入口文件。
 
 ```text
 .agents/skills/<13 core skills>/       # Codex
@@ -98,13 +117,13 @@ AGENTS.md       # 添加带标记的 AI Flow 区块
 CLAUDE.md       # 添加带标记的 AI Flow 区块
 ```
 
-安装器只维护 `<!-- ai-flow:start -->` 与 `<!-- ai-flow:end -->` 之间的内容，不覆盖文件中其他说明。三份 Skill 都由仓库中的同一份 `skills/` 源生成，并带有管理标记；更新时若发现同名但不受管理的 Skill，会停止而不是覆盖。
+安装器只维护 `<!-- ai-flow:start -->` 与 `<!-- ai-flow:end -->` 之间的内容，不覆盖文件中其他说明。各平台 Skill 副本都由仓库中的同一份 `skills/` 源生成，并带有管理标记；更新时若发现同名但不受管理的 Skill，会停止而不是覆盖。
 
 ### IDE Skill 发现矩阵
 
 | IDE | 官方项目级发现目录 | AI Flow 安装目录 |
 | --- | --- | --- |
-| Cursor | `.cursor/skills/`、`.agents/skills/` | 两处都安装，兼容版本差异 |
+| Cursor | `.cursor/skills/`、`.agents/skills/` | `--cursor` 安装 `.cursor/skills/`；同时选择 Codex 时也存在 `.agents/skills/` |
 | Codex | `.agents/skills/` | `.agents/skills/` |
 | Claude Code | `.claude/skills/` | `.claude/skills/` |
 
@@ -129,10 +148,19 @@ curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/
   | AI_FLOW_COMMAND=update sh
 ```
 
+不传平台时更新当前已安装的平台；要增量增加 Codex：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_COMMAND=update sh -s -- --codex
+```
+
 ```powershell
 $env:AI_FLOW_COMMAND="update"
+$env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_COMMAND
+Remove-Item Env:AI_FLOW_PLATFORMS
 ```
 
 ### 本地更新
@@ -142,7 +170,7 @@ git pull --ff-only
 ./install/install.sh update --target /path/to/project --source .
 ```
 
-更新会替换工具管理的 Skills、入口、Schema 和二进制，不修改项目对象和人读看板。
+带平台参数的更新只更新所选平台，并保留此前安装的其他平台；例如在 Cursor 安装上运行 `update --codex` 会增加 Codex 支持。更新不会修改项目对象和人读看板。
 
 ## 8. 卸载
 
@@ -153,6 +181,8 @@ git pull --ff-only
 ```powershell
 .\install\install.ps1 -Command uninstall -Target C:\work\my-project -Source .
 ```
+
+卸载始终移除整套 AI Flow 管理文件，因此不接受平台参数；项目状态和看板仍按下述规则保留。
 
 卸载保留：
 
@@ -172,8 +202,8 @@ git pull --ff-only
 检查内容：
 
 - 当前平台二进制。
-- 13 个 Core Skills。
-- Cursor、Codex、Claude Code 入口。
+- 所选平台目录中的 13 个 Core Skills。
+- 所选 Cursor、Codex 或 Claude Code 入口。
 - JSON Schema 安装数量。
 - 项目是否已经初始化。
 
@@ -198,7 +228,7 @@ git pull --ff-only
 ### IDE 没有发现 Skill
 
 1. 运行 `flowctl doctor`。
-2. 确认 `codex-skills`、`cursor-skills`、`claude-skills` 都是 `OK`。
+2. 确认已选择平台对应的 `codex-skills`、`cursor-skills` 或 `claude-skills` 是 `OK`；未安装的平台不会出现在检查列表中。
 3. 确认当前 IDE 打开的是执行安装命令时的目标项目根目录，而不是父目录、子目录或另一个 worktree。
 4. 安装或更新后必须 Reload IDE Window，并新建一个 Agent chat；Cursor 在启动时发现 Skills，旧会话不会可靠刷新。
 5. Cursor 可输入 `/` 并选择 `initialize-ai-project`；Codex 可从 Skill 选择器选择它；Claude Code 可输入 `/initialize-ai-project` 或 `/ai-flow`。

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 )
 
@@ -39,5 +40,20 @@ func TestNextActionForMode(t *testing.T) {
 	}
 	if got := nextActionForMode("greenfield"); got != "discover_product_goal" {
 		t.Fatalf("unexpected action: %s", got)
+	}
+}
+
+func TestInstalledPlatformsReadsSelectionAndWindowsBOM(t *testing.T) {
+	root := t.TempDir()
+	installDir := filepath.Join(root, ".ai-flow", "install")
+	if err := os.MkdirAll(installDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(installDir, "platforms"), []byte("\ufeffcursor\r\ncodex\r\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"codex", "cursor"}
+	if got := installedPlatforms(root); !reflect.DeepEqual(got, want) {
+		t.Fatalf("installedPlatforms() = %#v, want %#v", got, want)
 	}
 }
