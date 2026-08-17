@@ -13,6 +13,7 @@ trap cleanup EXIT HUP INT TERM
 "$REPO_ROOT/install/install.sh" install --cursor --target "$CURSOR_ROOT" --source "$REPO_ROOT" >/dev/null
 CURSOR_FLOWCTL="$CURSOR_ROOT/.ai-flow/bin/flowctl"
 [ -f "$CURSOR_ROOT/.cursor/skills/initialize-ai-project/SKILL.md" ]
+[ -f "$CURSOR_ROOT/.cursor/skills/profile-project-engineering/SKILL.md" ]
 [ -f "$CURSOR_ROOT/.cursor/rules/ai-flow.mdc" ]
 [ ! -e "$CURSOR_ROOT/.agents/skills/initialize-ai-project" ]
 [ ! -e "$CURSOR_ROOT/.claude/skills/initialize-ai-project" ]
@@ -40,6 +41,7 @@ grep -q '^codex$' "$CURSOR_ROOT/.ai-flow/install/platforms"
 
 AI_FLOW_PLATFORMS=claude "$REPO_ROOT/install/install.sh" install --target "$CLAUDE_ROOT" --source "$REPO_ROOT" >/dev/null
 [ -f "$CLAUDE_ROOT/.claude/skills/initialize-ai-project/SKILL.md" ]
+[ -f "$CLAUDE_ROOT/.claude/skills/profile-project-engineering/SKILL.md" ]
 [ -f "$CLAUDE_ROOT/.claude/skills/ai-flow/SKILL.md" ]
 [ -f "$CLAUDE_ROOT/CLAUDE.md" ]
 [ ! -e "$CLAUDE_ROOT/.cursor/skills/initialize-ai-project" ]

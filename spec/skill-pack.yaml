@@ -1,7 +1,7 @@
 schema_version: 1
 pack:
   name: mxm-ai-flow
-  version: 0.1.2
+  version: 0.2.0
   canonical_skill_root: skills
   target_skill_roots:
     codex: .agents/skills
@@ -42,6 +42,7 @@ profiles:
       - adopt-existing-project
       - discover-product-goal
       - plan-product-delivery
+      - profile-project-engineering
       - research-and-design-solution
       - specify-tests
       - implement-work-item

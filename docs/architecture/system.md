@@ -1,8 +1,8 @@
 # AI Flow 系统架构
 
-状态：v0.1.2 实现基线
+状态：v0.2.0 执行层基线
 
-目标版本：v0.1.2
+目标版本：v0.2.0
 适用平台：Cursor、Codex、Claude Code
 
 ## 1. 结论
@@ -12,7 +12,7 @@
 - 业务流程只维护一份，使用 Agent Skills 的最低公共格式：`SKILL.md` 只依赖 `name`、`description`，详细内容按需放入 `references/`、`scripts/`、`assets/`。
 - 仓库中的 `skills/` 是唯一源码；安装器为 Codex 生成 `.agents/skills/`，为 Cursor 生成 `.cursor/skills/`，为 Claude Code 生成 `.claude/skills/`。
 - 当前 Cursor 也支持 `.agents/skills/`，但仍安装 `.cursor/skills/` 原生副本，以兼容不同 Cursor 版本和发现刷新行为。
-- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为总入口，同时可以直接发现 13 个 `.claude/skills/<name>/` 业务 Skill。
+- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为总入口，同时可以直接发现 14 个 `.claude/skills/<name>/` 业务 Skill。
 - `AGENTS.md`、`.cursor/rules/`、`CLAUDE.md` 只承担常驻路由和防跑偏，不承载完整流程。
 - `flowctl` 承担状态写入、Schema 校验、锁、证据索引、文档生成、归档和版本检查；Agent 负责判断与协作，CLI 负责确定性。
 - MCP 只作为可选能力提供者，不是核心流程的前置依赖。
@@ -65,7 +65,8 @@ flowchart LR
     I -->|"既有项目"| A["扫描与基线对齐"]
     A --> G
     G --> P["计划与任务切片"]
-    P --> D["技术调研与方案"]
+    P --> E["工程画像与执行 Playbook"]
+    E --> D["技术调研与方案"]
     D --> T["测试先行"]
     T --> C["代码实现"]
     C --> V["诊断、验证与评审"]
@@ -80,17 +81,18 @@ flowchart LR
 2. 项目初始化或既有项目接管。
 3. 大目标和可验收需求对齐。
 4. 模块拆分、工作项排期和依赖规划。
-5. 技术调研、方案决策与风险记录。
-6. 测试案例先行、实现和即时验证。
-7. 根因诊断、回归测试和独立评审。
-8. Git 提交、合并门禁、版本规划与发布记录。
-9. 机器状态、人读看板、替代关系与归档同步。
+5. 工程画像、技术栈识别与开发/测试 Playbook 选择。
+6. 技术调研、方案决策与风险记录。
+7. 测试案例先行、实现和即时验证。
+8. 根因诊断、回归测试和独立评审。
+9. Git 提交、合并门禁、版本规划与发布记录。
+10. 机器状态、人读看板、替代关系与归档同步。
 
 以下内容不拆为独立 Skill：查看状态、生成看板、写 checkpoint、校验 Schema、申请锁、归档文件、计算下一个版本号。它们是 `flowctl` 子命令，由 Orchestrator 或业务 Skill 调用。
 
 ## 5. Skill 清单
 
-### 5.1 Core：13 个必需 Skill
+### 5.1 Core：14 个必需 Skill
 
 | # | Skill | 责任 | 主要输出 |
 | --- | --- | --- | --- |
@@ -99,14 +101,15 @@ flowchart LR
 | 3 | `adopt-existing-project` | 扫描代码、Git、测试、文档和版本，建立可信基线 | baseline、差距与风险 |
 | 4 | `discover-product-goal` | 多轮讨论目标、边界、角色、验收和非目标 | goal、requirements |
 | 5 | `plan-product-delivery` | 拆模块、工作项、依赖、里程碑和并行边界 | plan、work-items |
-| 6 | `research-and-design-solution` | 调研候选方案，写决策、约束和回滚设计 | research、ADR、design |
-| 7 | `specify-tests` | 在实现前定义验收、单元、集成、端到端和回归案例 | test-spec、traceability |
-| 8 | `implement-work-item` | 按已批准工作项和测试落地最小代码变更 | code diff、implementation report |
-| 9 | `diagnose-and-verify` | 复现失败、定位根因、修复并收集可信测试证据 | diagnosis、evidence、verification |
-| 10 | `review-change` | 独立检查需求符合度、设计一致性、风险和测试充分性 | review、findings |
-| 11 | `integrate-git-change` | 分支、原子提交、提交信息、PR/合并门禁和追踪关系 | commits、integration report |
-| 12 | `manage-release` | 计算版本、生成变更摘要、打包发布记录和回退信息 | release、version record |
-| 13 | `sync-project-knowledge` | 更新机读事实和人读看板，标记替代并归档旧资料 | snapshots、board、archive index |
+| 6 | `profile-project-engineering` | 识别真实技术栈、架构、质量命令、视觉需求和可用社区 Skill | engineering profile、playbook selection |
+| 7 | `research-and-design-solution` | 调研候选方案，写决策、约束和回滚设计 | research、ADR、design |
+| 8 | `specify-tests` | 按技术栈定义验收、单元、集成、E2E、视觉和回归案例 | test-spec、traceability |
+| 9 | `implement-work-item` | 按工程画像、模块化基线和已批准测试落地最小代码变更 | code diff、implementation report |
+| 10 | `diagnose-and-verify` | 复现失败、定位根因、修复并收集可信测试证据 | diagnosis、evidence、verification |
+| 11 | `review-change` | 独立检查需求、模块结构、设计、风险和测试充分性 | review、findings |
+| 12 | `integrate-git-change` | 分支、原子提交、提交信息、PR/合并门禁和追踪关系 | commits、integration report |
+| 13 | `manage-release` | 计算版本、生成变更摘要、打包发布记录和回退信息 | release、version record |
+| 14 | `sync-project-knowledge` | 更新机读事实和人读看板，标记替代并归档旧资料 | snapshots、board、archive index |
 
 ### 5.2 可选生产能力：3 个 Skill
 
@@ -143,7 +146,7 @@ flowchart TB
 - Templates：空白项目与既有项目的初始机读/人读资料。
 - CI：在 Agent 之外再次验证 Schema、追踪关系、文档新鲜度和测试证据。
 
-## 7. v0.1.2 仓库结构
+## 7. v0.2.0 仓库结构
 
 ```text
 coding-skills/
@@ -153,7 +156,7 @@ coding-skills/
 │   ├── bootstrap.sh
 │   └── bootstrap.ps1
 ├── cmd/flowctl/                  # Go CLI：项目、工作项、checkpoint、evidence、校验和看板
-├── skills/                       # 13 个 Core Skills 的规范源码
+├── skills/                       # 14 个 Core Skills 的规范源码
 │   └── <skill-name>/
 │       ├── SKILL.md
 │       ├── references/           # 仅按需读取
@@ -162,7 +165,7 @@ coding-skills/
 │   ├── codex/                    # AGENTS.md 路由片段
 │   ├── cursor/                   # .cursor/rules 路由
 │   └── claude/                   # CLAUDE.md 片段和 ai-flow 薄入口
-├── schemas/                      # 13 个 Draft 2020-12 JSON Schema
+├── schemas/                      # 14 个 Draft 2020-12 JSON Schema
 ├── spec/                         # 架构级机器可读规格
 ├── docs/
 │   ├── installation.md
@@ -253,6 +256,14 @@ target-project/
 
 扫描结果必须区分 `observed`、`inferred`、`user-confirmed`，不能把推断写成事实。用户确认基线后，才生成当前目标、版本映射和待办。
 
+### 10.3 工程画像与执行 Playbook
+
+`profile-project-engineering` 根据 manifest、lockfile、框架/编译/测试配置、CI、源码布局和现有测试生成 `.ai-flow/baseline/engineering-profile.json`。下游设计、开发、测试、诊断和评审不得重新猜测技术栈。
+
+Core 内置跨语言模块化基线和 TypeScript/Web、Node、Python、Go、Rust、JVM/.NET、移动端 Playbook。社区 Skill 只能作为已安装的可选增强，并记录来源、版本、选择理由和信任等级；禁止任务过程中静默拉取。代码默认按职责拆为目录和多文件，核心规则优先纯函数，副作用留在边界，注释解释意图、约束和不变量。
+
+Web UI 验证分三层：浏览器功能 E2E、Playwright 截图回归、人工/AI 视觉设计审查。截图基线属于受评审的产品证据，不能为了让 CI 通过而直接更新。
+
 ## 11. 长任务 Harness
 
 Harness 是仓库内的可恢复状态机，而不是依赖某个平台保持一个超长会话。
@@ -336,7 +347,7 @@ MCP 适合连接 GitHub、Linear/Jira、浏览器、设计稿、日志、云平�
 
 Profile：
 
-- `core`：13 Skills、单 Agent/单写者、Git、本地测试、机读/人读文档。
+- `core`：14 Skills、单 Agent/单写者、Git、本地测试、机读/人读文档。
 - `team`：并发租约、worktree、审批矩阵、CODEOWNERS、PR/CI 模板。
 - `secure`：在 team 上增加供应链、安全门禁和安全 Skill。
 - `delivery`：在 secure/team 上增加部署、观测、回滚和生产证据。
@@ -347,6 +358,7 @@ Profile：
 
 - Requirement → Work Item → Commit → Test Evidence → Release 可双向追踪。
 - 所有必需测试真实运行并通过，或有明确批准的例外。
+- 工程画像对当前技术栈仍有效；适用的 UI 变更包含功能、截图回归和视觉审查证据。
 - 评审无未处理的阻塞发现。
 - 机器状态通过 Schema 和 revision 校验。
 - 当前文档没有悬空替代关系；人读看板已由机器状态重新生成。

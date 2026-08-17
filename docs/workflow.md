@@ -10,7 +10,7 @@
 | Codex | `AGENTS.md` | `.agents/skills/`，可由 Agent 自动选择或 Skill 选择器 |
 | Claude Code | `CLAUDE.md` | `.claude/skills/`，可自动选择或 `/skill-name`，并保留 `/ai-flow` 总入口 |
 
-用户应优先用自然语言，不需要手动编排 13 个 Skill。
+用户应优先用自然语言，不需要手动编排 14 个 Skill。
 
 安装或更新发生在 IDE 已经打开之后时，先 Reload Window 并创建新 Agent chat。Skill 元数据通常在会话启动时发现，不能用安装前已经存在的聊天判断安装是否成功。
 
@@ -29,7 +29,7 @@
 3. `discover-product-goal` 讨论用户、价值、范围、非目标、约束和验收。
 4. 用户确认 Goal 和 Requirements。
 5. `plan-product-delivery` 拆成里程碑和可验证 Work Items。
-6. 尚未确认技术栈前，不创建业务目录。
+6. 技术栈确认后，`profile-project-engineering` 建立工程画像和执行 Playbook；确认前不创建业务目录。
 
 ## 3. 既有项目接管
 
@@ -46,9 +46,16 @@
 3. 输出分为 `observed`、`inferred`、`user-confirmed`。
 4. 用户确认当前版本和项目基线。
 5. 基线写入 `.ai-flow/baseline/`。
-6. 之后才讨论新的 Goal 和计划。
+6. `profile-project-engineering` 根据清单、锁文件、配置、CI、代码布局和现有测试生成工程画像。
+7. 之后才讨论新的 Goal 和计划。
 
 Agent 不得在接管过程中修改业务代码，也不能把推断当成事实。
+
+### 3.1 工程画像与社区 Skill
+
+`.ai-flow/baseline/engineering-profile.json` 记录真实语言、框架、架构边界、构建/质量命令、测试系统、视觉验证要求和选中的 Playbook。清单、锁文件、框架配置、CI 或测试工具变化后，技术任务开始前必须刷新画像。
+
+社区 Skill 是可选增强：只引用当前 IDE 已安装且与画像匹配的 Skill，并记录名称、来源、版本、理由和信任级别。任务执行中不会静默下载第三方 Skill；项目自身规则、现有框架和已接受决策始终优先。
 
 ## 4. 状态查询短路径
 
@@ -77,6 +84,7 @@ Agent 不得在接管过程中修改业务代码，也不能把推断当成事�
 ```text
 目标/需求
   → 计划和 Work Items
+  → 工程画像与技术栈 Playbook
   → 调研与设计决策
   → 测试规格
   → 开始 Work Item 和取得 lease
@@ -112,6 +120,14 @@ Agent 不得在接管过程中修改业务代码，也不能把推断当成事�
 5. 修复后运行复现、受影响测试和回归测试。
 6. Evidence 必须记录命令、exit code、Git SHA 和日志哈希。
 7. Review 通过后进入 Git 和修复版本流程。
+
+### 6.1 按技术栈选择测试
+
+- TypeScript/Node、Python、Go、Rust、JVM/.NET 和移动端分别使用匹配的测试 Playbook。
+- 优先复用项目现有 runner、CI 命令和覆盖规则，不为了偏好并存第二套框架。
+- 核心领域规则优先使用快速、确定性的单元测试；外部边界使用集成/契约测试；关键用户路径才进入 E2E。
+- Web UI 变更需要三层证据：功能 E2E、稳定状态的 Playwright 截图回归、人工/AI 打开截图进行视觉设计审查。
+- 截图基线只能在设计变更被确认后更新；失败应保留 actual/expected/diff 和 trace，而不是直接接受新基线。
 
 ## 7. Work Item 状态机
 
@@ -166,8 +182,9 @@ Review 必须固定 base/head revision，检查：
 
 - Requirement 和 acceptance criteria。
 - 设计一致性。
+- 模块职责、长代码是否合理拆成目录和多文件、核心逻辑与副作用是否分离、注释是否解释真实约束。
 - 错误处理、数据、并发、安全和兼容性风险。
-- 测试覆盖和 Evidence 新鲜度。
+- 技术栈对应的测试覆盖、UI 视觉证据和 Evidence 新鲜度。
 - 是否引入未批准的依赖/API/迁移。
 
 Git 默认约定：

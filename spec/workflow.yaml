@@ -3,6 +3,7 @@ schema_version: 1
 states:
   - intake
   - baselining
+  - engineering_profiling
   - goal_alignment
   - planning
   - researching
@@ -29,15 +30,18 @@ entry_routes:
       - initialize-ai-project
       - discover-product-goal
       - plan-product-delivery
+      - profile-project-engineering
   existing_project_goal:
     sequence:
       - initialize-ai-project
       - adopt-existing-project
+      - profile-project-engineering
       - discover-product-goal
       - plan-product-delivery
   bug_fix:
     sequence:
       - orchestrate-ai-delivery
+      - profile-project-engineering
       - specify-tests
       - diagnose-and-verify
       - review-change
@@ -49,6 +53,7 @@ entry_routes:
       - orchestrate-ai-delivery
       - discover-product-goal
       - plan-product-delivery
+      - profile-project-engineering
       - research-and-design-solution
       - specify-tests
       - implement-work-item
@@ -70,6 +75,8 @@ release_gates:
   - schema_valid
   - traceability_complete
   - required_tests_verified
+  - engineering_profile_current
+  - required_visual_evidence_verified
   - blocking_review_findings_resolved
   - git_revision_matches_evidence
   - active_documents_not_superseded

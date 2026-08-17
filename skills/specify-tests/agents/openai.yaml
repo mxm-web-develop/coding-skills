@@ -1,4 +1,4 @@
 interface:
-  display_name: "specify-tests"
-  short_description: "Run the specify-tests AI Flow workflow"
-  default_prompt: "Use $specify-tests to manage this AI Flow step."
+  display_name: "Specify Tests"
+  short_description: "Design stack-aware functional and visual tests"
+  default_prompt: "Use $specify-tests to define executable tests and required visual evidence before implementation."

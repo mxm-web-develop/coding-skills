@@ -1,0 +1,4 @@
+interface:
+  display_name: "Profile Project Engineering"
+  short_description: "Detect stack and select engineering playbooks"
+  default_prompt: "Use $profile-project-engineering to detect this repository stack and select its development and test playbooks."

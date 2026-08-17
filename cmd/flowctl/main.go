@@ -14,7 +14,7 @@ import (
 
 const packName = "mxm-ai-flow"
 
-var packVersion = "0.1.2"
+var packVersion = "0.2.0"
 
 var coreSkills = []string{
 	"initialize-ai-project",
@@ -22,6 +22,7 @@ var coreSkills = []string{
 	"adopt-existing-project",
 	"discover-product-goal",
 	"plan-product-delivery",
+	"profile-project-engineering",
 	"research-and-design-solution",
 	"specify-tests",
 	"implement-work-item",
@@ -290,7 +291,7 @@ func runDoctor(args []string) error {
 	add("platform-entries", len(entryMissing) == 0, false, missingMessage(entryMissing))
 
 	schemaFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runtime", "schemas", "*.schema.json"))
-	add("json-schemas", len(schemaFiles) >= 13, false, fmt.Sprintf("%d schema files installed", len(schemaFiles)))
+	add("json-schemas", len(schemaFiles) >= 14, false, fmt.Sprintf("%d schema files installed", len(schemaFiles)))
 
 	_, manifestErr := os.Stat(filepath.Join(root, ".ai-flow", "manifest.yaml"))
 	projectMessage := "project state initialized"

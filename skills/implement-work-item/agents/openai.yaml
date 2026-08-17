@@ -1,4 +1,4 @@
 interface:
-  display_name: "implement-work-item"
-  short_description: "Run the implement-work-item AI Flow workflow"
-  default_prompt: "Use $implement-work-item to manage this AI Flow step."
+  display_name: "Implement Work Item"
+  short_description: "Build modular code with stack-specific playbooks"
+  default_prompt: "Use $implement-work-item to implement this approved Work Item with the repository's engineering profile."

@@ -9,9 +9,9 @@ Ground design decisions in current project constraints and reproducible evidence
 
 ## Procedure
 
-1. Read the Requirement, Work Item, baseline, existing architecture, and relevant accepted decisions.
+1. Read the Requirement, Work Item, baseline, `.ai-flow/baseline/engineering-profile.json`, existing architecture, and relevant accepted decisions. Invoke `profile-project-engineering` when the profile is absent or stale.
 2. State the decision to make, constraints, and evaluation criteria.
-3. Inspect the local code before external research.
+3. Inspect the local code and recorded stack constraints before external research. Apply only relevant installed community Skills selected in the engineering profile.
 4. Use primary sources for unstable technical facts and record source URLs and access dates.
 5. Compare viable options, including keeping the current design when applicable.
 6. Evaluate correctness, complexity, compatibility, security, performance, migration, operability, testing, and rollback.

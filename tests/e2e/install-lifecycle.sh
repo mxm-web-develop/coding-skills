@@ -21,6 +21,8 @@ FLOWCTL="$TEST_ROOT/.ai-flow/bin/flowctl"
 for skill_root in .agents/skills .cursor/skills .claude/skills; do
   [ -f "$TEST_ROOT/$skill_root/initialize-ai-project/SKILL.md" ]
   [ -f "$TEST_ROOT/$skill_root/initialize-ai-project/.ai-flow-managed" ]
+  [ -f "$TEST_ROOT/$skill_root/profile-project-engineering/SKILL.md" ]
+  [ -f "$TEST_ROOT/$skill_root/profile-project-engineering/references/recommended-sources.md" ]
 done
 DOCTOR_JSON=$("$FLOWCTL" doctor --root "$TEST_ROOT" --json)
 for check_name in codex-skills cursor-skills claude-skills; do

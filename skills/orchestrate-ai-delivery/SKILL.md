@@ -12,15 +12,17 @@ Treat repository state as the source of truth and dispatch the smallest complete
 1. Find the project root and read `.ai-flow/manifest.yaml`.
 2. If it is absent, invoke `initialize-ai-project`.
 3. Run `.ai-flow/bin/flowctl status --root <root> --json` and inspect Git status.
-4. Classify the request using [references/routing.md](references/routing.md).
-5. Bind every mutation to an existing Goal/Requirement/Work Item. When none exists, create the smallest traceable item with `flowctl work create`.
-6. Dispatch one Skill at a time. Require its declared output before continuing.
-7. Use `flowctl checkpoint save` before a phase transition, external wait, user pause, context compaction, or retry.
-8. Stop at an approval gate rather than assuming permission to push, merge, tag, deploy, delete, or publish.
+4. For technical mutation, ensure `.ai-flow/baseline/engineering-profile.json` exists and is current. Invoke `profile-project-engineering` when it is absent or stale.
+5. Classify the request using [references/routing.md](references/routing.md).
+6. Bind every mutation to an existing Goal/Requirement/Work Item. When none exists, create the smallest traceable item with `flowctl work create`.
+7. Dispatch one Skill at a time. Require its declared output before continuing.
+8. Use `flowctl checkpoint save` before a phase transition, external wait, user pause, context compaction, or retry.
+9. Stop at an approval gate rather than assuming permission to push, merge, tag, deploy, delete, or publish.
 
 ## Coordination rules
 
 - Answer read-only status questions by reading machine state; do not start the full delivery chain.
+- Route language/framework decisions through the engineering profile. Do not let an execution Skill guess a different stack or silently acquire third-party Skills.
 - Keep one active writing owner per Work Item and scope. Serialize overlapping changes.
 - Start writing with `flowctl work start`; resume interrupted work with `flowctl checkpoint latest` and `flowctl checkpoint resume`.
 - On verification failure, return to diagnosis or design; never mark work complete from prose alone.

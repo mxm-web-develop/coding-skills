@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/engineering-profile.schema.json",
+  "title": "AI Flow engineering profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "detected_at", "git_sha", "languages", "frameworks", "package_managers", "build_systems", "architecture", "commands", "selected_playbooks", "community_skills", "visual_testing", "unknowns"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "detected_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "languages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/detectedTechnology" }
+    },
+    "frameworks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/detectedFramework" }
+    },
+    "package_managers": { "$ref": "common.schema.json#/$defs/stringList" },
+    "build_systems": { "$ref": "common.schema.json#/$defs/stringList" },
+    "architecture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module_roots", "generated_roots", "public_api_roots", "constraints"],
+      "properties": {
+        "style": { "type": "string", "minLength": 1 },
+        "module_roots": { "$ref": "common.schema.json#/$defs/stringList" },
+        "generated_roots": { "$ref": "common.schema.json#/$defs/stringList" },
+        "public_api_roots": { "$ref": "common.schema.json#/$defs/stringList" },
+        "constraints": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["install", "build", "format", "lint", "typecheck", "unit", "integration", "e2e", "visual"],
+      "properties": {
+        "install": { "$ref": "common.schema.json#/$defs/stringList" },
+        "build": { "$ref": "common.schema.json#/$defs/stringList" },
+        "format": { "$ref": "common.schema.json#/$defs/stringList" },
+        "lint": { "$ref": "common.schema.json#/$defs/stringList" },
+        "typecheck": { "$ref": "common.schema.json#/$defs/stringList" },
+        "unit": { "$ref": "common.schema.json#/$defs/stringList" },
+        "integration": { "$ref": "common.schema.json#/$defs/stringList" },
+        "e2e": { "$ref": "common.schema.json#/$defs/stringList" },
+        "visual": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "selected_playbooks": { "$ref": "common.schema.json#/$defs/stringList" },
+    "community_skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "source", "reason", "trust"],
+        "properties": {
+          "name": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+          "source": { "type": "string", "format": "uri" },
+          "version": { "type": "string", "minLength": 1 },
+          "reason": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+          "trust": { "type": "string", "enum": ["vendor", "official-ecosystem", "established-community", "individual-reviewed"] }
+        }
+      }
+    },
+    "visual_testing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "browsers", "viewports"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "tool": { "type": "string", "minLength": 1 },
+        "browsers": { "$ref": "common.schema.json#/$defs/stringList" },
+        "viewports": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "unknowns": { "$ref": "common.schema.json#/$defs/stringList" }
+  },
+  "$defs": {
+    "detectedTechnology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "evidence"],
+      "properties": {
+        "name": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "version": { "type": "string", "minLength": 1 },
+        "evidence": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "detectedFramework": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "category", "evidence"],
+      "properties": {
+        "name": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "version": { "type": "string", "minLength": 1 },
+        "category": { "type": "string", "enum": ["frontend", "backend", "mobile", "desktop", "data", "build", "test", "other"] },
+        "evidence": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    }
+  }
+}

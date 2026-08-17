@@ -159,6 +159,12 @@ func compileSchemas(schemaRoot string) (map[string]*jsonschema.Schema, error) {
 
 func collectValidationTargets(root string) ([]validationTarget, error) {
 	targets := []validationTarget{}
+	engineeringProfile := filepath.Join(root, ".ai-flow", "baseline", "engineering-profile.json")
+	if info, err := os.Stat(engineeringProfile); err == nil && !info.IsDir() {
+		targets = append(targets, validationTarget{Path: engineeringProfile, Schema: "engineering-profile.schema.json"})
+	} else if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
 	flat := map[string]string{
 		"goals":        "goal.schema.json",
 		"requirements": "requirement.schema.json",

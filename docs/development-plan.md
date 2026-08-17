@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.1.2 按 IDE 选择安装基线
+状态：v0.2.0 执行层基线
 
 更新日期：2026-08-17
 
@@ -13,7 +13,7 @@
 - Shell 与 PowerShell 本地安装、更新、卸载。
 - GitHub Release bootstrap、一行式远程安装与 SHA-256 校验。
 - Cursor、Codex、Claude Code 路由入口；业务规则使用一个源码并安装到各自的原生发现目录。
-- 13 个 Core Skill，均通过 Skill 结构校验。
+- 14 个 Core Skill，均通过 Skill 结构校验。
 
 ### 项目与流程
 
@@ -26,7 +26,7 @@
 
 ### 状态和文档
 
-- 13 个 Draft 2020-12 JSON Schema。
+- 14 个 Draft 2020-12 JSON Schema。
 - 对象 Schema、Event JSONL 和跨对象引用校验。
 - `.ai-flow/` 机器事实与 `docs/board/` 人读看板分离。
 - 看板显示版本、目标、下一动作、Work Item 和 Evidence 摘要。
@@ -48,7 +48,18 @@
 - 一行式安装必须从真实 GitHub Release 下载并通过 checksum 验证。
 - 安装器不能覆盖未管理的同名 Skill；卸载默认保留项目状态与人读看板。
 
-## 3. v0.2.0：团队协作与迁移
+## 3. 已完成的 v0.2.0：技术栈自适应执行层
+
+- `profile-project-engineering` 从仓库证据识别语言、框架、架构边界、质量命令、测试系统和视觉验证要求。
+- 工程画像使用独立 JSON Schema，并由 `flowctl validate` 校验。
+- 开发规则拆为跨语言模块化基线及 Web/Node、Python、Go、Rust、JVM/.NET、移动端 Playbook。
+- 测试规则按技术栈拆分，复用项目现有 runner；Web 增加功能 E2E、Playwright 截图回归和人工/AI 视觉审查。
+- 社区 Skill 只引用已安装能力，记录来源、版本、理由和信任等级；禁止任务中静默下载。
+- Review 增加模块职责、长文件拆分、纯核心/副作用边界、注释质量和 UI 视觉证据门禁。
+
+验收：技术任务必须使用当前工程画像；所有 Core Skills 和 Schema 通过验证；安装器在三 IDE 安装完整的 14 Skill 执行包。
+
+## 4. v0.3.0：团队协作与迁移
 
 - Work Item scope 重叠检测、lease 续期/接管和 worktree 辅助命令。
 - Agent/用户身份、Run、commit、PR 的审计关系。
@@ -59,24 +70,26 @@
 
 验收：多个 Agent 不会静默覆盖同一 revision 或重叠 scope；升级失败不丢项目数据；受保护路径缺少批准时不能进入发布门禁。
 
-## 4. v0.3.0：安全与生产交付 Profile
+## 5. v0.4.0：安全与生产交付 Profile
 
 - `secure`：依赖锁、SBOM、密钥扫描、漏洞证据、威胁模型和安全审批。
 - `delivery`：环境声明、部署证据、渐进发布、回滚和部署审批。
 - `observe`：日志、指标、trace、健康验证、事故记录和恢复报告。
 - MCP 只做能力适配；缺少供应商 MCP 时仍提供 CLI 或人工证据降级路径。
 
-## 5. 持续测试策略
+## 6. 持续测试策略
 
 - Unit：ID、状态转换、revision、锁、checksum、路径和看板汇总。
 - Contract：Skill 的输入、输出、停止条件和允许状态变化。
-- Schema：合法对象、非法状态、悬空引用和 Event JSONL。
+- Schema：合法对象、工程画像、非法状态、悬空引用和 Event JSONL。
+- Stack：各语言/框架 Playbook 路由、社区 Skill 来源记录和项目规则优先级。
+- Web：Playwright 功能、截图回归、trace 与人工/AI 视觉审查契约。
 - E2E：空白/既有项目、成功、失败、篡改、中断恢复、更新和卸载。
 - Platform：三个 IDE 的发现、自然语言路由和无 MCP/Hook/子 Agent 降级。
 - Release：六个二进制可执行格式、包内容、checksum 和远程 bootstrap。
 - Security：路径穿越、命令参数边界、供应链校验、敏感信息和权限边界。
 
-## 6. Definition of Done
+## 7. Definition of Done
 
 一个版本只有同时满足以下条件才算完成：
 

@@ -19,7 +19,7 @@ flowctl doctor --root .
 flowctl doctor --root . --json
 ```
 
-分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 13 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
+分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 14 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
 
 ### status
 
@@ -40,9 +40,10 @@ flowctl validate --root . --json
 执行：
 
 1. Draft 2020-12 JSON Schema 验证。
-2. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
-3. Evidence 日志路径引用检查。
-4. Event JSONL 逐行验证。
+2. `.ai-flow/baseline/engineering-profile.json` 工程画像验证（文件存在时）。
+3. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
+4. Evidence 日志路径引用检查。
+5. Event JSONL 逐行验证。
 
 ### render-board
 

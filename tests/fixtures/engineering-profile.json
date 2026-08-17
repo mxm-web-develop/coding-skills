@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "detected_at": "2026-08-17T12:00:00Z",
+  "git_sha": "not-a-git-repository",
+  "languages": [
+    { "name": "Shell", "evidence": ["tests/e2e/flowctl.sh"] }
+  ],
+  "frameworks": [],
+  "package_managers": [],
+  "build_systems": [],
+  "architecture": {
+    "style": "command-line workflow",
+    "module_roots": ["tests"],
+    "generated_roots": [],
+    "public_api_roots": [],
+    "constraints": ["POSIX shell compatibility"]
+  },
+  "commands": {
+    "install": [],
+    "build": [],
+    "format": [],
+    "lint": ["sh -n tests/e2e/*.sh"],
+    "typecheck": [],
+    "unit": [],
+    "integration": [],
+    "e2e": ["tests/e2e/flowctl.sh"],
+    "visual": []
+  },
+  "selected_playbooks": ["engineering-quality-baseline"],
+  "community_skills": [],
+  "visual_testing": {
+    "required": false,
+    "browsers": [],
+    "viewports": []
+  },
+  "unknowns": []
+}

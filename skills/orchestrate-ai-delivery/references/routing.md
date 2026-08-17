@@ -6,8 +6,8 @@
 | Missing AI Flow state | `initialize-ai-project` |
 | Existing code without baseline | `adopt-existing-project` |
 | New large goal or unclear feature | `discover-product-goal` → `plan-product-delivery` |
-| Approved feature work | `research-and-design-solution` → `specify-tests` → `implement-work-item` |
-| Bug or failing test | `specify-tests` when no reproduction exists → `diagnose-and-verify` |
+| Approved feature work | `profile-project-engineering` when stale → `research-and-design-solution` → `specify-tests` → `implement-work-item` |
+| Bug or failing test | `profile-project-engineering` when stale → `specify-tests` when no reproduction exists → `diagnose-and-verify` |
 | Review request | `review-change` |
 | Commit, PR, or merge preparation | `integrate-git-change` |
 | Version or release request | `manage-release` |

@@ -13,6 +13,7 @@ machine_files:
   project_config: .ai-flow/project.yaml
   capabilities: .ai-flow/capabilities.yaml
   current_state: .ai-flow/state/current.yaml
+  engineering_profile: .ai-flow/baseline/engineering-profile.json
 
 machine_directories:
   append_only:

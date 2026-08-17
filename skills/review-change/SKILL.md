@@ -9,11 +9,11 @@ Review the actual diff and evidence, not the implementer's summary.
 
 ## Procedure
 
-1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, and evidence.
+1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, evidence, and current engineering profile.
 2. Check requirement compliance and missing acceptance behavior.
 3. Check correctness, error handling, compatibility, data integrity, concurrency, security, performance, and operations as applicable.
-4. Check architectural fit and whether any decision was changed without a superseding record.
-5. Check test quality, regression coverage, and evidence revision freshness.
+4. Check architectural fit, module/file responsibility, pure-core/effect boundaries, public API scope, generated code, and whether any decision changed without a superseding record. Flag multipurpose monoliths and comments that obscure rather than explain intent.
+5. Check stack-appropriate test quality, regression coverage, selected community Skill provenance, and evidence revision freshness. Require functional and visual evidence for applicable UI changes.
 6. Run focused independent checks when needed and safe.
 7. Report findings by severity with precise file/line evidence and a concrete failure scenario.
 8. Mark the review `approved`, `approved_with_nonblocking_findings`, or `changes_required`.
