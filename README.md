@@ -6,12 +6,14 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 
 ## 核心能力
 
-- 14 个同源 Agent Skills，并安装到三个 IDE 各自可发现的项目目录。
+- 15 个同源 Agent Skills，并安装到三个 IDE 各自可发现的项目目录。
 - 基于仓库证据生成工程画像，按真实语言、框架、现有命令和已安装社区 Skill 选择开发与测试 Playbook。
 - 模块化代码门禁：按职责拆分多文件、核心逻辑优先纯函数、副作用显式隔离、注释解释意图和约束。
 - Web UI 同时要求功能 E2E、Playwright 截图回归和人工/AI 视觉设计审查。
 - 空白项目和既有项目两种初始化方式。
 - 既有或文档密集型工作区可选择保持原样、只读盘点，或在逐路径批准后按版本总结归档散落历史文档。
+- 初始化只标记疑似废弃代码、目录和生成内容；用户后续明确要求清理时，独立 Skill 才按多语言/多子项目依赖图提出可恢复计划。
+- 对话、选择、进度、错误和看板使用自然的产品/项目语言；Skill、对象 ID、状态值、缩写、哈希和机器目录默认只保留在内部记录中。
 - 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
 - Work Item、Harness Run、Checkpoint、Evidence 状态机。
 - 测试证据绑定真实命令、退出码、Git SHA、日志和 SHA-256。
@@ -55,7 +57,7 @@ Remove-Item Env:AI_FLOW_PLATFORMS
 1. 下载最新 GitHub Release。
 2. 校验发布包 SHA-256。
 3. 安装适合当前操作系统和架构的 `flowctl`。
-4. 将 14 个 Skill 安装到所选 IDE 的原生目录。
+4. 将 15 个 Skill 安装到所选 IDE 的原生目录。
 5. 只创建所选 IDE 的常驻路由入口。
 6. 保留已有 `AGENTS.md`、`CLAUDE.md` 和其他 IDE 规则。
 7. 运行健康检查。
@@ -133,18 +135,18 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
 ```
 
 ```text
-继续上次中断的长任务，先告诉我 checkpoint 和剩余风险。
+继续上次中断的开发，先告诉我已经完成了什么和剩余风险。
 ```
 
 ```text
-所有测试都通过了吗？把真实证据和 Git revision 告诉我。
+所有测试都通过了吗？请说明实际测试结果和对应的代码版本。
 ```
 
 ```text
 准备提交和发布 v1.1.0，但不要自动 push 或 tag。
 ```
 
-Orchestrator 会读取仓库状态并选择短路径或完整流程。状态查询不会启动开发任务；任何代码修改都会绑定 Work Item、测试和证据。
+项目助手会读取仓库状态并选择合适流程。状态查询不会启动开发任务；任何代码修改都会关联到具体开发任务和实际测试结果。
 
 ## 标准交付流程
 
@@ -215,7 +217,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.2.5 sh
+  | AI_FLOW_VERSION=v0.2.6 sh
 ```
 
 ## 卸载
@@ -261,4 +263,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.2.5` 提供 14 个 Core Skills 和 15 个 JSON Schema，支持 Cursor、Codex、Claude Code 按任意顺序逐次加入同一工作区并共享唯一 `.ai-flow/` 与 `docs/board/`。安装器只把“入口和完整原生 Skill Pack 同时存在”的 IDE 视为已安装，并在下载、校验、安装和健康检查阶段持续反馈进度。
+`v0.2.6` 提供 15 个 Core Skills 和 17 个 JSON Schema。初始化只允许归档经审批的历史文档，其他疑似废弃代码、目录和生成内容只写入只读结构清单；项目初始化完成后，用户明确提出“清理项目工作区”才会触发独立的多语言、多子项目清理流程。Cursor、Codex、Claude Code 共享唯一 `.ai-flow/` 与 `docs/board/`。

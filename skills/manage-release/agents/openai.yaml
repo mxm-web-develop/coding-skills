@@ -1,4 +1,3 @@
 interface:
-  display_name: "manage-release"
-  short_description: "Run the manage-release AI Flow workflow"
-  default_prompt: "Use $manage-release to manage this AI Flow step."
+  display_name: "准备版本发布"
+  short_description: "确定版本号并整理主要变化、测试结果、已知问题和恢复说明"

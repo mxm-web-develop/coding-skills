@@ -1,4 +1,3 @@
 interface:
-  display_name: "Specify Tests"
-  short_description: "Design stack-aware functional and visual tests"
-  default_prompt: "Use $specify-tests to define executable tests and required visual evidence before implementation."
+  display_name: "设计测试方案"
+  short_description: "明确功能、模块联动、完整用户流程、界面效果和回归检查"

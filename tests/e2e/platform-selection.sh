@@ -52,7 +52,7 @@ fi
 
 printf '%s\n' "0.2.3" > "$CURSOR_ROOT/.cursor/skills/initialize-ai-project/.ai-flow-managed"
 "$REPO_ROOT/install/install.sh" install --codex --target "$CURSOR_ROOT" --source "$REPO_ROOT" >/dev/null
-[ "$(sed -n '1p' "$CURSOR_ROOT/.cursor/skills/initialize-ai-project/.ai-flow-managed")" = "0.2.5" ]
+[ "$(sed -n '1p' "$CURSOR_ROOT/.cursor/skills/initialize-ai-project/.ai-flow-managed")" = "0.2.6" ]
 [ -f "$CURSOR_ROOT/.cursor/skills/initialize-ai-project/SKILL.md" ]
 [ -f "$CURSOR_ROOT/.agents/skills/initialize-ai-project/SKILL.md" ]
 [ -f "$CURSOR_ROOT/AGENTS.md" ]

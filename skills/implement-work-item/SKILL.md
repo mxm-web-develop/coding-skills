@@ -7,6 +7,8 @@ description: Implement one approved and test-specified AI Flow work item using t
 
 Deliver the smallest correct, maintainable change within the approved scope.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Describe the feature or fix being implemented, current progress, tests, and next step; do not narrate leases, Work Item state, checkpoints, playbook names, or Skill selection.
+
 ## Procedure
 
 1. Read the Work Item, Requirements, accepted decisions, test specification, current Checkpoint, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale.

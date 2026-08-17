@@ -7,6 +7,8 @@ description: Turn an initial product idea or change request into an agreed, test
 
 Reach shared understanding before decomposing or implementing work.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Use the user's product vocabulary and never ask them to approve a Goal/Requirement object or “contract.”
+
 ## Procedure
 
 1. Read the current baseline, active goals, constraints, and unresolved decisions.
@@ -15,7 +17,7 @@ Reach shared understanding before decomposing or implementing work.
 4. Separate the major goal from candidate features and implementation ideas.
 5. Define measurable success and explicit non-goals.
 6. Surface privacy, safety, compliance, migration, compatibility, and operational concerns when relevant.
-7. Present a concise goal contract for user confirmation.
+7. Present a concise “我理解的版本目标” summary covering who it serves, the result to achieve, what is included, what is excluded, and how the user will judge success. Ask whether that understanding is correct.
 8. Write the confirmed Goal and Requirements under `.ai-flow/`; leave unconfirmed items as questions, not facts.
 9. Hand off to `plan-product-delivery`.
 

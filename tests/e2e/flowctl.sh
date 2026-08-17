@@ -16,6 +16,15 @@ FLOWCTL="$TEST_ROOT/.ai-flow/bin/flowctl"
 "$FLOWCTL" project init --root "$TEST_ROOT" --mode greenfield --name "E2E Project" >/dev/null
 cp "$REPO_ROOT/tests/fixtures/engineering-profile.json" "$TEST_ROOT/.ai-flow/baseline/engineering-profile.json"
 cp "$REPO_ROOT/tests/fixtures/workspace-document-inventory.json" "$TEST_ROOT/.ai-flow/baseline/workspace-document-inventory.json"
+cp "$REPO_ROOT/tests/fixtures/workspace-structure-inventory.json" "$TEST_ROOT/.ai-flow/baseline/workspace-structure-inventory.json"
+mkdir -p "$TEST_ROOT/services/api-old" "$TEST_ROOT/apps/web/dist" "$TEST_ROOT/apps/web/coverage" "$TEST_ROOT/shared"
+mkdir -p "$TEST_ROOT/.github/workflows" "$TEST_ROOT/services/api" "$TEST_ROOT/deploy"
+touch "$TEST_ROOT/package.json" "$TEST_ROOT/go.work" "$TEST_ROOT/apps/web/package.json" "$TEST_ROOT/.github/workflows/web.yml" "$TEST_ROOT/services/api/go.mod" "$TEST_ROOT/deploy/api.yaml"
+mkdir -p "$TEST_ROOT/.ai-flow/workspace-cleanup"
+CLEANUP_WORK_ID=$("$FLOWCTL" work create --root "$TEST_ROOT" --kind chore --title "Verify workspace cleanup plan" --acceptance "cleanup plan validates" --scope "services/**" --scope "apps/**")
+sed "s/WI-20260817-11111111/$CLEANUP_WORK_ID/" "$REPO_ROOT/tests/fixtures/workspace-cleanup-plan.json" > "$TEST_ROOT/.ai-flow/workspace-cleanup/PLAN-20260817-abcdef12.json"
+CLEANUP_DIGEST=$("$FLOWCTL" cleanup digest --root "$TEST_ROOT" --plan .ai-flow/workspace-cleanup/PLAN-20260817-abcdef12.json)
+printf '%s\n' "$CLEANUP_DIGEST" | grep -Eq '^[a-f0-9]{64}$'
 WORK_ID=$("$FLOWCTL" work create --root "$TEST_ROOT" --kind bug --title "Prove the delivery loop" --acceptance "proof command passes" --scope "src/**")
 RUN_ID=$("$FLOWCTL" work start --root "$TEST_ROOT" --id "$WORK_ID" --owner "e2e-agent")
 CHECKPOINT_ID=$("$FLOWCTL" checkpoint save --root "$TEST_ROOT" --run "$RUN_ID" --phase implementing --summary "Prepared proof" --next "Run proof" --completed "created work item")

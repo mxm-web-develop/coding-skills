@@ -1,4 +1,3 @@
 interface:
-  display_name: "plan-product-delivery"
-  short_description: "Run the plan-product-delivery AI Flow workflow"
-  default_prompt: "Use $plan-product-delivery to manage this AI Flow step."
+  display_name: "安排开发计划"
+  short_description: "把确认的产品目标整理成清晰阶段和可以独立检查的开发任务"

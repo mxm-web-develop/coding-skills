@@ -171,6 +171,20 @@ func collectValidationTargets(root string) ([]validationTarget, error) {
 	} else if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
+	workspaceStructureInventory := filepath.Join(root, ".ai-flow", "baseline", "workspace-structure-inventory.json")
+	if info, err := os.Stat(workspaceStructureInventory); err == nil && !info.IsDir() {
+		targets = append(targets, validationTarget{Path: workspaceStructureInventory, Schema: "workspace-structure-inventory.schema.json"})
+	} else if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+	cleanupPlans, err := filepath.Glob(filepath.Join(root, ".ai-flow", "workspace-cleanup", "PLAN-*.json"))
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(cleanupPlans)
+	for _, path := range cleanupPlans {
+		targets = append(targets, validationTarget{Path: path, Schema: "workspace-cleanup-plan.schema.json"})
+	}
 	flat := map[string]string{
 		"goals":        "goal.schema.json",
 		"requirements": "requirement.schema.json",
@@ -301,6 +315,8 @@ func validateSemanticLinks(root string) []validationIssue {
 		addMissing(path, runPath(root, evidence.RunID))
 		addMissing(path, filepath.Join(root, filepath.FromSlash(evidence.LogPath)))
 	}
+	issues = append(issues, validateWorkspaceStructureInventory(root)...)
+	issues = append(issues, validateWorkspaceCleanupPlans(root)...)
 	return issues
 }
 

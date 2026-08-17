@@ -6,6 +6,7 @@
 | Missing AI Flow state | `initialize-ai-project` |
 | Existing code without baseline | `adopt-existing-project` |
 | Scattered, stale, duplicate, or conflicting pre-AI-Flow documents | `adopt-existing-project` for read-only inventory and approval → `sync-project-knowledge` for approved mappings |
+| Explicit post-initialization code, directory, generated-output, cache, or workspace cleanup | `clean-project-workspace` → verification/recovery evidence → `sync-project-knowledge` |
 | New large goal or unclear feature | `discover-product-goal` → `plan-product-delivery` |
 | Approved feature work | `profile-project-engineering` when stale → `research-and-design-solution` → `specify-tests` → `implement-work-item` |
 | Bug or failing test | `profile-project-engineering` when stale → `specify-tests` when no reproduction exists → `diagnose-and-verify` |

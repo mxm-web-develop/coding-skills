@@ -1,0 +1,3 @@
+interface:
+  display_name: "整理项目工作区"
+  short_description: "安全整理废弃代码、目录和可重新生成内容，并保留明确恢复方式"

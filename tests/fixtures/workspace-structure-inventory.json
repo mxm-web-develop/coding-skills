@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "revision": 1,
+  "scanned_at": "2026-08-17T12:00:00Z",
+  "git_sha": "not-a-git-repository",
+  "status": "confirmed",
+  "repository": {
+    "vcs_root": ".",
+    "topology": "monorepo",
+    "workspace_manifests": ["package.json", "go.work"],
+    "nested_repositories": [],
+    "shared_roots": ["shared"]
+  },
+  "components": [
+    {
+      "id": "CMP-web",
+      "name": "web",
+      "root": "apps/web",
+      "kind": "application",
+      "languages": ["TypeScript"],
+      "manifests": ["apps/web/package.json"],
+      "build_systems": ["Vite"],
+      "internal_dependencies": ["CMP-shared"],
+      "entry_points": ["apps/web/src/main.ts"],
+      "test_roots": ["apps/web/tests"],
+      "deployment_evidence": [".github/workflows/web.yml"],
+      "status": "active",
+      "evidence": ["package workspace membership", "CI build job"]
+    },
+    {
+      "id": "CMP-api",
+      "name": "api",
+      "root": "services/api",
+      "kind": "service",
+      "languages": ["Go"],
+      "manifests": ["services/api/go.mod"],
+      "build_systems": ["Go modules"],
+      "internal_dependencies": [],
+      "entry_points": ["services/api/cmd/server/main.go"],
+      "test_roots": ["services/api"],
+      "deployment_evidence": ["deploy/api.yaml"],
+      "status": "active",
+      "evidence": ["go.work membership", "deployment manifest"]
+    },
+    {
+      "id": "CMP-shared",
+      "name": "shared",
+      "root": "shared",
+      "kind": "shared",
+      "languages": ["TypeScript"],
+      "manifests": [],
+      "build_systems": ["TypeScript project references"],
+      "internal_dependencies": [],
+      "entry_points": ["shared/index.ts"],
+      "test_roots": [],
+      "deployment_evidence": [],
+      "status": "shared",
+      "evidence": ["referenced by CMP-web"]
+    }
+  ],
+  "candidates": [
+    {
+      "path": "services/api-old",
+      "path_type": "directory",
+      "category": "code",
+      "classification": "candidate-deprecated",
+      "owning_components": ["CMP-api"],
+      "evidence": ["not present in go.work", "name suggests an older implementation but is not proof"],
+      "reason": "Requires fresh import, CI, deployment, runtime and user confirmation before cleanup",
+      "initialization_action": "mark-only"
+    },
+    {
+      "path": "apps/web/dist",
+      "path_type": "directory",
+      "category": "generated",
+      "classification": "generated",
+      "owning_components": ["CMP-web"],
+      "evidence": ["Vite output directory"],
+      "reason": "Generated output; initialization records but does not remove it",
+      "initialization_action": "mark-only"
+    }
+  ],
+  "protected_paths": [".env", "deploy", "shared"],
+  "exclusions": [".git", ".ai-flow", "node_modules"],
+  "unknowns": ["Whether services/api-old is still used by an external deployment"]
+}

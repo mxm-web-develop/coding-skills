@@ -63,11 +63,19 @@ func TestRenderBoardCreatesReadableVersionTaskDecisionAndTestViews(t *testing.T)
 	if err := renderBoard(root); err != nil {
 		t.Fatal(err)
 	}
-	assertBoardContains(t, root, "STATUS.md", "项目当前处于 **V1** 大版本", "版本进度", "实现卖家风险评分页面", "确认桌面和移动端布局", "通过 1 / 失败 0")
-	assertBoardContains(t, root, "ROADMAP.md", "卖家画像与风险评分", "评分内核", "单元和视觉测试通过")
-	assertBoardContains(t, root, "CURRENT_STATE.md", "计算卖家风险评分", "采用纯函数评分内核", "TypeScript 5", "Playwright")
+	assertBoardContains(t, root, "STATUS.md", "项目当前处于 **V1** 大版本", "版本进度", "实现卖家风险评分页面", "界面效果", "确认桌面和移动端布局", "通过 1 / 失败 0")
+	assertBoardContains(t, root, "ROADMAP.md", "卖家画像与风险评分", "版本与开发阶段", "评分内核", "单元和视觉测试通过")
+	assertBoardContains(t, root, "CURRENT_STATE.md", "计算卖家风险评分", "采用纯函数评分内核", "TypeScript 5", "按产品功能划分模块", "开发与测试规范", "Playwright")
 	assertBoardContains(t, root, "RELEASES.md", "v1.1.0", "新增卖家风险评分", "暂不支持跨店铺分析", "关闭 seller-risk 特性开关")
-	assertBoardNotContains(t, root, "STATUS.md", oldWork.Title, "1 个已完成")
+	assertBoardNotContains(t, root, "STATUS.md", oldWork.Title, "1 个已完成", ".ai-flow", "Evidence", "Work Item", "TEST-", "WI-", "Playbook")
+	assertBoardNotContains(t, root, "ROADMAP.md", ".ai-flow", "Milestone", "Work Item", "完成门禁", "PLAN-")
+	assertBoardNotContains(t, root, "CURRENT_STATE.md", ".ai-flow", "Playbook", "feature modules", "REQ-", "Goal", "Requirement")
+	assertBoardNotContains(t, root, "RELEASES.md", ".ai-flow", "Evidence", "REL-")
+	assertBoardContainsRaw(t, root, "STATUS.md", work.ID, "PLAN-20260817-c3d4e5f6", "TEST-20260817-e5f6a7b8", evidence.ID)
+	assertBoardContainsRaw(t, root, "STATUS.md", "ai-flow-trace:version=v1.1.0", "goal=GOAL-20260817-a1b2c3d4", "plan=PLAN-20260817-c3d4e5f6")
+	assertBoardContainsRaw(t, root, "ROADMAP.md", "GOAL-20260817-a1b2c3d4", "PLAN-20260817-c3d4e5f6", "MS-score")
+	assertBoardContainsRaw(t, root, "CURRENT_STATE.md", "REQ-20260817-b2c3d4e5", "ADR-20260817-a7b8c9d0")
+	assertBoardContainsRaw(t, root, "RELEASES.md", "REL-20260817-d0e1f2a3", work.ID, evidence.ID)
 }
 
 func TestCompareVersionsUsesNumericSemverOrder(t *testing.T) {
@@ -114,10 +122,39 @@ func assertBoardNotContains(t *testing.T, root, name string, values ...string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	content := string(data)
+	content := stripHTMLComments(string(data))
 	for _, value := range values {
 		if strings.Contains(content, value) {
 			t.Fatalf("%s unexpectedly contains %q:\n%s", name, value, content)
 		}
+	}
+}
+
+func assertBoardContainsRaw(t *testing.T, root, name string, values ...string) {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, "docs", "board", name))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(data)
+	for _, value := range values {
+		if !strings.Contains(content, value) {
+			t.Fatalf("%s raw trace does not contain %q:\n%s", name, value, content)
+		}
+	}
+}
+
+func stripHTMLComments(content string) string {
+	for {
+		start := strings.Index(content, "<!--")
+		if start < 0 {
+			return content
+		}
+		endOffset := strings.Index(content[start+4:], "-->")
+		if endOffset < 0 {
+			return content[:start]
+		}
+		end := start + 4 + endOffset + 3
+		content = content[:start] + content[end:]
 	}
 }

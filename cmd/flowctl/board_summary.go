@@ -230,7 +230,7 @@ func overallSummary(data boardData) string {
 	current := currentMajorProgress(data)
 	active := current.InProgress + current.Review
 	return fmt.Sprintf(
-		"项目当前处于 **%s** 大版本，当前开发版本是 **%s**，%s。本轮任务中 **%d 个已完成、%d 个正在处理、%d 个阻塞**；验证证据为 **%d 项通过、%d 项失败、%d 项待确认**。下一步：**%s**。",
+		"项目当前处于 **%s** 大版本，当前开发版本是 **%s**，%s。本轮任务中 **%d 个已完成、%d 个正在处理、%d 个阻塞**；测试结果为 **%d 项通过、%d 项失败、%d 项待确认**。下一步：**%s**。",
 		majorVersion(data.Status.CurrentVersion), data.Status.CurrentVersion, goalText,
 		current.Done, active, current.Blocked,
 		current.PassedTests, current.FailedTests, current.OtherTests,
@@ -315,47 +315,80 @@ func humanStatus(status string) string {
 	labels := map[string]string{
 		"draft": "草稿", "active": "进行中", "accepted": "已确认", "superseded": "已替代",
 		"archived": "已归档", "rejected": "已拒绝", "cancelled": "已取消", "ready": "待开始",
-		"in_progress": "开发中", "blocked": "阻塞", "ready_for_review": "待评审", "done": "已完成",
+		"in_progress": "开发中", "blocked": "阻塞", "ready_for_review": "等待检查", "done": "已完成",
 		"planned": "已规划", "released": "已发布", "withdrawn": "已撤回", "red": "未通过",
 		"green": "已通过", "retired": "已停用", "passed": "通过", "failed": "失败", "unverified": "待确认",
+		"proposed": "等待确认", "approved": "已确认", "executing": "处理中", "applied": "已完成",
+		"partial": "部分完成", "rolled-back": "已恢复",
 	}
 	if label := labels[status]; label != "" {
 		return label
 	}
-	return firstNonEmpty(status, "未知")
+	return "待确认"
 }
 
 func humanPhase(phase string) string {
 	labels := map[string]string{
 		"intake": "需求接收", "baselining": "项目基线确认", "document_audit": "历史文档盘点",
+		"workspace_audit": "检查工作区内容", "workspace_cleanup_planning": "确认整理范围", "workspace_cleaning": "整理项目工作区",
 		"engineering_profiling": "技术栈识别", "goal_alignment": "目标对齐", "planning": "开发规划",
 		"researching": "技术调研", "test_specification": "测试设计", "implementing": "开发实现",
-		"verifying": "测试验证", "reviewing": "代码评审", "integrating": "Git 集成",
+		"verifying": "测试验证", "reviewing": "代码检查", "integrating": "整理提交",
 		"releasing": "版本发布", "syncing": "状态同步", "completed": "已完成",
 	}
 	if label := labels[phase]; label != "" {
 		return label
 	}
-	return firstNonEmpty(phase, "未知")
+	return "待确认"
 }
 
 func humanKind(kind string) string {
 	labels := map[string]string{"feature": "功能", "bug": "缺陷", "refactor": "重构", "test": "测试", "docs": "文档", "research": "调研", "chore": "维护"}
-	return firstNonEmpty(labels[kind], kind, "未知")
+	return firstNonEmpty(labels[kind], "其他")
 }
 
 func humanPriority(priority string) string {
 	labels := map[string]string{"critical": "紧急", "high": "高", "medium": "中", "low": "低"}
-	return firstNonEmpty(labels[priority], priority, "未知")
+	return firstNonEmpty(labels[priority], "未设置")
+}
+
+func humanOwner(owner string) string {
+	labels := map[string]string{
+		"codex-agent":  "Codex",
+		"cursor-agent": "Cursor",
+		"claude-agent": "Claude Code",
+	}
+	return firstNonEmpty(labels[owner], owner, "未分配")
+}
+
+func humanEngineeringGuidance(playbooks []string) string {
+	if len(playbooks) == 0 {
+		return "尚未确认"
+	}
+	return "已根据当前语言、框架和项目结构采用匹配的开发与测试规范"
+}
+
+func humanArchitectureStyle(style string) string {
+	labels := map[string]string{
+		"feature modules":    "按产品功能划分模块",
+		"layered":            "按职责分层组织",
+		"hexagonal":          "核心业务与外部系统分离",
+		"monolith":           "单体应用",
+		"modular monolith":   "模块化单体应用",
+		"microservices":      "多个独立服务协作",
+		"service-oriented":   "按服务职责拆分",
+		"clean architecture": "核心业务与技术实现分层",
+	}
+	return firstNonEmpty(labels[strings.ToLower(strings.TrimSpace(style))], style, "尚未确认")
 }
 
 func humanTestLevel(level string) string {
 	labels := map[string]string{
-		"unit": "单元", "component": "组件", "integration": "集成", "contract": "契约",
-		"end_to_end": "端到端", "accessibility": "无障碍", "visual": "视觉", "migration": "迁移",
-		"performance": "性能", "security": "安全", "smoke": "冒烟",
+		"unit": "单元", "component": "模块", "integration": "模块联动", "contract": "接口兼容",
+		"end_to_end": "完整流程", "accessibility": "无障碍体验", "visual": "界面效果", "migration": "数据迁移",
+		"performance": "性能", "security": "安全", "smoke": "基本功能",
 	}
-	return firstNonEmpty(labels[level], level, "未知")
+	return firstNonEmpty(labels[level], "其他")
 }
 
 func humanAction(action string) string {
@@ -363,16 +396,25 @@ func humanAction(action string) string {
 		return "等待安排下一项工作"
 	}
 	labels := map[string]string{
-		"adopt_existing_project":      "完成既有项目基线和历史文档盘点",
-		"discover_product_goal":       "讨论并确认首个产品目标",
-		"profile_project_engineering": "识别技术栈并确认开发与测试方案",
-		"plan_product_delivery":       "把需求拆成版本、里程碑和开发任务",
-		"review_visual_evidence":      "审核功能测试和视觉验证证据",
+		"adopt_existing_project":       "完成既有项目基线和历史文档盘点",
+		"discover_product_goal":        "讨论并确认首个产品目标",
+		"profile_project_engineering":  "识别项目技术环境并确认开发与测试方式",
+		"plan_product_delivery":        "把需求安排成版本、开发阶段和具体任务",
+		"research_and_design_solution": "比较可行方案并确认实现方式",
+		"specify_tests":                "确认测试范围和通过条件",
+		"implement_work_item":          "继续当前开发任务",
+		"diagnose_and_verify":          "定位问题并完成回归测试",
+		"review_change":                "检查本次代码改动",
+		"integrate_git_change":         "整理并提交已完成的改动",
+		"manage_release":               "整理版本内容并准备发布",
+		"sync_project_knowledge":       "更新项目进度和版本记录",
+		"clean_project_workspace":      "核对并整理项目工作区",
+		"review_visual_evidence":       "检查功能测试和界面效果",
 	}
 	if label := labels[action]; label != "" {
 		return label
 	}
-	return strings.ReplaceAll(action, "_", " ")
+	return "查看项目记录并确认下一步"
 }
 
 func mdCell(value string) string {

@@ -1,4 +1,3 @@
 interface:
-  display_name: "Adopt Existing Project"
-  short_description: "Baseline code and organize legacy documentation"
-  default_prompt: "Use $adopt-existing-project to baseline this repository and propose a safe, versioned legacy-document cleanup."
+  display_name: "接管现有项目"
+  short_description: "了解现有代码、版本、测试和历史文档，确认项目当前真实情况"

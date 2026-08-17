@@ -7,6 +7,8 @@ description: Plan and record an AI Flow project version after approved changes p
 
 Derive the version from policy and verified change impact.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Explain the proposed version, included changes, test result, known issues, migration, and rollback in release language; do not expose internal object names or gate states.
+
 ## Procedure
 
 1. Read the current version, versioning policy, merged Work Items, evidence, review state, and unreleased changes.

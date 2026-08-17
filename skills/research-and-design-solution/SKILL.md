@@ -7,6 +7,8 @@ description: Research and design a technical solution for an accepted requiremen
 
 Ground design decisions in current project constraints and reproducible evidence.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Compare options by user-relevant outcome, cost, risk, compatibility, and rollback; keep decision-object IDs, research routing, and internal record names out of the main explanation.
+
 ## Procedure
 
 1. Read the Requirement, Work Item, baseline, `.ai-flow/baseline/engineering-profile.json`, existing architecture, and relevant accepted decisions. Invoke `profile-project-engineering` when the profile is absent or stale.

@@ -7,6 +7,8 @@ description: Prepare and validate Git branches, atomic commits, commit messages,
 
 Make every integrated change traceable, reviewable, and reversible.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Tell the user what will be committed, what was excluded, whether checks passed, and what approval remains; keep traceability IDs and merge-gate vocabulary in technical detail only.
+
 ## Procedure
 
 1. Read the Work Item, verification evidence, review disposition, Git policy, and current working tree.

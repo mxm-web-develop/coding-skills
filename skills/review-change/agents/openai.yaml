@@ -1,4 +1,3 @@
 interface:
-  display_name: "review-change"
-  short_description: "Run the review-change AI Flow workflow"
-  default_prompt: "Use $review-change to manage this AI Flow step."
+  display_name: "检查本次改动"
+  short_description: "检查代码、需求、风险和测试结果，判断是否可以安全继续"

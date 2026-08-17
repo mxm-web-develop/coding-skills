@@ -7,8 +7,10 @@ Record:
 - Implemented capabilities and their code locations.
 - Build, test, lint, type-check, and run commands with discovery source.
 - Architecture and dependency summary.
+- Repository topology, component graph, languages, build systems, nested repositories, shared roots, generated roots, and deployment units.
 - Active, stale, conflicting, and unknown documentation.
 - Documentation cleanup mode, current-authority documents, versioned historical summary, inventory path, and any approved archive mappings.
+- Non-document cleanup candidates with evidence and `initialization_action: mark-only`; these are not confirmed deprecated and carry no mutation approval.
 - Known failures, risks, security-sensitive areas, and missing evidence.
 - Observed, inferred, and user-confirmed facts as separate lists.
 - Recommended next goal without declaring it accepted.

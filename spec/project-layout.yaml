@@ -15,6 +15,7 @@ machine_files:
   current_state: .ai-flow/state/current.yaml
   engineering_profile: .ai-flow/baseline/engineering-profile.json
   workspace_document_inventory: .ai-flow/baseline/workspace-document-inventory.json
+  workspace_structure_inventory: .ai-flow/baseline/workspace-structure-inventory.json
 
 machine_directories:
   append_only:
@@ -31,11 +32,14 @@ machine_directories:
     - .ai-flow/runs
     - .ai-flow/reports
     - .ai-flow/releases
+    - .ai-flow/workspace-cleanup
   coordination:
     - .ai-flow/locks
   historical:
     - .ai-flow/archive
     - .ai-flow/archive/legacy-documents
+    - .ai-flow/archive/legacy-code
+    - .ai-flow/archive/legacy-files
 
 human_files:
   - docs/board/STATUS.md
@@ -60,8 +64,16 @@ rules:
   human_board_leads_with_natural_language: true
   human_board_groups_work_by_major_and_minor_version: true
   human_board_shows_decisions_and_test_evidence: true
+  user_facing_language_is_natural_and_product_oriented: true
+  internal_workflow_vocabulary_is_not_primary_user_output: true
+  user_choices_use_plain_language_and_are_mapped_internally: true
+  technical_ids_and_paths_are_secondary_on_request: true
   arbitrary_workflow_docs_forbidden: true
   archived_objects_excluded_from_active_context: true
   generated_platform_entries_must_preserve_user_content: true
   legacy_document_moves_require_path_level_approval: true
   legacy_document_archives_preserve_original_paths_and_hashes: true
+  initialization_non_document_candidates_are_mark_only: true
+  workspace_cleanup_requires_explicit_post_initialization_request: true
+  workspace_cleanup_requires_path_level_approval: true
+  workspace_cleanup_is_component_and_language_aware: true

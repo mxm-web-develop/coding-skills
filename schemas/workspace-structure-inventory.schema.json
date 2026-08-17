@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/workspace-structure-inventory.schema.json",
+  "title": "AI Flow workspace structure inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "scanned_at", "git_sha", "status", "repository", "components", "candidates", "protected_paths", "exclusions", "unknowns"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "scanned_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "status": { "type": "string", "enum": ["draft", "confirmed", "stale"] },
+    "repository": { "$ref": "#/$defs/repository" },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/component" }
+    },
+    "candidates": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/candidate" }
+    },
+    "protected_paths": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relativePath" },
+      "uniqueItems": true
+    },
+    "exclusions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relativePath" },
+      "uniqueItems": true
+    },
+    "unknowns": { "$ref": "common.schema.json#/$defs/stringList" }
+  },
+  "$defs": {
+    "relativePath": {
+      "allOf": [
+        { "type": "string", "minLength": 1 },
+        { "not": { "pattern": "^[/\\\\]" } },
+        { "not": { "pattern": "^[A-Za-z]:([/\\\\]|$)" } },
+        { "not": { "pattern": "(^|[/\\\\])\\.\\.([/\\\\]|$)" } }
+      ]
+    },
+    "componentId": { "type": "string", "pattern": "^CMP-[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["vcs_root", "topology", "workspace_manifests", "nested_repositories", "shared_roots"],
+      "properties": {
+        "vcs_root": { "const": "." },
+        "topology": { "type": "string", "enum": ["single-project", "monorepo", "multi-project", "nested-repositories", "unknown"] },
+        "workspace_manifests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "nested_repositories": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "shared_roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "root", "kind", "languages", "manifests", "build_systems", "internal_dependencies", "entry_points", "test_roots", "deployment_evidence", "status", "evidence"],
+      "properties": {
+        "id": { "$ref": "#/$defs/componentId" },
+        "name": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "root": { "$ref": "#/$defs/relativePath" },
+        "kind": { "type": "string", "enum": ["application", "service", "library", "cli", "worker", "extension", "desktop", "mobile", "infrastructure", "documentation", "shared", "unknown"] },
+        "languages": { "$ref": "common.schema.json#/$defs/stringList" },
+        "manifests": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "build_systems": { "$ref": "common.schema.json#/$defs/stringList" },
+        "internal_dependencies": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        },
+        "entry_points": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "test_roots": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "deployment_evidence": { "$ref": "common.schema.json#/$defs/stringList" },
+        "status": { "type": "string", "enum": ["active", "candidate-historical", "shared", "protected", "unknown"] },
+        "evidence": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "path_type", "category", "classification", "owning_components", "evidence", "reason", "initialization_action"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "path_type": { "type": "string", "enum": ["file", "directory", "symlink"] },
+        "category": { "type": "string", "enum": ["code", "generated", "cache", "vendor", "binary", "configuration", "artifact", "infrastructure", "migration", "secret", "other"] },
+        "classification": { "type": "string", "enum": ["candidate-deprecated", "candidate-duplicate", "generated", "cache", "vendor", "protected", "shared", "unknown"] },
+        "owning_components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        },
+        "evidence": { "$ref": "common.schema.json#/$defs/stringList" },
+        "reason": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "initialization_action": { "const": "mark-only" }
+      }
+    }
+  }
+}

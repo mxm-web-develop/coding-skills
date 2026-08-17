@@ -7,6 +7,8 @@ description: Reproduce failures, identify root causes, fix defects, and collect 
 
 Separate symptoms, design causes, implementation causes, and verified outcomes.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Report the visible problem, root cause, fix, test result, and remaining risk; keep internal task, run, checkpoint, and evidence terminology out of the default response.
+
 ## Procedure
 
 1. Read the Requirement, Work Item, test specification, implementation handoff, existing evidence, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale.

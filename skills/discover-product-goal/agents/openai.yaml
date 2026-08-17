@@ -1,4 +1,3 @@
 interface:
-  display_name: "discover-product-goal"
-  short_description: "Run the discover-product-goal AI Flow workflow"
-  default_prompt: "Use $discover-product-goal to manage this AI Flow step."
+  display_name: "明确产品目标"
+  short_description: "通过讨论确认用户、范围、预期结果、限制和最终验收方式"

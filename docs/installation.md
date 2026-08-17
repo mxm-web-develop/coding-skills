@@ -76,21 +76,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.5 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.6 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.5 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.6 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.5"
+$env:AI_FLOW_VERSION="v0.2.6"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
@@ -121,9 +121,9 @@ cd coding-skills
 以下路径按选择的平台生成；不会为未选择的 IDE 创建 Skill 或入口文件。
 
 ```text
-.agents/skills/<14 core skills>/       # Codex
-.cursor/skills/<14 core skills>/       # Cursor
-.claude/skills/<14 core skills>/       # Claude Code
+.agents/skills/<15 core skills>/       # Codex
+.cursor/skills/<15 core skills>/       # Cursor
+.claude/skills/<15 core skills>/       # Claude Code
 .claude/skills/ai-flow/SKILL.md         # Claude /ai-flow 入口
 .cursor/rules/ai-flow.mdc
 .ai-flow/bin/flowctl[.exe]
@@ -152,7 +152,7 @@ CLAUDE.md       # 添加带标记的 AI Flow 区块
 安装完成时可能看到：
 
 ```text
-project-state WARNING run initialize-ai-project when not initialized
+project-state WARNING project not initialized; ask your IDE assistant to initialize this project
 ```
 
 这是正常状态。安装器不应该判断一个代码仓库当前开发到了哪里。请随后在 IDE 中提出“初始化这个项目”，或手动执行 `flowctl project init`。
@@ -220,7 +220,7 @@ git pull --ff-only
 检查内容：
 
 - 当前平台二进制。
-- 所选平台目录中的 14 个 Core Skills。
+- 所选平台目录中的 15 个 Core Skills。
 - 所选 Cursor、Codex 或 Claude Code 入口。
 - JSON Schema 安装数量。
 - 项目是否已经初始化。

@@ -1,0 +1,435 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/workspace-cleanup-plan.schema.json",
+  "title": "AI Flow workspace cleanup plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "plan_id", "created_at", "git_sha", "inventory_revision", "inventory_sha256", "boundary_fingerprints", "work_item_id", "status", "requested_intent", "scope", "items", "batches", "summary", "approval", "completed_at", "completed_git_sha", "verification_evidence_ids"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "plan_id": { "type": "string", "pattern": "^CLN-[0-9]{8}-[a-f0-9]{8}$" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "inventory_revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "inventory_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "boundary_fingerprints": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/boundaryFingerprint" }
+    },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "status": { "type": "string", "enum": ["proposed", "approved", "executing", "applied", "partial", "rejected", "rolled-back"] },
+    "requested_intent": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "scope": { "$ref": "#/$defs/scope" },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "batches": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/batch" }
+    },
+    "summary": { "$ref": "#/$defs/summary" },
+    "approval": { "$ref": "#/$defs/approval" },
+    "completed_at": {
+      "oneOf": [
+        { "$ref": "common.schema.json#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    },
+    "completed_git_sha": {
+      "oneOf": [
+        { "$ref": "common.schema.json#/$defs/gitSha" },
+        { "type": "null" }
+      ]
+    },
+    "verification_evidence_ids": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/evidenceId" },
+      "uniqueItems": true
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["approved", "executing", "applied", "partial", "rolled-back"] } } },
+      "then": {
+        "properties": {
+          "approval": {
+            "properties": {
+              "status": { "const": "approved" },
+              "approved_by": { "type": "string", "minLength": 1 },
+              "approved_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+              "mapping_sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["applied", "partial", "rolled-back"] } } },
+      "then": {
+        "properties": {
+          "completed_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+          "completed_git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+          "verification_evidence_ids": { "minItems": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["approved", "executing", "applied", "partial", "rolled-back"] } } },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "if": { "properties": { "action": { "not": { "const": "keep" } } } },
+              "then": { "properties": { "approval": { "const": "approved" } } }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "approved" } } },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "if": { "properties": { "action": { "not": { "const": "keep" } } } },
+              "then": { "properties": { "result": { "const": "pending" } } }
+            }
+          },
+          "batches": { "items": { "properties": { "status": { "const": "pending" } } } }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "applied" } } },
+      "then": {
+        "properties": {
+          "items": {
+            "items": {
+              "allOf": [
+                { "if": { "properties": { "action": { "enum": ["archive-code", "archive-file"] } } }, "then": { "properties": { "result": { "const": "moved" } } } },
+                { "if": { "properties": { "action": { "const": "remove-generated" } } }, "then": { "properties": { "result": { "const": "removed" } } } },
+                { "if": { "properties": { "action": { "const": "add-ignore-rule" } } }, "then": { "properties": { "result": { "const": "updated" } } } },
+                { "if": { "properties": { "action": { "const": "keep" } } }, "then": { "properties": { "result": { "const": "kept" } } } }
+              ]
+            }
+          },
+          "batches": { "items": { "properties": { "status": { "const": "verified" } } } }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "relativePath": {
+      "allOf": [
+        { "type": "string", "minLength": 1 },
+        { "not": { "pattern": "^[/\\\\]" } },
+        { "not": { "pattern": "^[A-Za-z]:([/\\\\]|$)" } },
+        { "not": { "pattern": "(^|[/\\\\])\\.\\.([/\\\\]|$)" } }
+      ]
+    },
+    "componentId": { "type": "string", "pattern": "^CMP-[A-Za-z0-9][A-Za-z0-9._-]*$" },
+    "boundaryFingerprint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath" },
+        "sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["paths", "components"],
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath" },
+          "uniqueItems": true
+        },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "recovery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "reference", "verified"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["none", "git", "archive", "regenerate", "quarantine"] },
+        "reference": { "type": ["string", "null"] },
+        "verified": { "type": "boolean" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source_path", "source_fingerprint", "tracked", "path_type", "category", "classification", "action", "target_path", "target_existed_before", "target_fingerprint_before", "target_fingerprint_after", "owning_components", "evidence", "risk", "ignore_pattern", "approval", "result", "recovery"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CLN-I[0-9]{3,}$" },
+        "source_path": { "$ref": "#/$defs/relativePath" },
+        "source_fingerprint": { "$ref": "common.schema.json#/$defs/sha256" },
+        "tracked": { "type": "boolean" },
+        "path_type": { "type": "string", "enum": ["file", "directory", "symlink"] },
+        "category": { "type": "string", "enum": ["code", "generated", "cache", "vendor", "binary", "configuration", "artifact", "infrastructure", "migration", "other"] },
+        "classification": { "type": "string", "enum": ["active", "deprecated-confirmed", "duplicate-confirmed", "generated", "cache", "obsolete-artifact", "protected", "shared", "unknown"] },
+        "action": { "type": "string", "enum": ["keep", "archive-code", "archive-file", "remove-generated", "add-ignore-rule"] },
+        "target_path": {
+          "oneOf": [
+            { "$ref": "#/$defs/relativePath" },
+            { "type": "null" }
+          ]
+        },
+        "target_existed_before": { "type": "boolean" },
+        "target_fingerprint_before": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        },
+        "target_fingerprint_after": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        },
+        "owning_components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        },
+        "evidence": { "$ref": "common.schema.json#/$defs/stringList" },
+        "risk": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "ignore_pattern": { "type": ["string", "null"], "minLength": 1 },
+        "approval": { "type": "string", "enum": ["not-required", "pending", "approved", "rejected"] },
+        "result": { "type": "string", "enum": ["pending", "kept", "moved", "removed", "updated", "skipped", "failed", "restored"] },
+        "recovery": { "$ref": "#/$defs/recovery" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "enum": ["active", "protected", "shared", "unknown"] } } },
+          "then": {
+            "properties": {
+              "action": { "const": "keep" },
+              "approval": { "const": "not-required" },
+              "target_path": { "type": "null" },
+              "target_existed_before": { "const": false },
+              "target_fingerprint_before": { "type": "null" },
+              "target_fingerprint_after": { "type": "null" },
+              "ignore_pattern": { "type": "null" },
+              "recovery": {
+                "properties": {
+                  "kind": { "const": "none" },
+                  "reference": { "type": "null" }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "archive-code" } } },
+          "then": {
+            "properties": {
+              "category": { "const": "code" },
+              "classification": { "enum": ["deprecated-confirmed", "duplicate-confirmed"] },
+              "target_path": { "type": "string", "pattern": "^\\.ai-flow/archive/legacy-code/" },
+              "target_existed_before": { "const": false },
+              "target_fingerprint_before": { "type": "null" },
+              "target_fingerprint_after": { "$ref": "common.schema.json#/$defs/sha256" },
+              "ignore_pattern": { "type": "null" },
+              "approval": { "enum": ["pending", "approved", "rejected"] },
+              "recovery": { "properties": { "kind": { "enum": ["git", "archive"] }, "reference": { "type": "string", "minLength": 1 } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "archive-file" } } },
+          "then": {
+            "properties": {
+              "category": { "enum": ["binary", "configuration", "artifact", "infrastructure", "migration", "other"] },
+              "classification": { "enum": ["deprecated-confirmed", "duplicate-confirmed"] },
+              "target_path": { "type": "string", "pattern": "^\\.ai-flow/archive/legacy-files/" },
+              "target_existed_before": { "const": false },
+              "target_fingerprint_before": { "type": "null" },
+              "target_fingerprint_after": { "$ref": "common.schema.json#/$defs/sha256" },
+              "ignore_pattern": { "type": "null" },
+              "approval": { "enum": ["pending", "approved", "rejected"] },
+              "recovery": { "properties": { "kind": { "enum": ["git", "archive"] }, "reference": { "type": "string", "minLength": 1 } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "remove-generated" } } },
+          "then": {
+            "properties": {
+              "category": { "enum": ["generated", "cache", "artifact"] },
+              "classification": { "enum": ["generated", "cache", "obsolete-artifact"] },
+              "target_path": { "type": "null" },
+              "target_existed_before": { "const": false },
+              "target_fingerprint_before": { "type": "null" },
+              "target_fingerprint_after": { "type": "null" },
+              "ignore_pattern": { "type": "null" },
+              "approval": { "enum": ["pending", "approved", "rejected"] },
+              "recovery": { "properties": { "kind": { "enum": ["git", "regenerate", "quarantine"] }, "reference": { "type": "string", "minLength": 1 } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "add-ignore-rule" } } },
+          "then": {
+            "properties": {
+              "category": { "enum": ["generated", "cache", "artifact"] },
+              "classification": { "enum": ["generated", "cache", "obsolete-artifact"] },
+              "target_path": { "type": "string", "pattern": "(^|/)\\.gitignore$" },
+              "target_fingerprint_after": { "$ref": "common.schema.json#/$defs/sha256" },
+              "ignore_pattern": { "type": "string", "minLength": 1 },
+              "approval": { "enum": ["pending", "approved", "rejected"] },
+              "recovery": { "properties": { "kind": { "const": "git" }, "reference": { "type": "string", "minLength": 1 } } }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "add-ignore-rule" }, "target_existed_before": { "const": true } } },
+          "then": { "properties": { "target_fingerprint_before": { "$ref": "common.schema.json#/$defs/sha256" } } }
+        },
+        {
+          "if": { "properties": { "action": { "const": "add-ignore-rule" }, "target_existed_before": { "const": false } } },
+          "then": { "properties": { "target_fingerprint_before": { "type": "null" } } }
+        },
+        {
+          "if": { "properties": { "result": { "enum": ["moved", "removed", "updated", "restored"] } } },
+          "then": {
+            "properties": {
+              "approval": { "const": "approved" },
+              "recovery": { "properties": { "verified": { "const": true } } }
+            }
+          }
+        }
+      ]
+    },
+    "batch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "item_ids", "affected_components", "languages", "preconditions", "before_commands", "before_evidence_ids", "after_commands", "after_evidence_ids", "rollback_commands", "recovery_evidence_ids", "mutation_started_at", "mutation_completed_at", "status"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CLN-B[0-9]{3,}$" },
+        "item_ids": { "$ref": "common.schema.json#/$defs/stringList" },
+        "affected_components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        },
+        "languages": { "$ref": "common.schema.json#/$defs/stringList" },
+        "preconditions": { "$ref": "common.schema.json#/$defs/stringList" },
+        "before_commands": { "$ref": "common.schema.json#/$defs/stringList" },
+        "before_evidence_ids": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/evidenceId" },
+          "uniqueItems": true
+        },
+        "after_commands": { "$ref": "common.schema.json#/$defs/stringList" },
+        "after_evidence_ids": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/evidenceId" },
+          "uniqueItems": true
+        },
+        "rollback_commands": { "$ref": "common.schema.json#/$defs/stringList" },
+        "recovery_evidence_ids": {
+          "type": "array",
+          "items": { "$ref": "common.schema.json#/$defs/evidenceId" },
+          "uniqueItems": true
+        },
+        "mutation_started_at": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "mutation_completed_at": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "status": { "type": "string", "enum": ["pending", "running", "verified", "failed", "restored", "skipped"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "verified" } } },
+          "then": {
+            "properties": {
+              "before_commands": { "minItems": 1 },
+              "before_evidence_ids": { "minItems": 1 },
+              "after_commands": { "minItems": 1 },
+              "after_evidence_ids": { "minItems": 1 },
+              "mutation_started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+              "mutation_completed_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "restored" } } },
+          "then": {
+            "properties": {
+              "before_commands": { "minItems": 1 },
+              "before_evidence_ids": { "minItems": 1 },
+              "after_commands": { "minItems": 1 },
+              "after_evidence_ids": { "minItems": 1 },
+              "rollback_commands": { "minItems": 1 },
+              "recovery_evidence_ids": { "minItems": 1 },
+              "mutation_started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+              "mutation_completed_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+            }
+          }
+        }
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["affected_components", "archive_count", "removal_count", "ignore_rule_count", "kept_count", "residual_risks"],
+      "properties": {
+        "affected_components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/componentId" },
+          "uniqueItems": true
+        },
+        "archive_count": { "type": "integer", "minimum": 0 },
+        "removal_count": { "type": "integer", "minimum": 0 },
+        "ignore_rule_count": { "type": "integer", "minimum": 0 },
+        "kept_count": { "type": "integer", "minimum": 0 },
+        "residual_risks": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "status", "approved_by", "approved_at", "mapping_sha256"],
+      "properties": {
+        "required": { "const": true },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "approved_by": { "type": ["string", "null"], "minLength": 1 },
+        "approved_at": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "mapping_sha256": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

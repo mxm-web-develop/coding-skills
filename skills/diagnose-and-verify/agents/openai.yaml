@@ -1,4 +1,3 @@
 interface:
-  display_name: "diagnose-and-verify"
-  short_description: "Run the diagnose-and-verify AI Flow workflow"
-  default_prompt: "Use $diagnose-and-verify to manage this AI Flow step."
+  display_name: "修复并验证问题"
+  short_description: "复现问题、找到原因、完成修复和回归测试，并说明实际影响"

@@ -7,6 +7,8 @@ description: Define executable, stack-aware acceptance and regression tests befo
 
 Translate accepted behavior into evidence that can fail before implementation and pass afterward.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Explain what will be checked, why it matters, and what counts as success in product language; keep test IDs, evidence fields, playbook names, and traceability links internal by default.
+
 ## Procedure
 
 1. Read the Requirement, Work Item, decision, implementation, existing test conventions, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale.

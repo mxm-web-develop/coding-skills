@@ -19,7 +19,7 @@ flowctl doctor --root .
 flowctl doctor --root . --json
 ```
 
-分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 14 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
+分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 15 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
 
 ### status
 
@@ -42,9 +42,19 @@ flowctl validate --root . --json
 1. Draft 2020-12 JSON Schema 验证。
 2. `.ai-flow/baseline/engineering-profile.json` 工程画像验证（文件存在时）。
 3. `.ai-flow/baseline/workspace-document-inventory.json` 文档盘点、审批和恢复映射验证（文件存在时）。
-4. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
-5. Evidence 日志路径引用检查。
-6. Event JSONL 逐行验证。
+4. `.ai-flow/baseline/workspace-structure-inventory.json` 多语言组件图和初始化候选标记验证（文件存在时）。
+5. `.ai-flow/workspace-cleanup/*.json` 清理动作、组件/批次引用、逐路径审批摘要、当前内容指纹、恢复方式和最终验证记录（文件存在时）。
+6. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
+7. Evidence 日志路径引用检查。
+8. Event JSONL 逐行验证。
+
+### cleanup digest
+
+```bash
+flowctl cleanup digest --root . --plan .ai-flow/workspace-cleanup/PLAN-<id>.json
+```
+
+计算待用户确认内容的稳定 SHA-256。摘要覆盖计划版本、Git revision、结构清单内容摘要、组件边界文件指纹、开发任务、范围、每条源路径与内容指纹、动作、目标、恢复方式、执行批次和风险摘要；执行状态、结果和完成时间不参与计算。用户确认后把输出写入计划的批准记录，任何受批准内容发生变化都会使校验失败。
 
 ### render-board
 
@@ -58,7 +68,7 @@ flowctl render-board --root .
 
 - `STATUS.md`：自然语言项目摘要、当前大版本、子版本进度、开发任务、测试项、证据、阻塞和下一步。
 - `ROADMAP.md`：当前目标、目标版本、里程碑、任务完成度和退出门禁。
-- `CURRENT_STATE.md`：当前需求、技术方案决策、语言/框架/架构 Playbook、边界和风险。
+- `CURRENT_STATE.md`：当前需求、技术方案决策、语言、框架、代码组织方式、适用的开发与测试规范、边界和风险。
 - `RELEASES.md`：真实 Release 对象、版本变更、测试证据、已知问题、迁移和回滚。
 
 缺少事实时显示“未记录”“待确认”或“尚无证据”，不会猜测通过状态。

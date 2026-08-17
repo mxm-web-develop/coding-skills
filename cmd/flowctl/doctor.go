@@ -75,12 +75,12 @@ func runDoctor(args []string) error {
 	add("platform-entries", len(entryMissing) == 0, false, missingMessage(entryMissing))
 
 	schemaFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runtime", "schemas", "*.schema.json"))
-	add("json-schemas", len(schemaFiles) >= 15, false, fmt.Sprintf("%d schema files installed", len(schemaFiles)))
+	add("json-schemas", len(schemaFiles) >= 17, false, fmt.Sprintf("%d schema files installed", len(schemaFiles)))
 
 	_, manifestErr := os.Stat(filepath.Join(root, ".ai-flow", "manifest.yaml"))
 	projectMessage := "project state initialized"
 	if manifestErr != nil {
-		projectMessage = "run initialize-ai-project when not initialized"
+		projectMessage = "project not initialized; ask your IDE assistant to initialize this project"
 	}
 	add("project-state", manifestErr == nil, true, projectMessage)
 

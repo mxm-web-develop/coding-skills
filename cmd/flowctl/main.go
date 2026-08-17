@@ -27,6 +27,8 @@ func main() {
 		err = runCheckpoint(os.Args[2:])
 	case "evidence":
 		err = runEvidence(os.Args[2:])
+	case "cleanup":
+		err = runCleanup(os.Args[2:])
 	case "validate":
 		err = runValidate(os.Args[2:])
 	case "project":
@@ -61,6 +63,7 @@ Usage:
   flowctl work <create|list|show|ready|start|block|review-ready|complete|cancel>
   flowctl checkpoint <save|list|show|latest|resume>
   flowctl evidence <run|record|list|show|verify>
+  flowctl cleanup digest [--root PATH] --plan PATH
   flowctl validate [--root PATH] [--json]
   flowctl render-board [--root PATH]`)
 }

@@ -7,6 +7,8 @@ description: Independently review a proposed code or documentation change agains
 
 Review the actual diff and evidence, not the implementer's summary.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Lead with whether the change is safe to continue, then explain concrete problems and impact; keep severity codes, object IDs, and workflow routing secondary unless the user asks for review detail.
+
 ## Procedure
 
 1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, evidence, and current engineering profile.

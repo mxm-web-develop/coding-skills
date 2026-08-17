@@ -7,12 +7,14 @@ description: Detect a repository's real languages, frameworks, architecture, com
 
 Create the evidence-backed engineering profile that downstream Skills must follow.
 
+Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Tell the user which technologies and project commands were found, what development/testing approach fits them, and what remains uncertain; do not present profile fields, playbook names, or community Skill routing as user-facing concepts.
+
 ## Procedure
 
-1. Locate the project root and read `.ai-flow/manifest.yaml`, the adoption baseline, accepted decisions, and current Work Item.
+1. Locate the project root and read `.ai-flow/manifest.yaml`, the adoption baseline, workspace structure inventory, accepted decisions, and current Work Item.
 2. Inspect manifests, lockfiles, build and framework configuration, CI, scripts, source layout, generated-code markers, and existing tests. Do not infer a stack from file extensions alone.
 3. Detect languages, runtimes, frameworks, package managers, build systems, module boundaries, public APIs, generated roots, and the project's actual quality commands using [references/stack-detection.md](references/stack-detection.md).
-4. Determine whether the profile is new, unchanged, or stale relative to the current Git revision and configuration evidence.
+4. Determine whether the profile is new, unchanged, or stale relative to the current Git revision, workspace component graph, and configuration evidence. A completed cleanup that moves component roots, manifests, generated roots, or commands makes the profile stale.
 5. Inventory only Skills already available to the active IDE/agent. Select relevant community Skills using [references/community-skill-routing.md](references/community-skill-routing.md) and the reviewed source catalog in [references/recommended-sources.md](references/recommended-sources.md); project rules and accepted decisions always take precedence.
 6. Select the smallest matching development and test playbooks. For browser UI, mark visual verification required unless the change is provably non-visual.
 7. Write or update `.ai-flow/baseline/engineering-profile.json` using [references/profile-contract.md](references/profile-contract.md), then run `flowctl validate`.

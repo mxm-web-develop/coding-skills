@@ -1,4 +1,3 @@
 interface:
-  display_name: "orchestrate-ai-delivery"
-  short_description: "Run the orchestrate-ai-delivery AI Flow workflow"
-  default_prompt: "Use $orchestrate-ai-delivery to manage this AI Flow step."
+  display_name: "项目开发助手"
+  short_description: "查看项目进度并协调需求讨论、开发实现、测试验证和版本工作"

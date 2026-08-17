@@ -4,6 +4,9 @@ states:
   - intake
   - baselining
   - document_audit
+  - workspace_audit
+  - workspace_cleanup_planning
+  - workspace_cleaning
   - engineering_profiling
   - goal_alignment
   - planning
@@ -39,6 +42,13 @@ entry_routes:
       - profile-project-engineering
       - discover-product-goal
       - plan-product-delivery
+  workspace_cleanup:
+    sequence:
+      - orchestrate-ai-delivery
+      - clean-project-workspace
+      - sync-project-knowledge
+    requires_initialized_project: true
+    requires_explicit_user_request: true
   bug_fix:
     sequence:
       - orchestrate-ai-delivery
@@ -78,6 +88,8 @@ release_gates:
   - required_tests_verified
   - engineering_profile_current
   - workspace_document_inventory_valid_when_present
+  - workspace_structure_inventory_valid_when_present
+  - workspace_cleanup_plan_valid_when_present
   - required_visual_evidence_verified
   - blocking_review_findings_resolved
   - git_revision_matches_evidence
@@ -109,3 +121,20 @@ harness:
   optional_budgets:
     - tokens
     - cost
+
+user_communication:
+  language: match_user
+  lead_with:
+    - outcome
+    - impact
+    - current_progress
+    - next_action
+  hide_by_default:
+    - skill_names
+    - object_ids
+    - enum_values
+    - workflow_abbreviations
+    - revisions_and_hashes
+    - machine_directories
+  technical_detail: on_request_or_when_actionable
+  approval_choices: natural_language

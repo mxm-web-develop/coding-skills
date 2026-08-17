@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.5"
+PACK_VERSION="0.2.6"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -11,7 +11,7 @@ SELECT_CODEX=0
 SELECT_CLAUDE=0
 PLATFORM_SELECTION_SEEN=0
 
-CORE_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery profile-project-engineering research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
+CORE_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project clean-project-workspace discover-product-goal plan-product-delivery profile-project-engineering research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
 LEGACY_CODEX_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
 
 usage() {
