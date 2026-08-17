@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -37,6 +38,12 @@ func runCheckpointSave(args []string) error {
 	summary := fs.String("summary", "", "completed work summary")
 	next := fs.String("next", "", "next resumable action")
 	expected := fs.Int("expect-revision", 0, "optimistic run revision")
+	approvalKind := fs.String("approval-kind", "", "pending approval kind")
+	approvalOperation := fs.String("approval-operation", "", "exact pending operation")
+	approvalTarget := fs.String("approval-target", "", "exact pending target")
+	approvalScope := fs.String("approval-scope", "", "scope or version affected by the approval")
+	approvalDigest := fs.String("approval-digest", "", "SHA-256 of the exact proposal awaiting approval")
+	approvalSummary := fs.String("approval-summary", "", "plain-language approval question")
 	var completed stringListFlag
 	var changed stringListFlag
 	var questions stringListFlag
@@ -48,6 +55,10 @@ func runCheckpointSave(args []string) error {
 	}
 	if strings.TrimSpace(*phase) == "" || strings.TrimSpace(*summary) == "" || strings.TrimSpace(*next) == "" {
 		return errors.New("--phase, --summary, and --next are required")
+	}
+	pendingApproval, err := checkpointPendingApproval(*approvalKind, *approvalOperation, *approvalTarget, *approvalScope, *approvalDigest, *approvalSummary)
+	if err != nil {
+		return err
 	}
 	root, err := resolveRoot(*rootArg, true)
 	if err != nil {
@@ -68,20 +79,26 @@ func runCheckpointSave(args []string) error {
 		return err
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
+	worktreeSHA, err := gitWorktreeFingerprint(root)
+	if err != nil {
+		return err
+	}
 	checkpoint := Checkpoint{
-		SchemaVersion:  1,
-		ID:             id,
-		RunID:          run.ID,
-		WorkItemID:     run.WorkItemID,
-		Sequence:       len(run.CheckpointIDs) + 1,
-		Phase:          strings.TrimSpace(*phase),
-		Summary:        strings.TrimSpace(*summary),
-		NextAction:     strings.TrimSpace(*next),
-		GitSHA:         gitSHA(root),
-		CompletedSteps: nonNil(completed),
-		ChangedFiles:   nonNil(changed),
-		OpenQuestions:  nonNil(questions),
-		CreatedAt:      now,
+		SchemaVersion:   1,
+		ID:              id,
+		RunID:           run.ID,
+		WorkItemID:      run.WorkItemID,
+		Sequence:        len(run.CheckpointIDs) + 1,
+		Phase:           strings.TrimSpace(*phase),
+		Summary:         strings.TrimSpace(*summary),
+		NextAction:      strings.TrimSpace(*next),
+		GitSHA:          gitSHA(root),
+		WorktreeSHA256:  worktreeSHA,
+		CompletedSteps:  nonNil(completed),
+		ChangedFiles:    nonNil(changed),
+		OpenQuestions:   nonNil(questions),
+		PendingApproval: pendingApproval,
+		CreatedAt:       now,
 	}
 	if err := writeJSONAtomic(checkpointPath(root, run.ID, checkpoint.ID), &checkpoint); err != nil {
 		return err
@@ -220,6 +237,37 @@ func runCheckpointResume(args []string) error {
 	if err != nil {
 		return err
 	}
+	if item.RunID == nil || *item.RunID != run.ID {
+		return errors.New("cannot resume this saved run because the task now points to a different run")
+	}
+	if item.Owner == nil || strings.TrimSpace(*item.Owner) != previousOwner {
+		return errors.New("cannot resume this saved run because task ownership changed")
+	}
+	var existingLease WorkLease
+	if leaseErr := readJSON(leasePath(root, item.ID), &existingLease); leaseErr == nil {
+		if existingLease.RunID != run.ID || existingLease.Owner != previousOwner {
+			return errors.New("cannot resume this saved run because its write lease belongs to another run or owner")
+		}
+	} else if !os.IsNotExist(leaseErr) {
+		return leaseErr
+	}
+	currentWorktreeSHA, fingerprintErr := gitWorktreeFingerprint(root)
+	if fingerprintErr != nil {
+		return fingerprintErr
+	}
+	if !*allowDrift {
+		if checkpoint.WorktreeSHA256 == "" {
+			clean, cleanErr := gitWorktreeClean(root)
+			if cleanErr != nil {
+				return cleanErr
+			}
+			if !clean {
+				return errors.New("working tree changed since this legacy checkpoint; inspect it or use --allow-git-drift")
+			}
+		} else if checkpoint.WorktreeSHA256 != currentWorktreeSHA {
+			return errors.New("working tree changed since checkpoint; inspect the differences or use --allow-git-drift")
+		}
+	}
 	now := time.Now().UTC()
 	lease := WorkLease{
 		SchemaVersion: 1,
@@ -258,6 +306,29 @@ func runCheckpointResume(args []string) error {
 		return err
 	}
 	return printJSON(checkpoint)
+}
+
+func checkpointPendingApproval(kind, operation, target, scope, digest, summary string) (*PendingApproval, error) {
+	values := []string{kind, operation, target, scope, digest, summary}
+	provided := false
+	for _, value := range values {
+		provided = provided || strings.TrimSpace(value) != ""
+	}
+	if !provided {
+		return nil, nil
+	}
+	for _, value := range values {
+		if strings.TrimSpace(value) == "" {
+			return nil, errors.New("all --approval-* fields are required when saving a pending approval")
+		}
+	}
+	if !contains([]string{"technology", "ux", "scope", "git", "release", "deployment", "file-move", "deletion", "other"}, strings.TrimSpace(kind)) {
+		return nil, errors.New("invalid --approval-kind")
+	}
+	if matched, _ := filepath.Match(strings.Repeat("[0-9a-f]", 64), strings.ToLower(strings.TrimSpace(digest))); !matched {
+		return nil, errors.New("--approval-digest must be a SHA-256 value")
+	}
+	return &PendingApproval{Kind: strings.TrimSpace(kind), Operation: strings.TrimSpace(operation), Target: strings.TrimSpace(target), Scope: strings.TrimSpace(scope), ExpectedSHA256: strings.ToLower(strings.TrimSpace(digest)), Summary: strings.TrimSpace(summary)}, nil
 }
 
 func listCheckpoints(root, runID string) ([]Checkpoint, error) {

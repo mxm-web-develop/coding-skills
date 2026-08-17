@@ -15,9 +15,23 @@
     "summary": { "$ref": "common.schema.json#/$defs/nonEmpty" },
     "next_action": { "$ref": "common.schema.json#/$defs/nonEmpty" },
     "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "worktree_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
     "completed_steps": { "$ref": "common.schema.json#/$defs/stringList" },
     "changed_files": { "$ref": "common.schema.json#/$defs/stringList" },
     "open_questions": { "$ref": "common.schema.json#/$defs/stringList" },
+    "pending_approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "operation", "target", "scope", "expected_sha256", "summary"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["technology", "ux", "scope", "git", "release", "deployment", "file-move", "deletion", "other"] },
+        "operation": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "target": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "scope": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "expected_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+        "summary": { "$ref": "common.schema.json#/$defs/nonEmpty" }
+      }
+    },
     "created_at": { "$ref": "common.schema.json#/$defs/timestamp" }
   }
 }

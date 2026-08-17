@@ -34,12 +34,15 @@ type traceMilestone struct {
 }
 
 type traceDecision struct {
-	ID             string   `json:"id"`
-	GoalID         *string  `json:"goal_id"`
-	RequirementIDs []string `json:"requirement_ids"`
-	WorkItemIDs    []string `json:"work_item_ids"`
-	Supersedes     []string `json:"supersedes"`
-	SupersededBy   *string  `json:"superseded_by"`
+	ID             string                        `json:"id"`
+	Status         string                        `json:"status"`
+	DecisionType   string                        `json:"decision_type"`
+	GoalID         *string                       `json:"goal_id"`
+	RequirementIDs []string                      `json:"requirement_ids"`
+	WorkItemIDs    []string                      `json:"work_item_ids"`
+	Supersedes     []string                      `json:"supersedes"`
+	SupersededBy   *string                       `json:"superseded_by"`
+	Confirmation   *solutionDecisionConfirmation `json:"confirmation"`
 }
 
 type traceTest struct {
@@ -55,6 +58,7 @@ type traceRelease struct {
 	Status      string   `json:"status"`
 	WorkItemIDs []string `json:"work_item_ids"`
 	EvidenceIDs []string `json:"evidence_ids"`
+	CommitSHAs  []string `json:"commit_shas"`
 }
 
 type traceObject[T any] struct {
@@ -63,16 +67,19 @@ type traceObject[T any] struct {
 }
 
 type traceGraph struct {
-	goals        map[string]traceObject[traceGoal]
-	requirements map[string]traceObject[traceRequirement]
-	plans        map[string]traceObject[tracePlan]
-	decisions    map[string]traceObject[traceDecision]
-	workItems    map[string]traceObject[WorkItem]
-	tests        map[string]traceObject[traceTest]
-	runs         map[string]traceObject[HarnessRun]
-	checkpoints  map[string]traceObject[Checkpoint]
-	evidence     map[string]traceObject[Evidence]
-	releases     map[string]traceObject[traceRelease]
+	goals                map[string]traceObject[traceGoal]
+	requirements         map[string]traceObject[traceRequirement]
+	plans                map[string]traceObject[tracePlan]
+	decisions            map[string]traceObject[traceDecision]
+	workItems            map[string]traceObject[WorkItem]
+	tests                map[string]traceObject[traceTest]
+	runs                 map[string]traceObject[HarnessRun]
+	checkpoints          map[string]traceObject[Checkpoint]
+	evidence             map[string]traceObject[Evidence]
+	releases             map[string]traceObject[traceRelease]
+	archivedGoals        map[string]traceObject[traceGoal]
+	archivedRequirements map[string]traceObject[traceRequirement]
+	archivedDecisions    map[string]traceObject[traceDecision]
 }
 
 func validateTraceability(root string) []validationIssue {
@@ -107,10 +114,10 @@ func validateTraceability(root string) []validationIssue {
 				add(object.Path, "linked test does not point back to requirement: "+testID)
 			}
 		}
-		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, graph.requirements, add)
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, mergeTraceObjects(graph.requirements, graph.archivedRequirements), add)
 	}
 	for id, object := range graph.goals {
-		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, graph.goals, add)
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, mergeTraceObjects(graph.goals, graph.archivedGoals), add)
 	}
 	for id, object := range graph.decisions {
 		if object.Value.GoalID != nil {
@@ -125,7 +132,7 @@ func validateTraceability(root string) []validationIssue {
 			_, found := graph.workItems[workID]
 			require(object.Path, "development task", workID, found)
 		}
-		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, graph.decisions, add)
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, mergeTraceObjects(graph.decisions, graph.archivedDecisions), add)
 	}
 	for _, object := range graph.plans {
 		_, found := graph.goals[object.Value.GoalID]
@@ -236,8 +243,16 @@ func validateTraceability(root string) []validationIssue {
 		}
 		if err := validateEvidenceLogPath(root, object.Value.LogPath); err != nil {
 			add(object.Path, "verification log is unavailable or unsafe: "+err.Error())
+		} else if digest, digestErr := sha256File(filepath.Join(root, filepath.FromSlash(object.Value.LogPath))); digestErr != nil {
+			add(object.Path, "verification log cannot be hashed: "+digestErr.Error())
+		} else if digest != object.Value.LogSHA256 {
+			add(object.Path, "verification log hash does not match its recorded digest")
+		}
+		if object.Value.Result == "passed" && contains([]string{"verified-local", "verified-ci"}, object.Value.Trust) && object.Value.ExitCode != 0 {
+			add(object.Path, "trusted passing verification has a non-zero exit code")
 		}
 	}
+	validateArchivedReplacementMaps(graph, add)
 	for _, object := range graph.releases {
 		validateReleaseTraceability(object, graph, require, add)
 	}
@@ -272,6 +287,26 @@ func validateTraceStorage(root string) []validationIssue {
 			}
 		}
 	}
+	archiveFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "archive", "**", "*.json"))
+	_ = archiveFiles // filepath.Glob does not recurse; Walk below records archived IDs without imposing an active canonical path.
+	_ = filepath.Walk(filepath.Join(root, ".ai-flow", "archive"), func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil || info == nil || info.IsDir() || !strings.HasSuffix(strings.ToLower(path), ".json") {
+			return nil
+		}
+		var identity struct {
+			ID string `json:"id"`
+		}
+		if readSemanticJSON(path, &identity) != nil || identity.ID == "" {
+			return nil
+		}
+		displayPath := relativeDisplay(root, path)
+		if previous, duplicate := seen[identity.ID]; duplicate {
+			issues = append(issues, validationIssue{Path: displayPath, Schema: "semantic-links", Message: "duplicate object id also stored at: " + previous})
+		} else {
+			seen[identity.ID] = displayPath
+		}
+		return nil
+	})
 	runFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
 	for _, path := range runFiles {
 		var identity struct {
@@ -369,6 +404,28 @@ func validateReleaseTraceability(object traceObject[traceRelease], graph traceGr
 	if object.Value.Status != "ready" && object.Value.Status != "released" {
 		return
 	}
+	if len(object.Value.WorkItemIDs) == 0 || len(object.Value.EvidenceIDs) == 0 || len(object.Value.CommitSHAs) == 0 {
+		add(object.Path, "ready or released record requires development tasks, verification records, and commit revisions")
+	}
+	for _, commitSHA := range object.Value.CommitSHAs {
+		if !gitCommitExists(filepath.Dir(filepath.Dir(filepath.Dir(object.Path))), commitSHA) {
+			add(object.Path, "release references a commit that does not exist in this repository: "+commitSHA)
+		}
+	}
+	for _, workID := range object.Value.WorkItemIDs {
+		work, found := graph.workItems[workID]
+		if !found {
+			continue
+		}
+		for _, decision := range graph.decisions {
+			if !materialDecisionApplies(decision.Value, work.Value) {
+				continue
+			}
+			if decision.Value.Status != "accepted" || decision.Value.Confirmation == nil || decision.Value.Confirmation.Status != "confirmed" || decision.Value.Confirmation.SelectedOption == nil || strings.TrimSpace(*decision.Value.Confirmation.SelectedOption) == "" {
+				add(object.Path, "release is blocked by an unconfirmed product or technical direction: "+decision.Value.ID)
+			}
+		}
+	}
 	for workID := range includedWork {
 		work, found := graph.workItems[workID]
 		if !found {
@@ -388,7 +445,7 @@ func validateReleaseTraceability(object traceObject[traceRelease], graph traceGr
 				}
 				for _, evidenceID := range test.Value.EvidenceIDs {
 					evidence, evidenceFound := graph.evidence[evidenceID]
-					if evidenceFound && contains(object.Value.EvidenceIDs, evidenceID) && evidence.Value.Result == "passed" && contains([]string{"verified-local", "verified-ci"}, evidence.Value.Trust) {
+					if evidenceFound && contains(object.Value.EvidenceIDs, evidenceID) && trustedEvidenceMatchesRelease(object.Value, evidence.Value) {
 						covered = true
 					}
 				}
@@ -397,6 +454,46 @@ func validateReleaseTraceability(object traceObject[traceRelease], graph traceGr
 				add(object.Path, "release requirement lacks trusted passing verification: "+requirementID)
 			}
 		}
+	}
+}
+
+func trustedEvidenceMatchesRelease(release traceRelease, evidence Evidence) bool {
+	return evidence.Result == "passed" && evidence.ExitCode == 0 && contains([]string{"verified-local", "verified-ci"}, evidence.Trust) && contains(release.CommitSHAs, evidence.GitSHA)
+}
+
+func materialDecisionApplies(decision traceDecision, work WorkItem) bool {
+	if !contains([]string{"backend-technology", "architecture", "data", "api", "frontend-ux-ui", "cross-cutting"}, decision.DecisionType) {
+		return false
+	}
+	if contains(decision.WorkItemIDs, work.ID) {
+		return true
+	}
+	return decision.GoalID != nil && work.GoalID != nil && *decision.GoalID == *work.GoalID
+}
+
+func mergeTraceObjects[T any](active, archived map[string]traceObject[T]) map[string]traceObject[T] {
+	merged := make(map[string]traceObject[T], len(active)+len(archived))
+	for id, object := range archived {
+		merged[id] = object
+	}
+	for id, object := range active {
+		merged[id] = object
+	}
+	return merged
+}
+
+func validateArchivedReplacementMaps(graph traceGraph, add func(string, string)) {
+	goals := mergeTraceObjects(graph.goals, graph.archivedGoals)
+	for id, object := range graph.archivedGoals {
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, goals, add)
+	}
+	requirements := mergeTraceObjects(graph.requirements, graph.archivedRequirements)
+	for id, object := range graph.archivedRequirements {
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, requirements, add)
+	}
+	decisions := mergeTraceObjects(graph.decisions, graph.archivedDecisions)
+	for id, object := range graph.archivedDecisions {
+		validateReplacementLinks(object.Path, id, object.Value.Supersedes, object.Value.SupersededBy, decisions, add)
 	}
 }
 
@@ -430,6 +527,7 @@ func loadTraceGraph(root string) traceGraph {
 		workItems: map[string]traceObject[WorkItem]{}, tests: map[string]traceObject[traceTest]{},
 		runs: map[string]traceObject[HarnessRun]{}, checkpoints: map[string]traceObject[Checkpoint]{},
 		evidence: map[string]traceObject[Evidence]{}, releases: map[string]traceObject[traceRelease]{},
+		archivedGoals: map[string]traceObject[traceGoal]{}, archivedRequirements: map[string]traceObject[traceRequirement]{}, archivedDecisions: map[string]traceObject[traceDecision]{},
 	}
 	loadTraceDirectory(root, "goals", graph.goals)
 	loadTraceDirectory(root, "requirements", graph.requirements)
@@ -439,6 +537,7 @@ func loadTraceGraph(root string) traceGraph {
 	loadTraceDirectory(root, "tests", graph.tests)
 	loadTraceDirectory(root, "evidence", graph.evidence)
 	loadTraceDirectory(root, "releases", graph.releases)
+	loadArchivedTraceObjects(root, &graph)
 	runFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
 	for _, path := range runFiles {
 		var value HarnessRun
@@ -454,6 +553,38 @@ func loadTraceGraph(root string) traceGraph {
 		}
 	}
 	return graph
+}
+
+func loadArchivedTraceObjects(root string, graph *traceGraph) {
+	_ = filepath.Walk(filepath.Join(root, ".ai-flow", "archive"), func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil || info == nil || info.IsDir() || !strings.HasSuffix(strings.ToLower(path), ".json") {
+			return nil
+		}
+		var identity struct {
+			ID string `json:"id"`
+		}
+		if readSemanticJSON(path, &identity) != nil {
+			return nil
+		}
+		switch {
+		case strings.HasPrefix(identity.ID, "GOAL-"):
+			var value traceGoal
+			if readSemanticJSON(path, &value) == nil {
+				graph.archivedGoals[value.ID] = traceObject[traceGoal]{Path: path, Value: value}
+			}
+		case strings.HasPrefix(identity.ID, "REQ-"):
+			var value traceRequirement
+			if readSemanticJSON(path, &value) == nil {
+				graph.archivedRequirements[value.ID] = traceObject[traceRequirement]{Path: path, Value: value}
+			}
+		case strings.HasPrefix(identity.ID, "ADR-"):
+			var value traceDecision
+			if readSemanticJSON(path, &value) == nil {
+				graph.archivedDecisions[value.ID] = traceObject[traceDecision]{Path: path, Value: value}
+			}
+		}
+		return nil
+	})
 }
 
 func loadTraceDirectory[T any](root, directory string, target map[string]traceObject[T]) {

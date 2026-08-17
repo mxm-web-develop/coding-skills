@@ -36,6 +36,9 @@ func TestCheckpointResumeRequiresExplicitOwnershipHandoff(t *testing.T) {
 		SchemaVersion: 1, ID: checkpointID, RunID: runID, WorkItemID: workID, Sequence: 1, Phase: "solution_design",
 		Summary: "Saved before editor switch", NextAction: "Continue the same task", GitSHA: gitSHA(root), CompletedSteps: []string{}, ChangedFiles: []string{}, OpenQuestions: []string{}, CreatedAt: now,
 	}
+	if fingerprint, err := gitWorktreeFingerprint(root); err == nil {
+		checkpoint.WorktreeSHA256 = fingerprint
+	}
 	if err := writeJSONAtomic(workItemPath(root, workID), &work); err != nil {
 		t.Fatal(err)
 	}

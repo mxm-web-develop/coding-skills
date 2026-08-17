@@ -23,5 +23,17 @@
     "remote_url": { "type": ["string", "null"], "format": "uri-reference" },
     "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
     "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "enum": ["ready", "released"] } } },
+      "then": {
+        "properties": {
+          "work_item_ids": { "minItems": 1 },
+          "commit_shas": { "minItems": 1 },
+          "evidence_ids": { "minItems": 1 }
+        }
+      }
+    }
+  ]
 }

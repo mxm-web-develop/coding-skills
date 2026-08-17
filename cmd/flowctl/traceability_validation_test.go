@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -107,6 +108,7 @@ func TestTraceabilityRejectsNonCanonicalObjectPath(t *testing.T) {
 func createTraceabilityFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
+	repoSHA := initTraceabilityRepository(t, root)
 	for _, directory := range []string{"state", "goals", "requirements", "plans", "work-items", "decisions", "tests", "evidence", "releases", "runs/" + traceRunID + "/checkpoints"} {
 		if err := os.MkdirAll(filepath.Join(root, ".ai-flow", filepath.FromSlash(directory)), 0o755); err != nil {
 			t.Fatal(err)
@@ -140,9 +142,15 @@ func createTraceabilityFixture(t *testing.T) string {
 	})
 	writeTraceFixture(t, root, "decisions", traceDecisionID, map[string]any{
 		"schema_version": 1, "id": traceDecisionID, "revision": 1, "status": "accepted", "title": "后台任务实现",
-		"context": "当前团队只维护数据库", "goal_id": traceGoalID, "requirement_ids": []string{traceRequirementID}, "work_item_ids": []string{traceWorkID},
-		"options":  []map[string]any{{"name": "数据库任务表", "tradeoffs": []string{"需要控制并发"}}},
-		"decision": "采用数据库任务表", "consequences": []string{"无需新增服务"}, "created_at": traceTime, "updated_at": traceTime,
+		"context": "当前团队只维护数据库", "decision_type": "backend-technology", "evaluation_criteria": []string{"稳定性", "运维成本", "交付速度"},
+		"goal_id": traceGoalID, "requirement_ids": []string{traceRequirementID}, "work_item_ids": []string{traceWorkID},
+		"options": []map[string]any{
+			{"name": "数据库任务表", "tradeoffs": []string{"需要控制并发"}},
+			{"name": "外部队列服务", "tradeoffs": []string{"要增加新依赖"}},
+		},
+		"recommended_option": "数据库任务表", "recommendation_reason": "当前团队可以最快交付且无需新增服务",
+		"confirmation": map[string]any{"status": "confirmed", "selected_option": "数据库任务表"},
+		"decision":     "采用数据库任务表", "consequences": []string{"无需新增服务"}, "created_at": traceTime, "updated_at": traceTime,
 	})
 	writeTraceFixture(t, root, "tests", traceTestID, map[string]any{
 		"schema_version": 1, "id": traceTestID, "revision": 1, "requirement_ids": []string{traceRequirementID}, "work_item_id": traceWorkID,
@@ -159,7 +167,7 @@ func createTraceabilityFixture(t *testing.T) string {
 	}
 	checkpoint := Checkpoint{
 		SchemaVersion: 1, ID: traceCheckpointID, RunID: traceRunID, WorkItemID: traceWorkID, Sequence: 1, Phase: "implementing",
-		Summary: "完成任务领取", NextAction: "运行测试", GitSHA: "abcdef1234567", CompletedSteps: []string{"实现任务领取"},
+		Summary: "完成任务领取", NextAction: "运行测试", GitSHA: repoSHA, CompletedSteps: []string{"实现任务领取"},
 		ChangedFiles: []string{}, OpenQuestions: []string{}, CreatedAt: traceTime,
 	}
 	if err := writeJSONAtomic(filepath.Join(root, ".ai-flow", "runs", traceRunID, "checkpoints", traceCheckpointID+".json"), checkpoint); err != nil {
@@ -173,18 +181,53 @@ func createTraceabilityFixture(t *testing.T) string {
 	if err := os.WriteFile(logAbsolute, []byte("passed\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	logSHA, err := sha256File(logAbsolute)
+	if err != nil {
+		t.Fatal(err)
+	}
 	writeTraceFixture(t, root, "evidence", traceEvidenceID, Evidence{
 		SchemaVersion: 1, ID: traceEvidenceID, WorkItemID: traceWorkID, RunID: traceRunID, TestID: traceTestID,
 		Source: "local", Trust: "verified-local", Result: "passed", Command: []string{"go", "test", "./..."}, ExitCode: 0,
-		GitSHA: "abcdef1234567", Environment: map[string]string{"os": "test"}, StartedAt: traceTime, EndedAt: traceTime,
-		LogPath: logRelative, LogSHA256: strings.Repeat("a", 64), CreatedAt: traceTime,
+		GitSHA: repoSHA, Environment: map[string]string{"os": "test"}, StartedAt: traceTime, EndedAt: traceTime,
+		LogPath: logRelative, LogSHA256: logSHA, CreatedAt: traceTime,
 	})
 	writeTraceFixture(t, root, "releases", traceReleaseID, map[string]any{
 		"schema_version": 1, "id": traceReleaseID, "revision": 1, "status": "ready", "previous_version": "v0.2.0", "version": "v0.3.0",
-		"work_item_ids": []string{traceWorkID}, "commit_shas": []string{"abcdef1234567"}, "evidence_ids": []string{traceEvidenceID},
+		"work_item_ids": []string{traceWorkID}, "commit_shas": []string{repoSHA}, "evidence_ids": []string{traceEvidenceID},
 		"summary": "增加异步报告", "known_issues": []string{}, "rollback": "关闭异步报告入口", "created_at": traceTime, "updated_at": traceTime,
 	})
 	return root
+}
+
+func initTraceabilityRepository(t *testing.T, root string) string {
+	t.Helper()
+	if err := exec.Command("git", "init", root).Run(); err != nil {
+		t.Fatal(err)
+	}
+	env := append(os.Environ(),
+		"GIT_AUTHOR_NAME=AI Flow",
+		"GIT_AUTHOR_EMAIL=ai-flow@example.com",
+		"GIT_COMMITTER_NAME=AI Flow",
+		"GIT_COMMITTER_EMAIL=ai-flow@example.com",
+	)
+	if err := os.WriteFile(filepath.Join(root, "seed.txt"), []byte("seed\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	add := exec.Command("git", "-C", root, "add", "seed.txt")
+	add.Env = env
+	if output, err := add.CombinedOutput(); err != nil {
+		t.Fatalf("git add failed: %v: %s", err, output)
+	}
+	commit := exec.Command("git", "-C", root, "commit", "--quiet", "-m", "fixture")
+	commit.Env = env
+	if output, err := commit.CombinedOutput(); err != nil {
+		t.Fatalf("git commit failed: %v: %s", err, output)
+	}
+	sha, err := exec.Command("git", "-C", root, "rev-parse", "HEAD").Output()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return strings.TrimSpace(string(sha))
 }
 
 func writeTraceFixture(t *testing.T, root, directory, id string, value any) {

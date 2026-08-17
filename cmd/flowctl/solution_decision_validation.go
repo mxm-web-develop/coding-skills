@@ -8,6 +8,7 @@ import (
 )
 
 type solutionDecision struct {
+	SchemaVersion        int                           `json:"schema_version"`
 	DecisionType         string                        `json:"decision_type"`
 	Status               string                        `json:"status"`
 	Options              []solutionDecisionOption      `json:"options"`
@@ -35,7 +36,11 @@ func validateSolutionDecisions(root string) []validationIssue {
 			continue
 		}
 		if strings.TrimSpace(decision.DecisionType) == "" {
-			continue // Legacy records remain valid until they are superseded.
+			add := func(message string) {
+				issues = append(issues, validationIssue{Path: relativeDisplay(root, path), Schema: "solution-confirmation", Message: message})
+			}
+			add("decision must declare its product or technical decision type")
+			continue
 		}
 		add := func(message string) {
 			issues = append(issues, validationIssue{Path: relativeDisplay(root, path), Schema: "solution-confirmation", Message: message})

@@ -45,6 +45,8 @@ func TestRenderBoardCreatesReadableVersionTaskDecisionAndTestViews(t *testing.T)
 	writeBoardJSONFixture(t, root, ".ai-flow/work-items/"+oldWork.ID+".json", oldWork)
 	writeBoardJSONFixture(t, root, ".ai-flow/decisions/ADR-20260817-a7b8c9d0.json", map[string]any{
 		"id": "ADR-20260817-a7b8c9d0", "status": "accepted", "title": "评分内核架构",
+		"context":       "需要在可解释性和交付速度之间做选择",
+		"decision_type": "backend-technology", "evaluation_criteria": []string{"可测试性", "可解释性", "维护成本"},
 		"decision": "采用纯函数评分内核，I/O放在适配器", "recommended_option": "纯函数评分内核",
 		"recommendation_reason": "最符合当前团队的测试和维护要求",
 		"confirmation":          map[string]any{"status": "confirmed", "selected_option": "纯函数评分内核", "feedback": "先保持规则透明"},

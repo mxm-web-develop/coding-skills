@@ -44,19 +44,30 @@ type RunBudgets struct {
 }
 
 type Checkpoint struct {
-	SchemaVersion  int      `json:"schema_version"`
-	ID             string   `json:"id"`
-	RunID          string   `json:"run_id"`
-	WorkItemID     string   `json:"work_item_id"`
-	Sequence       int      `json:"sequence"`
-	Phase          string   `json:"phase"`
-	Summary        string   `json:"summary"`
-	NextAction     string   `json:"next_action"`
-	GitSHA         string   `json:"git_sha"`
-	CompletedSteps []string `json:"completed_steps"`
-	ChangedFiles   []string `json:"changed_files"`
-	OpenQuestions  []string `json:"open_questions"`
-	CreatedAt      string   `json:"created_at"`
+	SchemaVersion   int              `json:"schema_version"`
+	ID              string           `json:"id"`
+	RunID           string           `json:"run_id"`
+	WorkItemID      string           `json:"work_item_id"`
+	Sequence        int              `json:"sequence"`
+	Phase           string           `json:"phase"`
+	Summary         string           `json:"summary"`
+	NextAction      string           `json:"next_action"`
+	GitSHA          string           `json:"git_sha"`
+	WorktreeSHA256  string           `json:"worktree_sha256,omitempty"`
+	CompletedSteps  []string         `json:"completed_steps"`
+	ChangedFiles    []string         `json:"changed_files"`
+	OpenQuestions   []string         `json:"open_questions"`
+	PendingApproval *PendingApproval `json:"pending_approval,omitempty"`
+	CreatedAt       string           `json:"created_at"`
+}
+
+type PendingApproval struct {
+	Kind           string `json:"kind"`
+	Operation      string `json:"operation"`
+	Target         string `json:"target"`
+	Scope          string `json:"scope"`
+	ExpectedSHA256 string `json:"expected_sha256"`
+	Summary        string `json:"summary"`
 }
 
 type Evidence struct {
