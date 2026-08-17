@@ -83,6 +83,7 @@ release_gates:
   - git_revision_matches_evidence
   - active_documents_not_superseded
   - board_rendered_from_current_state
+  - board_versions_tasks_decisions_tests_traceable
 
 harness:
   states:

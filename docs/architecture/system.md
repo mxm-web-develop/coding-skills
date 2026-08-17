@@ -1,8 +1,8 @@
 # AI Flow 系统架构
 
-状态：v0.2.1 工作区接管基线
+状态：v0.2.2 自然语言看板基线
 
-目标版本：v0.2.1
+目标版本：v0.2.2
 适用平台：Cursor、Codex、Claude Code
 
 ## 1. 结论
@@ -148,7 +148,7 @@ flowchart TB
 - Templates：空白项目与既有项目的初始机读/人读资料。
 - CI：在 Agent 之外再次验证 Schema、追踪关系、文档新鲜度和测试证据。
 
-## 7. v0.2.1 仓库结构
+## 7. v0.2.2 仓库结构
 
 ```text
 coding-skills/
@@ -157,7 +157,11 @@ coding-skills/
 │   ├── install.ps1
 │   ├── bootstrap.sh
 │   └── bootstrap.ps1
-├── cmd/flowctl/                  # Go CLI：项目、工作项、checkpoint、evidence、校验和看板
+├── cmd/flowctl/                  # Go CLI 源码；Release 预编译后安装为单文件二进制
+│   ├── main.go                   # 薄命令入口
+│   ├── board_load.go             # 读取看板所需机读对象
+│   ├── board_summary.go          # 版本、任务、测试聚合纯函数
+│   └── board_render.go           # 四份 Markdown 看板渲染
 ├── skills/                       # 14 个 Core Skills 的规范源码
 │   └── <skill-name>/
 │       ├── SKILL.md
@@ -183,6 +187,8 @@ coding-skills/
 Git、门禁、版本和文档生命周期规则在 Core Skill 的 `references/` 与 `spec/` 中维护。等它们需要由 CLI 独立配置时再提升为单独的 `policies/`，避免先创建空目录和重复事实源。
 
 选择 Go 实现 `flowctl`，让安装脚本下载单文件二进制，避免要求目标项目预装 Node、Python 或特定包管理器。安装器仍保持为薄 Shell/PowerShell 脚本，不进行项目语义判断。
+
+`main.go` 仅是源码命令入口。Release 会交叉编译 macOS/Linux/Windows、amd64/arm64 二进制；普通用户运行 `.ai-flow/bin/flowctl[.exe]`，不需要 Go 环境。看板读取、聚合和 Markdown 渲染拆成独立文件，避免入口文件继续膨胀。
 
 ## 8. 目标项目生成结构
 
@@ -296,6 +302,8 @@ ready → running → checkpointed → running → verifying → reviewing → c
 - 历史：`events/*.jsonl` 追加记录。
 - 结论来源：对象 ID 和 `supersedes`/`superseded_by` 链。
 - 人读视图：从当前状态生成，不人工维护重复事实。
+
+四份人读看板采用“自然语言结论在前、表格证据在后”：`STATUS.md` 展示当前大版本、子版本任务和测试；`ROADMAP.md` 展示目标版本与里程碑；`CURRENT_STATE.md` 展示当前需求、开发方案决策和工程画像；`RELEASES.md` 展示真实 Release、Evidence、已知问题和回滚。旧大版本的已完成任务不堆积在状态页，而进入发布历史。
 
 ### 12.2 多 Agent 并发
 

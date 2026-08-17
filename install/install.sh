@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.1"
+PACK_VERSION="0.2.2"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -220,7 +220,12 @@ case "$ARCH_NAME" in
   *) fail "unsupported architecture: $ARCH_NAME" ;;
 esac
 PACKAGED_RUNTIME="$SOURCE_DIR/dist/flowctl-$OS_NAME-$ARCH_NAME"
-if [ -x "$PACKAGED_RUNTIME" ]; then
+if [ "${AI_FLOW_BUILD_SOURCE:-0}" = "1" ]; then
+  command -v go >/dev/null 2>&1 || fail "AI_FLOW_BUILD_SOURCE=1 requires Go"
+  [ -f "$SOURCE_DIR/go.mod" ] || fail "AI_FLOW_BUILD_SOURCE=1 requires repository source"
+  (cd "$SOURCE_DIR" && go build -o "$BUILD_DIR/flowctl" ./cmd/flowctl)
+  RUNTIME_SOURCE="$BUILD_DIR/flowctl"
+elif [ -x "$PACKAGED_RUNTIME" ]; then
   RUNTIME_SOURCE="$PACKAGED_RUNTIME"
 elif command -v go >/dev/null 2>&1 && [ -f "$SOURCE_DIR/go.mod" ]; then
   (cd "$SOURCE_DIR" && go build -o "$BUILD_DIR/flowctl" ./cmd/flowctl)

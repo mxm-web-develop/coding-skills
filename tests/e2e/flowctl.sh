@@ -3,6 +3,7 @@ set -eu
 
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
 TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-e2e.XXXXXX")
+export AI_FLOW_BUILD_SOURCE=1
 
 cleanup() {
   rm -rf "$TEST_ROOT"
@@ -39,7 +40,9 @@ mv "$EVIDENCE_LOG.original" "$EVIDENCE_LOG"
 [ -f "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json" ]
 [ -f "$TEST_ROOT/.ai-flow/runs/$RUN_ID/checkpoints/$CHECKPOINT_ID.json" ]
 [ -f "$TEST_ROOT/.ai-flow/evidence/$EVIDENCE_ID.json" ]
-grep -q '| 0 | 0 | 0 | 0 | 0 | 1 | 0 |' "$TEST_ROOT/docs/board/STATUS.md"
-grep -q '| 1 | 0 | 0 |' "$TEST_ROOT/docs/board/STATUS.md"
+grep -q '# 项目状态' "$TEST_ROOT/docs/board/STATUS.md"
+grep -q '1 个已完成' "$TEST_ROOT/docs/board/STATUS.md"
+grep -q '通过 1 / 失败 0 / 待确认 0' "$TEST_ROOT/docs/board/STATUS.md"
+grep -q '目前还没有可验证的发布记录' "$TEST_ROOT/docs/board/RELEASES.md"
 
 printf 'AI Flow E2E passed: %s %s %s %s\n' "$WORK_ID" "$RUN_ID" "$CHECKPOINT_ID" "$EVIDENCE_ID"

@@ -2,6 +2,7 @@
 set -eu
 
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
+export AI_FLOW_BUILD_SOURCE=1
 CURSOR_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-cursor-e2e.XXXXXX")
 CLAUDE_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-claude-e2e.XXXXXX")
 

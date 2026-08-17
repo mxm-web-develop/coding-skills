@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.2.1"
+$PackVersion = "0.2.2"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -191,7 +191,8 @@ $architecture = switch ($env:PROCESSOR_ARCHITECTURE) {
     default { throw "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" }
 }
 $runtimePath = Join-Path $SourcePath "dist/flowctl-windows-$architecture.exe"
-if (-not (Test-Path -LiteralPath $runtimePath -PathType Leaf)) {
+$buildFromSource = $env:AI_FLOW_BUILD_SOURCE -eq "1"
+if ($buildFromSource -or -not (Test-Path -LiteralPath $runtimePath -PathType Leaf)) {
     $goCommand = Get-Command go -ErrorAction SilentlyContinue
     if ($null -eq $goCommand) { throw "No compatible flowctl binary found and Go is unavailable" }
     $buildDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ai-flow-" + [guid]::NewGuid())

@@ -10,6 +10,8 @@
 
 Release 包内包含静态 Go 二进制，目标项目无需安装 Go、Node.js 或 Python。
 
+仓库中的 `cmd/flowctl/main.go` 是开发源码，不是用户安装入口。安装器会按操作系统和 CPU 架构下载/复制预编译的 `.ai-flow/bin/flowctl[.exe]`。只有维护者设置 `AI_FLOW_BUILD_SOURCE=1` 进行源码级安装测试时才要求本机存在 Go。
+
 ## 2. 一行式安装
 
 先进入目标项目根目录。
@@ -58,21 +60,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.1 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.2 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.1 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.2 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.1"
+$env:AI_FLOW_VERSION="v0.2.2"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET

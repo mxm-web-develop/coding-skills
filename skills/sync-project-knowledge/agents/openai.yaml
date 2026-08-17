@@ -1,4 +1,4 @@
 interface:
   display_name: "Sync Project Knowledge"
-  short_description: "Sync current truth and versioned document archives"
-  default_prompt: "Use $sync-project-knowledge to refresh current project truth, concise boards, and approved versioned archives."
+  short_description: "Render readable version, task, decision, and test boards"
+  default_prompt: "Use $sync-project-knowledge to refresh machine truth and generate concise natural-language project dashboards."

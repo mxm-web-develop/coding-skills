@@ -57,6 +57,9 @@ platform_entries:
 rules:
   machine_state_is_source_of_truth: true
   human_board_is_generated: true
+  human_board_leads_with_natural_language: true
+  human_board_groups_work_by_major_and_minor_version: true
+  human_board_shows_decisions_and_test_evidence: true
   arbitrary_workflow_docs_forbidden: true
   archived_objects_excluded_from_active_context: true
   generated_platform_entries_must_preserve_user_content: true

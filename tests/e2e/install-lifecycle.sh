@@ -2,6 +2,7 @@
 set -eu
 
 REPO_ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
+export AI_FLOW_BUILD_SOURCE=1
 TEST_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-install-e2e.XXXXXX")
 CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-conflict-e2e.XXXXXX")
 NATIVE_CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-native-conflict-e2e.XXXXXX")

@@ -11,7 +11,7 @@
     "revision": { "$ref": "common.schema.json#/$defs/revision" },
     "requirement_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "minItems": 1, "uniqueItems": true },
     "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
-    "level": { "type": "string", "enum": ["unit", "integration", "contract", "end_to_end", "migration", "performance", "security"] },
+    "level": { "type": "string", "enum": ["unit", "component", "integration", "contract", "end_to_end", "accessibility", "visual", "migration", "performance", "security", "smoke"] },
     "purpose": { "$ref": "common.schema.json#/$defs/nonEmpty" },
     "preconditions": { "$ref": "common.schema.json#/$defs/stringList" },
     "command": { "type": "array", "items": { "type": "string" }, "minItems": 1 },

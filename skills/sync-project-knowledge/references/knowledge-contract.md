@@ -11,10 +11,10 @@ Machine truth:
 
 Human board:
 
-- `STATUS.md`: version, active goal, completed/in-progress/blocked, verification summary, next action.
-- `ROADMAP.md`: active goals and near milestones only.
-- `CURRENT_STATE.md`: current capabilities, boundaries, and accepted decisions.
-- `RELEASES.md`: concise observed release history.
+- `STATUS.md`: natural-language current-major summary plus child-version, Work Item, test, blocker, and next-action tables.
+- `ROADMAP.md`: active goal and near milestones grouped by target version and exit gate.
+- `CURRENT_STATE.md`: active requirements, current capabilities, boundaries, engineering profile, and accepted decisions.
+- `RELEASES.md`: real Release objects with change, Evidence, known issue, migration, and rollback summaries.
 
 Legacy history appears only as a short version summary, conflict/unknown count, and links to the archive inventory. It must not be treated as current authority.
 

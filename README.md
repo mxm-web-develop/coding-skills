@@ -15,6 +15,7 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 - 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
 - Work Item、Harness Run、Checkpoint、Evidence 状态机。
 - 测试证据绑定真实命令、退出码、Git SHA、日志和 SHA-256。
+- 四份自然语言人读看板，按大版本/小版本展示任务、方案决策、测试状态、发布和下一步。
 - JSON Schema 与跨对象链接校验。
 - Cursor、Codex、Claude Code 三平台入口。
 - macOS、Linux、Windows 的 Release 二进制和一行式安装。
@@ -58,6 +59,8 @@ Remove-Item Env:AI_FLOW_PLATFORMS
 5. 只创建所选 IDE 的常驻路由入口。
 6. 保留已有 `AGENTS.md`、`CLAUDE.md` 和其他 IDE 规则。
 7. 运行健康检查。
+
+用户机器不需要安装 Go。`main.go` 只是源码入口；远程安装默认下载当前系统和架构对应的预编译 `flowctl` 单文件二进制。只有 AI Flow 仓库开发者显式设置 `AI_FLOW_BUILD_SOURCE=1` 从源码验证时才需要 Go。
 
 ## 初始化项目
 
@@ -212,7 +215,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.2.1 sh
+  | AI_FLOW_VERSION=v0.2.2 sh
 ```
 
 ## 卸载
@@ -243,6 +246,7 @@ cd coding-skills
 
 - [安装、更新和卸载](docs/installation.md)
 - [初始化与完整使用流程](docs/workflow.md)
+- [人读看板效果示例](docs/examples/human-board-demo.md)
 - [flowctl CLI 参考](docs/cli-reference.md)
 - [系统架构](docs/architecture/system.md)
 - [开发计划](docs/development-plan.md)
@@ -257,4 +261,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.2.1` 提供 14 个 Core Skills 和 15 个 JSON Schema，在技术栈自适应执行层上增加既有工作区文档盘点、逐路径审批、版本化归档和恢复映射。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。
+`v0.2.2` 提供 14 个 Core Skills 和 15 个 JSON Schema，并将人读看板升级为自然语言管理视图：当前大版本、子版本进度、开发任务、技术决策、测试证据和真实发布记录一目了然。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。
