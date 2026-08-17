@@ -1,18 +1,18 @@
 # AI Flow 开发计划
 
-状态：v0.1.0 发布基线
+状态：v0.1.1 跨 IDE 发现修复基线
 
 更新日期：2026-08-17
 
 计划原则：先确保三套 IDE 共用一个可安装、可恢复、可验证的小闭环，再增加团队并发、远程平台和生产交付复杂度。
 
-## 1. 已完成的 v0.1.0
+## 1. 已完成的 v0.1.x
 
 ### 安装与平台入口
 
 - Shell 与 PowerShell 本地安装、更新、卸载。
 - GitHub Release bootstrap、一行式远程安装与 SHA-256 校验。
-- Cursor、Codex、Claude Code 路由入口，业务规则共用 `.agents/skills/`。
+- Cursor、Codex、Claude Code 路由入口；业务规则使用一个源码并安装到各自的原生发现目录。
 - 13 个 Core Skill，均通过 Skill 结构校验。
 
 ### 项目与流程
@@ -39,7 +39,7 @@
 - tar.gz、zip、独立二进制、checksums GitHub Release 资产。
 - tag `v*.*.*` 触发发布，二进制版本由 tag 注入。
 
-## 2. v0.1.0 验收门禁
+## 2. v0.1.x 验收门禁
 
 - 安装、初始化、创建 Work Item、启动 Run、保存 Checkpoint、执行 Evidence、评审就绪、完成、校验和看板生成必须端到端通过。
 - 修改 Evidence 日志后，完成 Work Item 必须失败。

@@ -43,21 +43,21 @@ irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.1.0 sh
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.1.1 sh
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.1.0 --target /path/to/project
+  | sh -s -- --version v0.1.1 --target /path/to/project
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.1.0"
+$env:AI_FLOW_VERSION="v0.1.1"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
 Remove-Item Env:AI_FLOW_VERSION
@@ -84,8 +84,10 @@ cd coding-skills
 ## 5. 安装内容
 
 ```text
-.agents/skills/<13 core skills>/
-.claude/skills/ai-flow/SKILL.md
+.agents/skills/<13 core skills>/       # Codex
+.cursor/skills/<13 core skills>/       # Cursor
+.claude/skills/<13 core skills>/       # Claude Code
+.claude/skills/ai-flow/SKILL.md         # Claude /ai-flow 入口
 .cursor/rules/ai-flow.mdc
 .ai-flow/bin/flowctl[.exe]
 .ai-flow/runtime/schemas/*.schema.json
@@ -96,7 +98,17 @@ AGENTS.md       # 添加带标记的 AI Flow 区块
 CLAUDE.md       # 添加带标记的 AI Flow 区块
 ```
 
-安装器只维护 `<!-- ai-flow:start -->` 与 `<!-- ai-flow:end -->` 之间的内容，不覆盖文件中其他说明。
+安装器只维护 `<!-- ai-flow:start -->` 与 `<!-- ai-flow:end -->` 之间的内容，不覆盖文件中其他说明。三份 Skill 都由仓库中的同一份 `skills/` 源生成，并带有管理标记；更新时若发现同名但不受管理的 Skill，会停止而不是覆盖。
+
+### IDE Skill 发现矩阵
+
+| IDE | 官方项目级发现目录 | AI Flow 安装目录 |
+| --- | --- | --- |
+| Cursor | `.cursor/skills/`、`.agents/skills/` | 两处都安装，兼容版本差异 |
+| Codex | `.agents/skills/` | `.agents/skills/` |
+| Claude Code | `.claude/skills/` | `.claude/skills/` |
+
+注意目录名是 `.agents/skills`，`agents` 为复数；`.agent` 或 `.agent/skills` 不属于这些 IDE 的约定目录。官方依据：[Cursor Agent Skills](https://cursor.com/docs/skills)、[Codex Skills](https://learn.chatgpt.com/docs/build-skills)、[Claude Code Skills](https://code.claude.com/docs/en/skills)。
 
 ## 6. 安装与初始化的区别
 
@@ -186,6 +198,8 @@ git pull --ff-only
 ### IDE 没有发现 Skill
 
 1. 运行 `flowctl doctor`。
-2. 确认当前 IDE 打开的是目标项目根目录。
-3. 重新启动 IDE/Agent 会话，使其重新扫描 Skill。
-4. Claude Code 使用 `/ai-flow` 入口；公共业务 Skill 保存在 `.agents/skills/`。
+2. 确认 `codex-skills`、`cursor-skills`、`claude-skills` 都是 `OK`。
+3. 确认当前 IDE 打开的是执行安装命令时的目标项目根目录，而不是父目录、子目录或另一个 worktree。
+4. 安装或更新后必须 Reload IDE Window，并新建一个 Agent chat；Cursor 在启动时发现 Skills，旧会话不会可靠刷新。
+5. Cursor 可输入 `/` 并选择 `initialize-ai-project`；Codex 可从 Skill 选择器选择它；Claude Code 可输入 `/initialize-ai-project` 或 `/ai-flow`。
+6. 如果显式调用能工作而自然语言不触发，检查 `.cursor/rules/ai-flow.mdc`、`AGENTS.md` 或 `CLAUDE.md` 是否被其他更高优先级规则覆盖。

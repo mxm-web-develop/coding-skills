@@ -3,7 +3,9 @@ schema_version: 1
 roots:
   machine: .ai-flow
   human: docs/board
-  shared_skills: .agents/skills
+  canonical_installed_skills: .agents/skills
+  cursor_skills: .cursor/skills
+  claude_skills: .claude/skills
 
 machine_files:
   manifest: .ai-flow/manifest.yaml
@@ -41,11 +43,13 @@ human_files:
 platform_entries:
   cursor:
     - .cursor/rules/ai-flow.mdc
+    - .cursor/skills
   codex:
     - AGENTS.md
   claude_code:
     - CLAUDE.md
     - .claude/skills/ai-flow/SKILL.md
+    - .claude/skills
 
 rules:
   machine_state_is_source_of_truth: true

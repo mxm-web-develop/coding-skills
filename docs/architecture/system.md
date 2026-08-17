@@ -1,8 +1,8 @@
 # AI Flow 系统架构
 
-状态：v0.1.0 实现基线
+状态：v0.1.1 实现基线
 
-目标版本：v0.1.0
+目标版本：v0.1.1
 适用平台：Cursor、Codex、Claude Code
 
 ## 1. 结论
@@ -10,8 +10,9 @@
 本项目采用“共享 Skill 内核 + 平台入口适配 + 确定性 CLI + Git/CI 兜底”的架构。
 
 - 业务流程只维护一份，使用 Agent Skills 的最低公共格式：`SKILL.md` 只依赖 `name`、`description`，详细内容按需放入 `references/`、`scripts/`、`assets/`。
-- Cursor 与 Codex 从项目根目录 `.agents/skills/` 原生发现全部共享 Skill。
-- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为薄入口，由它读取并调度 `.agents/skills/` 中的同一套 Skill；不复制业务规则。
+- 仓库中的 `skills/` 是唯一源码；安装器为 Codex 生成 `.agents/skills/`，为 Cursor 生成 `.cursor/skills/`，为 Claude Code 生成 `.claude/skills/`。
+- 当前 Cursor 也支持 `.agents/skills/`，但仍安装 `.cursor/skills/` 原生副本，以兼容不同 Cursor 版本和发现刷新行为。
+- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为总入口，同时可以直接发现 13 个 `.claude/skills/<name>/` 业务 Skill。
 - `AGENTS.md`、`.cursor/rules/`、`CLAUDE.md` 只承担常驻路由和防跑偏，不承载完整流程。
 - `flowctl` 承担状态写入、Schema 校验、锁、证据索引、文档生成、归档和版本检查；Agent 负责判断与协作，CLI 负责确定性。
 - MCP 只作为可选能力提供者，不是核心流程的前置依赖。
@@ -41,7 +42,7 @@
 | 能力 | 共享内核 | Cursor | Codex | Claude Code |
 | --- | --- | --- | --- | --- |
 | `SKILL.md` + 资源目录 | 保留 | 原生 | 原生 | 原生 |
-| 项目共享 Skill 目录 | `.agents/skills/` 为规范源 | 原生扫描 | 原生扫描 | 由 `ai-flow` 薄入口读取 |
+| 项目 Skill 目录 | 仓库 `skills/` 为唯一源码 | `.cursor/skills/`，兼容 `.agents/skills/` | `.agents/skills/` | `.claude/skills/` |
 | 常驻项目说明 | 只放路由规则 | `.cursor/rules/` | `AGENTS.md` | `CLAUDE.md` |
 | 显式调用 | 统一语义，语法由入口适配 | `/skill-name` | `$skill-name` 或 Skill 选择器 | `/ai-flow <intent>` |
 | Hooks | 可选增强，不承载业务真相 | 平台 Hook | 平台 Hook | 平台 Hook |
@@ -142,7 +143,7 @@ flowchart TB
 - Templates：空白项目与既有项目的初始机读/人读资料。
 - CI：在 Agent 之外再次验证 Schema、追踪关系、文档新鲜度和测试证据。
 
-## 7. v0.1.0 仓库结构
+## 7. v0.1.1 仓库结构
 
 ```text
 coding-skills/
@@ -174,7 +175,7 @@ coding-skills/
 └── go.mod
 ```
 
-Git、门禁、版本和文档生命周期规则在 Core Skill 的 `references/` 与 `spec/` 中维护。等它们需要由 CLI 独立配置时再提升为单独的 `policies/`，避免 v0.1.0 先创建空目录和重复事实源。
+Git、门禁、版本和文档生命周期规则在 Core Skill 的 `references/` 与 `spec/` 中维护。等它们需要由 CLI 独立配置时再提升为单独的 `policies/`，避免先创建空目录和重复事实源。
 
 选择 Go 实现 `flowctl`，让安装脚本下载单文件二进制，避免要求目标项目预装 Node、Python 或特定包管理器。安装器仍保持为薄 Shell/PowerShell 脚本，不进行项目语义判断。
 
@@ -207,8 +208,9 @@ target-project/
 │   ├── ROADMAP.md                # 目标和近期里程碑
 │   ├── CURRENT_STATE.md          # 当前能力边界与关键决策
 │   └── RELEASES.md               # 对人友好的发布摘要
-├── .agents/skills/               # Cursor/Codex 项目级共享 Skill
-├── .claude/skills/ai-flow/       # Claude Code 薄入口，不复制业务内容
+├── .agents/skills/               # Codex 原生 Skill 副本
+├── .cursor/skills/               # Cursor 原生 Skill 副本
+├── .claude/skills/               # Claude Code 原生 Skill 副本与 ai-flow 总入口
 ├── .cursor/rules/                # Cursor 常驻路由
 ├── AGENTS.md                     # Codex 常驻路由
 └── CLAUDE.md                     # Claude Code 常驻路由

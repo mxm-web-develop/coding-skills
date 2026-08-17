@@ -14,7 +14,7 @@ import (
 
 const packName = "mxm-ai-flow"
 
-var packVersion = "0.1.0"
+var packVersion = "0.1.1"
 
 var coreSkills = []string{
 	"initialize-ai-project",
@@ -259,15 +259,18 @@ func runDoctor(args []string) error {
 	_, flowctlErr := os.Stat(flowctlPath)
 	add("flowctl", flowctlErr == nil, false, flowctlPath)
 
-	missing := []string{}
-	for _, skill := range coreSkills {
-		path := filepath.Join(root, ".agents", "skills", skill, "SKILL.md")
-		if _, err := os.Stat(path); err != nil {
-			missing = append(missing, skill)
-		}
+	skillRoots := []struct {
+		name string
+		path string
+	}{
+		{name: "codex-skills", path: filepath.Join(".agents", "skills")},
+		{name: "cursor-skills", path: filepath.Join(".cursor", "skills")},
+		{name: "claude-skills", path: filepath.Join(".claude", "skills")},
 	}
-	sort.Strings(missing)
-	add("core-skills", len(missing) == 0, false, missingMessage(missing))
+	for _, skillRoot := range skillRoots {
+		missing := missingCoreSkills(root, skillRoot.path)
+		add(skillRoot.name, len(missing) == 0, false, missingMessage(missing))
+	}
 
 	entries := []string{
 		filepath.Join(root, "AGENTS.md"),
@@ -308,6 +311,18 @@ func runDoctor(args []string) error {
 		}
 	}
 	return nil
+}
+
+func missingCoreSkills(root, relativeRoot string) []string {
+	missing := []string{}
+	for _, skill := range coreSkills {
+		path := filepath.Join(root, relativeRoot, skill, "SKILL.md")
+		if _, err := os.Stat(path); err != nil {
+			missing = append(missing, skill)
+		}
+	}
+	sort.Strings(missing)
+	return missing
 }
 
 func renderBoard(root string) error {

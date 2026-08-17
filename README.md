@@ -6,7 +6,7 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 
 ## 核心能力
 
-- 13 个跨 IDE 的 Agent Skills。
+- 13 个同源 Agent Skills，并安装到三个 IDE 各自可发现的项目目录。
 - 空白项目和既有项目两种初始化方式。
 - 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
 - Work Item、Harness Run、Checkpoint、Evidence 状态机。
@@ -39,8 +39,8 @@ irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install
 1. 下载最新 GitHub Release。
 2. 校验发布包 SHA-256。
 3. 安装适合当前操作系统和架构的 `flowctl`。
-4. 安装 13 个 Skill 到 `.agents/skills/`。
-5. 创建 Cursor、Codex、Claude Code 的薄入口。
+4. 将 13 个 Skill 安装到 `.agents/skills/`、`.cursor/skills/` 和 `.claude/skills/`。
+5. 创建 Cursor、Codex、Claude Code 的常驻路由入口。
 6. 保留已有 `AGENTS.md`、`CLAUDE.md` 和其他 IDE 规则。
 7. 运行健康检查。
 
@@ -86,12 +86,15 @@ Windows 使用：
 ```text
 .ai-flow/                 # 机器可读事实、运行、证据和归档
 docs/board/               # 给人看的简洁看板
-.agents/skills/           # Cursor/Codex 共享 Skills
-.claude/skills/ai-flow/   # Claude Code 薄入口
+.agents/skills/           # Codex 原生 Skills，也是安装后的公共副本
+.cursor/skills/           # Cursor 原生 Skills
+.claude/skills/           # Claude Code 原生 Skills 与 /ai-flow 入口
 .cursor/rules/            # Cursor 常驻路由
 AGENTS.md                  # Codex 常驻路由
 CLAUDE.md                  # Claude Code 常驻路由
 ```
+
+目录名必须是 `.agents/skills`（`agents` 为复数），不是 `.agent`。安装或更新完成后，需要 Reload IDE Window 并开始一个新的 Agent chat，让 IDE 重新发现 Skill 元数据。
 
 ## 日常使用
 
@@ -191,7 +194,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.1.0 sh
+  | AI_FLOW_VERSION=v0.1.1 sh
 ```
 
 ## 卸载
@@ -236,4 +239,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.1.0` 提供 Core Profile。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。
+`v0.1.1` 提供 Core Profile，并为 Cursor、Codex、Claude Code 分别安装原生 Skill 副本。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。

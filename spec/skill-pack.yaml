@@ -1,9 +1,12 @@
 schema_version: 1
 pack:
   name: mxm-ai-flow
-  version: 0.1.0
+  version: 0.1.1
   canonical_skill_root: skills
-  target_skill_root: .agents/skills
+  target_skill_roots:
+    codex: .agents/skills
+    cursor: .cursor/skills
+    claude_code: .claude/skills
   machine_state_root: .ai-flow
   human_board_root: docs/board
 
@@ -56,7 +59,9 @@ profiles:
 
 platform_entries:
   cursor:
-    discovery_root: .agents/skills
+    discovery_roots:
+      - .cursor/skills
+      - .agents/skills
     persistent_route: .cursor/rules/ai-flow.mdc
   codex:
     discovery_root: .agents/skills
@@ -64,5 +69,5 @@ platform_entries:
   claude_code:
     discovery_root: .claude/skills
     entry_skill: ai-flow
-    delegates_to: .agents/skills/orchestrate-ai-delivery/SKILL.md
+    delegates_to: .claude/skills/orchestrate-ai-delivery/SKILL.md
     persistent_route: CLAUDE.md

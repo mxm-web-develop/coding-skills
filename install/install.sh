@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.1.0"
+PACK_VERSION="0.1.1"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -95,6 +95,8 @@ remove_managed_files() {
       *[!a-z0-9-]*|'') fail "invalid managed skill name: $skill_name" ;;
     esac
     rm -rf "$TARGET_DIR/.agents/skills/$skill_name"
+    rm -rf "$TARGET_DIR/.cursor/skills/$skill_name"
+    rm -rf "$TARGET_DIR/.claude/skills/$skill_name"
   done
   rm -rf "$TARGET_DIR/.claude/skills/ai-flow"
   rm -f "$TARGET_DIR/.cursor/rules/ai-flow.mdc"
@@ -112,10 +114,23 @@ fi
 
 if [ "$COMMAND" = "install" ] && [ ! -f "$INSTALL_MARKER" ]; then
   for skill_name in $CORE_SKILLS; do
-    [ ! -e "$TARGET_DIR/.agents/skills/$skill_name" ] || fail "existing unmanaged Skill would be overwritten: $skill_name"
+    for skill_root in .agents/skills .cursor/skills .claude/skills; do
+      [ ! -e "$TARGET_DIR/$skill_root/$skill_name" ] || fail "existing unmanaged Skill would be overwritten: $skill_root/$skill_name"
+    done
   done
   [ ! -e "$TARGET_DIR/.claude/skills/ai-flow" ] || fail "existing unmanaged Claude ai-flow entry would be overwritten"
   [ ! -e "$TARGET_DIR/.cursor/rules/ai-flow.mdc" ] || fail "existing unmanaged Cursor ai-flow rule would be overwritten"
+fi
+
+if [ -f "$INSTALL_MARKER" ]; then
+  for skill_name in $CORE_SKILLS; do
+    for skill_root in .cursor/skills .claude/skills; do
+      native_skill="$TARGET_DIR/$skill_root/$skill_name"
+      if [ -e "$native_skill" ] && [ ! -f "$native_skill/.ai-flow-managed" ]; then
+        fail "existing unmanaged native Skill would be overwritten: $skill_root/$skill_name"
+      fi
+    done
+  done
 fi
 
 if [ "$COMMAND" = "uninstall" ]; then
@@ -149,16 +164,21 @@ else
   fail "no compatible flowctl binary found and Go is unavailable"
 fi
 
-mkdir -p "$TARGET_DIR/.agents/skills" "$TARGET_DIR/.claude/skills" "$TARGET_DIR/.cursor/rules" "$TARGET_DIR/.ai-flow/bin" "$TARGET_DIR/.ai-flow/install" "$TARGET_DIR/.ai-flow/runtime"
+mkdir -p "$TARGET_DIR/.agents/skills" "$TARGET_DIR/.cursor/skills" "$TARGET_DIR/.claude/skills" "$TARGET_DIR/.cursor/rules" "$TARGET_DIR/.ai-flow/bin" "$TARGET_DIR/.ai-flow/install" "$TARGET_DIR/.ai-flow/runtime"
 
 for skill_name in $CORE_SKILLS; do
   [ -f "$SOURCE_DIR/skills/$skill_name/SKILL.md" ] || fail "missing source Skill: $skill_name"
-  rm -rf "$TARGET_DIR/.agents/skills/$skill_name"
-  cp -R "$SOURCE_DIR/skills/$skill_name" "$TARGET_DIR/.agents/skills/$skill_name"
+  for skill_root in .agents/skills .cursor/skills .claude/skills; do
+    skill_target="$TARGET_DIR/$skill_root/$skill_name"
+    rm -rf "$skill_target"
+    cp -R "$SOURCE_DIR/skills/$skill_name" "$skill_target"
+    printf '%s\n' "$PACK_VERSION" > "$skill_target/.ai-flow-managed"
+  done
 done
 
 rm -rf "$TARGET_DIR/.claude/skills/ai-flow"
 cp -R "$SOURCE_DIR/adapters/claude/ai-flow" "$TARGET_DIR/.claude/skills/ai-flow"
+printf '%s\n' "$PACK_VERSION" > "$TARGET_DIR/.claude/skills/ai-flow/.ai-flow-managed"
 cp "$SOURCE_DIR/adapters/cursor/ai-flow.mdc" "$TARGET_DIR/.cursor/rules/ai-flow.mdc"
 cp "$RUNTIME_SOURCE" "$TARGET_DIR/.ai-flow/bin/flowctl"
 chmod 0755 "$TARGET_DIR/.ai-flow/bin/flowctl"
@@ -174,4 +194,4 @@ printf 'schema_version: 1\nprofile: %s\nplatforms:\n  cursor: detected\n  codex:
 
 "$TARGET_DIR/.ai-flow/bin/flowctl" doctor --root "$TARGET_DIR"
 printf 'AI Flow %s %s completed at %s\n' "$PACK_VERSION" "$COMMAND" "$TARGET_DIR"
-printf '%s\n' "Next: ask your IDE to use initialize-ai-project, or invoke the platform-specific Skill directly."
+printf '%s\n' "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."

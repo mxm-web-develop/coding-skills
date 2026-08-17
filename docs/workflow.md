@@ -6,11 +6,13 @@
 
 | 平台 | 常驻入口 | Skill 入口 |
 | --- | --- | --- |
-| Cursor | `.cursor/rules/ai-flow.mdc` | `.agents/skills/`，可由 Agent 自动选择或 `/skill-name` |
+| Cursor | `.cursor/rules/ai-flow.mdc` | `.cursor/skills/`，可由 Agent 自动选择或 `/skill-name`；`.agents/skills/` 作为兼容发现目录 |
 | Codex | `AGENTS.md` | `.agents/skills/`，可由 Agent 自动选择或 Skill 选择器 |
-| Claude Code | `CLAUDE.md` | `/ai-flow` 薄入口，再读取 `.agents/skills/` |
+| Claude Code | `CLAUDE.md` | `.claude/skills/`，可自动选择或 `/skill-name`，并保留 `/ai-flow` 总入口 |
 
 用户应优先用自然语言，不需要手动编排 13 个 Skill。
+
+安装或更新发生在 IDE 已经打开之后时，先 Reload Window 并创建新 Agent chat。Skill 元数据通常在会话启动时发现，不能用安装前已经存在的聊天判断安装是否成功。
 
 ## 2. 空白项目初始化
 

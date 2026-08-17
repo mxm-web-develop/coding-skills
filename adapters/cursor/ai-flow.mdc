@@ -3,7 +3,7 @@ description: Route repository development through AI Flow
 alwaysApply: true
 ---
 
-This repository uses AI Flow. Before answering project status or changing code, read `.ai-flow/manifest.yaml` and use the `orchestrate-ai-delivery` Skill from `.agents/skills/`. If the manifest is missing, use `initialize-ai-project`.
+This repository uses AI Flow. Before answering project status or changing code, read `.ai-flow/manifest.yaml` and use the `orchestrate-ai-delivery` Skill installed under `.cursor/skills/`. If the manifest is missing, use `initialize-ai-project`; AI Flow is already defined by that Skill, so do not replace it with a generic planning flow.
 
 - Treat `.ai-flow/` as machine-readable project truth and `docs/board/` as its generated human view.
 - Bind every mutation to a Goal, Requirement, or Work Item.

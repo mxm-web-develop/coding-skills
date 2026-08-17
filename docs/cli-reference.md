@@ -19,7 +19,7 @@ flowctl doctor --root .
 flowctl doctor --root . --json
 ```
 
-检查二进制、13 个 Skills、三平台入口、JSON Schema 和初始化状态。
+分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 13 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
 
 ### status
 

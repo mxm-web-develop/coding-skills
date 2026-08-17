@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.1.0"
+$PackVersion = "0.1.1"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -58,8 +58,10 @@ $SourcePath = (Resolve-Path -LiteralPath $Source).Path
 
 function Remove-ManagedFiles {
     foreach ($skillName in $CoreSkills) {
-        $skillPath = Join-Path $TargetPath ".agents/skills/$skillName"
-        if (Test-Path -LiteralPath $skillPath) { Remove-Item -LiteralPath $skillPath -Recurse -Force }
+        foreach ($skillRoot in @(".agents/skills", ".cursor/skills", ".claude/skills")) {
+            $skillPath = Join-Path $TargetPath "$skillRoot/$skillName"
+            if (Test-Path -LiteralPath $skillPath) { Remove-Item -LiteralPath $skillPath -Recurse -Force }
+        }
     }
     $managedPaths = @(
         ".claude/skills/ai-flow",
@@ -85,8 +87,10 @@ if (($Command -eq "update" -or $Command -eq "uninstall") -and -not (Test-Path -L
 
 if ($Command -eq "install" -and -not (Test-Path -LiteralPath $InstallMarker -PathType Leaf)) {
     foreach ($skillName in $CoreSkills) {
-        if (Test-Path -LiteralPath (Join-Path $TargetPath ".agents/skills/$skillName")) {
-            throw "Existing unmanaged Skill would be overwritten: $skillName"
+        foreach ($skillRoot in @(".agents/skills", ".cursor/skills", ".claude/skills")) {
+            if (Test-Path -LiteralPath (Join-Path $TargetPath "$skillRoot/$skillName")) {
+                throw "Existing unmanaged Skill would be overwritten: $skillRoot/$skillName"
+            }
         }
     }
     if (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow")) {
@@ -94,6 +98,18 @@ if ($Command -eq "install" -and -not (Test-Path -LiteralPath $InstallMarker -Pat
     }
     if (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc")) {
         throw "Existing unmanaged Cursor ai-flow rule would be overwritten"
+    }
+}
+
+if (Test-Path -LiteralPath $InstallMarker -PathType Leaf) {
+    foreach ($skillName in $CoreSkills) {
+        foreach ($skillRoot in @(".cursor/skills", ".claude/skills")) {
+            $nativeSkill = Join-Path $TargetPath "$skillRoot/$skillName"
+            $managedMarker = Join-Path $nativeSkill ".ai-flow-managed"
+            if ((Test-Path -LiteralPath $nativeSkill) -and -not (Test-Path -LiteralPath $managedMarker -PathType Leaf)) {
+                throw "Existing unmanaged native Skill would be overwritten: $skillRoot/$skillName"
+            }
+        }
     }
 }
 
@@ -124,22 +140,26 @@ if (-not (Test-Path -LiteralPath $runtimePath -PathType Leaf)) {
     try { & go build -o $runtimePath ./cmd/flowctl } finally { Pop-Location }
 }
 
-$directories = @(".agents/skills", ".claude/skills", ".cursor/rules", ".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
+$directories = @(".agents/skills", ".cursor/skills", ".claude/skills", ".cursor/rules", ".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
 foreach ($relativePath in $directories) {
     New-Item -ItemType Directory -Path (Join-Path $TargetPath $relativePath) -Force | Out-Null
 }
 
 foreach ($skillName in $CoreSkills) {
     $sourceSkill = Join-Path $SourcePath "skills/$skillName"
-    $targetSkill = Join-Path $TargetPath ".agents/skills/$skillName"
     if (-not (Test-Path -LiteralPath (Join-Path $sourceSkill "SKILL.md"))) { throw "Missing source Skill: $skillName" }
-    if (Test-Path -LiteralPath $targetSkill) { Remove-Item -LiteralPath $targetSkill -Recurse -Force }
-    Copy-Item -LiteralPath $sourceSkill -Destination $targetSkill -Recurse
+    foreach ($skillRoot in @(".agents/skills", ".cursor/skills", ".claude/skills")) {
+        $targetSkill = Join-Path $TargetPath "$skillRoot/$skillName"
+        if (Test-Path -LiteralPath $targetSkill) { Remove-Item -LiteralPath $targetSkill -Recurse -Force }
+        Copy-Item -LiteralPath $sourceSkill -Destination $targetSkill -Recurse
+        Set-Content -LiteralPath (Join-Path $targetSkill ".ai-flow-managed") -Value $PackVersion -Encoding utf8
+    }
 }
 
 $claudeTarget = Join-Path $TargetPath ".claude/skills/ai-flow"
 if (Test-Path -LiteralPath $claudeTarget) { Remove-Item -LiteralPath $claudeTarget -Recurse -Force }
 Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/claude/ai-flow") -Destination $claudeTarget -Recurse
+Set-Content -LiteralPath (Join-Path $claudeTarget ".ai-flow-managed") -Value $PackVersion -Encoding utf8
 Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/cursor/ai-flow.mdc") -Destination (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc") -Force
 Copy-Item -LiteralPath $runtimePath -Destination (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") -Force
 $schemaTarget = Join-Path $TargetPath ".ai-flow/runtime/schemas"
@@ -162,4 +182,4 @@ Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/capabilities.yaml") -V
 
 & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") doctor --root $TargetPath
 Write-Host "AI Flow $PackVersion $Command completed at $TargetPath"
-Write-Host "Next: ask your IDE to use initialize-ai-project, or invoke the platform-specific Skill directly."
+Write-Host "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."
