@@ -9,32 +9,52 @@ import (
 
 type solutionDecision struct {
 	SchemaVersion        int                           `json:"schema_version"`
-	DecisionType         string                        `json:"decision_type"`
+	ID                   string                        `json:"id"`
+	Revision             int                           `json:"revision"`
 	Status               string                        `json:"status"`
+	Title                string                        `json:"title"`
+	Context              string                        `json:"context"`
+	DecisionType         string                        `json:"decision_type"`
+	GoalID               *string                       `json:"goal_id"`
+	RequirementIDs       []string                      `json:"requirement_ids"`
+	WorkItemIDs          []string                      `json:"work_item_ids"`
+	EvaluationCriteria   []string                      `json:"evaluation_criteria"`
 	Options              []solutionDecisionOption      `json:"options"`
 	RecommendedOption    string                        `json:"recommended_option"`
 	RecommendationReason string                        `json:"recommendation_reason"`
 	Confirmation         *solutionDecisionConfirmation `json:"confirmation"`
+	Decision             string                        `json:"decision"`
+	Consequences         []string                      `json:"consequences"`
+	Rollback             string                        `json:"rollback"`
+	Sources              []string                      `json:"sources"`
+	Supersedes           []string                      `json:"supersedes"`
+	SupersededBy         *string                       `json:"superseded_by"`
+	CreatedAt            string                        `json:"created_at"`
+	UpdatedAt            string                        `json:"updated_at"`
 }
 
 type solutionDecisionOption struct {
-	Name           string   `json:"name"`
-	Summary        string   `json:"summary"`
-	Strengths      []string `json:"strengths"`
-	Weaknesses     []string `json:"weaknesses"`
-	ProjectFit     string   `json:"project_fit"`
-	Risks          []string `json:"risks"`
-	AdoptionImpact string   `json:"adoption_impact"`
-	TestingImpact  string   `json:"testing_impact"`
-	Rollback       string   `json:"rollback"`
-	Tradeoffs      []string `json:"tradeoffs"`
-	PrototypePath  *string  `json:"prototype_path"`
-	PrototypeFocus string   `json:"prototype_focus"`
+	Name            string   `json:"name"`
+	Summary         string   `json:"summary"`
+	Strengths       []string `json:"strengths"`
+	Weaknesses      []string `json:"weaknesses"`
+	ProjectFit      string   `json:"project_fit"`
+	Risks           []string `json:"risks"`
+	AdoptionImpact  string   `json:"adoption_impact"`
+	MigrationImpact string   `json:"migration_impact"`
+	OperatingImpact string   `json:"operating_impact"`
+	TestingImpact   string   `json:"testing_impact"`
+	Rollback        string   `json:"rollback"`
+	Tradeoffs       []string `json:"tradeoffs"`
+	PrototypePath   *string  `json:"prototype_path"`
+	PrototypeFocus  string   `json:"prototype_focus"`
 }
 
 type solutionDecisionConfirmation struct {
 	Status         string  `json:"status"`
 	SelectedOption *string `json:"selected_option"`
+	Feedback       string  `json:"feedback"`
+	ConfirmedAt    *string `json:"confirmed_at"`
 }
 
 func validateSolutionDecisions(root string) []validationIssue {
@@ -75,6 +95,12 @@ func validateSolutionDecisions(root string) []validationIssue {
 				}
 				if strings.TrimSpace(option.ProjectFit) == "" {
 					add("backend decision option must describe project fit")
+				}
+				if strings.TrimSpace(option.MigrationImpact) == "" {
+					add("backend decision option must describe migration impact")
+				}
+				if strings.TrimSpace(option.OperatingImpact) == "" {
+					add("backend decision option must describe operating impact")
 				}
 				if strings.TrimSpace(option.TestingImpact) == "" {
 					add("backend decision option must describe testing impact")

@@ -111,7 +111,7 @@ func TestDecisionSchemaSupportsInteractiveTechnologyAndUXConfirmation(t *testing
 			map[string]any{
 				"name": "快速浏览", "summary": "高信息密度看板", "strengths": []any{"比较速度快"},
 				"weaknesses": []any{"新用户学习成本较高"}, "project_fit": "沿用现有表格组件",
-				"risks": []any{"移动端拥挤"}, "adoption_impact": "无需新增依赖", "testing_impact": "增加手机视口测试",
+				"risks": []any{"移动端拥挤"}, "adoption_impact": "无需新增依赖", "migration_impact": "对现有数据结构没有影响", "operating_impact": "不增加额外运维面", "testing_impact": "增加手机视口测试",
 				"rollback": "恢复当前页面", "tradeoffs": []any{"速度优先于引导"},
 				"prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html", "prototype_focus": "快速对比",
 			},
@@ -191,5 +191,91 @@ func TestInteractiveDecisionRequiresConsistentChoiceAndSafePrototype(t *testing.
 	}
 	if issues := validateSolutionDecisions(root); len(issues) == 0 {
 		t.Fatal("prototype path traversal unexpectedly passed validation")
+	}
+}
+
+func TestBackendDecisionRequiresMigrationAndOperatingImpact(t *testing.T) {
+	root := t.TempDir()
+	decisionDirectory := filepath.Join(root, ".ai-flow", "decisions")
+	if err := os.MkdirAll(decisionDirectory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	decisionPath := filepath.Join(decisionDirectory, "ADR-20260817-ffffffff.json")
+	validDecision := map[string]any{
+		"schema_version":      1,
+		"id":                  "ADR-20260817-ffffffff",
+		"revision":            1,
+		"status":              "accepted",
+		"title":               "后端选型",
+		"context":             "比较两种后端实现方式",
+		"decision_type":       "backend-technology",
+		"evaluation_criteria": []any{"可测试性", "运维成本"},
+		"options": []any{
+			map[string]any{
+				"name": "方案A", "summary": "保持当前实现", "strengths": []any{"改动小"}, "weaknesses": []any{"长期维护一般"},
+				"project_fit": "适合短期交付", "risks": []any{"扩展性一般"}, "adoption_impact": "几乎不变",
+				"migration_impact": "不需要迁移现有接口", "operating_impact": "不改变现有监控与部署方式",
+				"testing_impact": "增加回归测试", "rollback": "恢复当前实现", "tradeoffs": []any{"稳定但保守"},
+			},
+			map[string]any{
+				"name": "方案B", "summary": "引入新抽象", "strengths": []any{"可扩展"}, "weaknesses": []any{"切换成本更高"},
+				"project_fit": "适合中长期演进", "risks": []any{"迁移成本较高"}, "adoption_impact": "需要团队熟悉新结构",
+				"migration_impact": "需要分阶段迁移现有接口", "operating_impact": "需要新的监控和告警", "testing_impact": "增加契约和集成测试",
+				"rollback": "切回旧实现", "tradeoffs": []any{"前期投入更高"},
+			},
+		},
+		"recommended_option":    "方案B",
+		"recommendation_reason": "更适合长期演进",
+		"confirmation": map[string]any{
+			"status": "confirmed", "selected_option": "方案B", "feedback": "接受分阶段迁移",
+		},
+		"decision":     "采用方案B",
+		"consequences": []any{"迁移更复杂"},
+		"created_at":   "2026-08-17T11:00:00Z",
+		"updated_at":   "2026-08-17T12:00:00Z",
+	}
+	if err := writeJSONAtomic(decisionPath, validDecision); err != nil {
+		t.Fatal(err)
+	}
+	if issues := validateSolutionDecisions(root); len(issues) != 0 {
+		t.Fatalf("valid backend decision produced issues: %#v", issues)
+	}
+
+	invalidDecision := map[string]any{
+		"schema_version":      1,
+		"id":                  "ADR-20260817-ffffffff",
+		"revision":            1,
+		"status":              "accepted",
+		"title":               "后端选型",
+		"context":             "比较两种后端实现方式",
+		"decision_type":       "backend-technology",
+		"evaluation_criteria": []any{"可测试性", "运维成本"},
+		"options": []any{
+			map[string]any{
+				"name": "方案A", "summary": "保持当前实现", "strengths": []any{"改动小"}, "weaknesses": []any{"长期维护一般"},
+				"project_fit": "适合短期交付", "risks": []any{"扩展性一般"}, "adoption_impact": "几乎不变",
+				"testing_impact": "增加回归测试", "rollback": "恢复当前实现", "tradeoffs": []any{"稳定但保守"},
+			},
+			map[string]any{
+				"name": "方案B", "summary": "引入新抽象", "strengths": []any{"可扩展"}, "weaknesses": []any{"切换成本更高"},
+				"project_fit": "适合中长期演进", "risks": []any{"迁移成本较高"}, "adoption_impact": "需要团队熟悉新结构",
+				"testing_impact": "增加契约和集成测试", "rollback": "切回旧实现", "tradeoffs": []any{"前期投入更高"},
+			},
+		},
+		"recommended_option":    "方案B",
+		"recommendation_reason": "更适合长期演进",
+		"confirmation": map[string]any{
+			"status": "confirmed", "selected_option": "方案B", "feedback": "接受分阶段迁移",
+		},
+		"decision":     "采用方案B",
+		"consequences": []any{"迁移更复杂"},
+		"created_at":   "2026-08-17T11:00:00Z",
+		"updated_at":   "2026-08-17T12:00:00Z",
+	}
+	if err := writeJSONAtomic(decisionPath, invalidDecision); err != nil {
+		t.Fatal(err)
+	}
+	if issues := validateSolutionDecisions(root); len(issues) == 0 {
+		t.Fatal("backend decision missing migration or operating impact unexpectedly passed validation")
 	}
 }

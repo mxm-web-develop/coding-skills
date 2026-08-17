@@ -32,6 +32,8 @@
           "project_fit": { "type": "string" },
           "risks": { "$ref": "common.schema.json#/$defs/stringList" },
           "adoption_impact": { "type": "string" },
+          "migration_impact": { "type": "string" },
+          "operating_impact": { "type": "string" },
           "testing_impact": { "type": "string" },
           "rollback": { "type": "string" },
           "prototype_path": { "type": ["string", "null"] },
