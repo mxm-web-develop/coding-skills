@@ -468,6 +468,11 @@ func materialDecisionApplies(decision traceDecision, work WorkItem) bool {
 	if contains(decision.WorkItemIDs, work.ID) {
 		return true
 	}
+	for _, requirementID := range decision.RequirementIDs {
+		if contains(work.RequirementIDs, requirementID) {
+			return true
+		}
+	}
 	return decision.GoalID != nil && work.GoalID != nil && *decision.GoalID == *work.GoalID
 }
 

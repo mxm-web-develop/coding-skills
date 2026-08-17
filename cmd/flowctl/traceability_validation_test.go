@@ -83,6 +83,19 @@ func TestTraceabilityRequiresTrustedPassingReleaseVerification(t *testing.T) {
 	assertTraceIssue(t, validateTraceability(root), "release requirement lacks trusted passing verification")
 }
 
+func TestTraceabilityBlocksRequirementLinkedUnconfirmedDecision(t *testing.T) {
+	root := createTraceabilityFixture(t)
+	decisionPath := filepath.Join(root, ".ai-flow", "decisions", traceDecisionID+".json")
+	var decision map[string]any
+	readFixtureJSON(t, decisionPath, &decision)
+	decision["work_item_ids"] = []string{}
+	decision["confirmation"] = map[string]any{"status": "pending", "selected_option": nil}
+	if err := writeJSONAtomic(decisionPath, decision); err != nil {
+		t.Fatal(err)
+	}
+	assertTraceIssue(t, validateTraceability(root), "release is blocked by an unconfirmed product or technical direction")
+}
+
 func TestTraceabilityRejectsVerificationLogTraversal(t *testing.T) {
 	root := createTraceabilityFixture(t)
 	evidencePath := filepath.Join(root, ".ai-flow", "evidence", traceEvidenceID+".json")
@@ -145,8 +158,8 @@ func createTraceabilityFixture(t *testing.T) string {
 		"context": "当前团队只维护数据库", "decision_type": "backend-technology", "evaluation_criteria": []string{"稳定性", "运维成本", "交付速度"},
 		"goal_id": traceGoalID, "requirement_ids": []string{traceRequirementID}, "work_item_ids": []string{traceWorkID},
 		"options": []map[string]any{
-			{"name": "数据库任务表", "tradeoffs": []string{"需要控制并发"}},
-			{"name": "外部队列服务", "tradeoffs": []string{"要增加新依赖"}},
+			{"name": "数据库任务表", "summary": "通过数据库轮询处理后台任务", "strengths": []string{"实现简单", "无需新服务"}, "weaknesses": []string{"并发控制更难"}, "project_fit": "适合当前团队的单仓库节奏", "testing_impact": "可以用集成测试覆盖重试", "rollback": "恢复同步处理", "tradeoffs": []string{"需要控制并发"}},
+			{"name": "外部队列服务", "summary": "引入独立队列处理后台任务", "strengths": []string{"扩展性更好"}, "weaknesses": []string{"要增加新依赖"}, "project_fit": "更适合后期增长", "testing_impact": "需要额外的契约和集成测试", "rollback": "撤销队列接入", "tradeoffs": []string{"要增加新依赖"}},
 		},
 		"recommended_option": "数据库任务表", "recommendation_reason": "当前团队可以最快交付且无需新增服务",
 		"confirmation": map[string]any{"status": "confirmed", "selected_option": "数据库任务表"},

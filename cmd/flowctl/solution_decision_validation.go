@@ -18,8 +18,18 @@ type solutionDecision struct {
 }
 
 type solutionDecisionOption struct {
-	Name          string  `json:"name"`
-	PrototypePath *string `json:"prototype_path"`
+	Name           string   `json:"name"`
+	Summary        string   `json:"summary"`
+	Strengths      []string `json:"strengths"`
+	Weaknesses     []string `json:"weaknesses"`
+	ProjectFit     string   `json:"project_fit"`
+	Risks          []string `json:"risks"`
+	AdoptionImpact string   `json:"adoption_impact"`
+	TestingImpact  string   `json:"testing_impact"`
+	Rollback       string   `json:"rollback"`
+	Tradeoffs      []string `json:"tradeoffs"`
+	PrototypePath  *string  `json:"prototype_path"`
+	PrototypeFocus string   `json:"prototype_focus"`
 }
 
 type solutionDecisionConfirmation struct {
@@ -44,6 +54,8 @@ func validateSolutionDecisions(root string) []validationIssue {
 		if len(decision.Options) < 2 {
 			add("interactive solution decision must contain at least two viable options")
 		}
+		frontendDecision := decision.DecisionType == "frontend-ux-ui"
+		backendDecision := contains([]string{"backend-technology", "architecture", "data", "api", "cross-cutting"}, decision.DecisionType)
 		optionNames := map[string]bool{}
 		for _, option := range decision.Options {
 			name := strings.TrimSpace(option.Name)
@@ -51,6 +63,26 @@ func validateSolutionDecisions(root string) []validationIssue {
 				add("interactive solution decision contains a duplicate option: " + name)
 			}
 			optionNames[name] = true
+			if backendDecision {
+				if strings.TrimSpace(option.Summary) == "" {
+					add("backend decision option must describe the option in plain language")
+				}
+				if len(option.Strengths) == 0 {
+					add("backend decision option must describe strengths")
+				}
+				if len(option.Weaknesses) == 0 {
+					add("backend decision option must describe weaknesses")
+				}
+				if strings.TrimSpace(option.ProjectFit) == "" {
+					add("backend decision option must describe project fit")
+				}
+				if strings.TrimSpace(option.TestingImpact) == "" {
+					add("backend decision option must describe testing impact")
+				}
+				if strings.TrimSpace(option.Rollback) == "" {
+					add("backend decision option must describe rollback or recovery")
+				}
+			}
 			if option.PrototypePath != nil {
 				if err := validatePrototypePath(root, *option.PrototypePath); err != nil {
 					add(fmt.Sprintf("prototype for option %s is unavailable or unsafe: %v", name, err))
@@ -64,8 +96,6 @@ func validateSolutionDecisions(root string) []validationIssue {
 		if strings.TrimSpace(decision.RecommendationReason) == "" {
 			add("interactive solution decision must explain the recommendation")
 		}
-		prototypeCount := 0
-		prototypePaths := map[string]bool{}
 		if decision.Confirmation == nil {
 			add("interactive solution decision must record whether the user has confirmed a direction")
 			continue
@@ -80,7 +110,10 @@ func validateSolutionDecisions(root string) []validationIssue {
 		if decision.Status == "accepted" && (decision.Confirmation.Status != "confirmed" || selected == "") {
 			add("accepted interactive solution decision requires a confirmed option")
 		}
-		if decision.DecisionType == "frontend-ux-ui" {
+		if frontendDecision {
+			prototypeCount := 0
+			prototypePaths := map[string]bool{}
+			prototypeFocuses := map[string]bool{}
 			if len(decision.Options) < 2 || len(decision.Options) > 3 {
 				add("frontend UX decision should compare two or three HTML directions")
 			}
@@ -88,6 +121,14 @@ func validateSolutionDecisions(root string) []validationIssue {
 				if option.PrototypePath == nil || strings.TrimSpace(*option.PrototypePath) == "" {
 					add("frontend UX decision must keep every compared direction in an HTML prototype")
 					continue
+				}
+				if strings.TrimSpace(option.PrototypeFocus) == "" {
+					add("frontend UX decision must explain what each prototype is testing")
+				}
+				if prototypeFocuses[strings.ToLower(strings.TrimSpace(option.PrototypeFocus))] {
+					add("frontend UX decision must compare distinct directions, not the same idea twice")
+				} else {
+					prototypeFocuses[strings.ToLower(strings.TrimSpace(option.PrototypeFocus))] = true
 				}
 				prototypeCount++
 				normalized := filepath.ToSlash(strings.TrimSpace(*option.PrototypePath))
@@ -142,6 +183,9 @@ func validatePrototypeExperience(root, prototypePath string) error {
 		return err
 	}
 	normalized := strings.ToLower(string(data))
+	if !strings.Contains(normalized, "ai-flow exploration") && !strings.Contains(normalized, "data-ai-flow-exploration") {
+		return fmt.Errorf("missing explicit exploration labeling")
+	}
 	if !strings.Contains(normalized, "meta name=\"viewport\"") {
 		return fmt.Errorf("missing responsive viewport metadata")
 	}

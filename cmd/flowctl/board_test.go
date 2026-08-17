@@ -51,8 +51,8 @@ func TestRenderBoardCreatesReadableVersionTaskDecisionAndTestViews(t *testing.T)
 		"recommendation_reason": "最符合当前团队的测试和维护要求",
 		"confirmation":          map[string]any{"status": "confirmed", "selected_option": "纯函数评分内核", "feedback": "先保持规则透明"},
 		"options": []map[string]any{
-			{"name": "纯函数评分内核", "summary": "强调可解释评分", "tradeoffs": []string{"需要显式适配I/O"}},
-			{"name": "数据对比页面", "summary": "强调横向比较", "tradeoffs": []string{"信息密度较高"}, "prototype_path": ".ai-flow/prototypes/seller-risk/comparison/index.html", "prototype_focus": "快速比较多个卖家的风险差异"},
+			{"name": "纯函数评分内核", "summary": "强调可解释评分", "strengths": []string{"测试容易", "边界清晰"}, "weaknesses": []string{"需要显式适配I/O"}, "project_fit": "适合现有核心规则层", "testing_impact": "可直接用单元测试覆盖", "rollback": "恢复当前实现", "tradeoffs": []string{"需要显式适配I/O"}},
+			{"name": "数据对比页面", "summary": "强调横向比较", "strengths": []string{"便于运营理解"}, "weaknesses": []string{"信息密度较高"}, "project_fit": "适合当前看板风格", "testing_impact": "增加视觉回归", "rollback": "恢复当前页面", "tradeoffs": []string{"信息密度较高"}, "prototype_path": ".ai-flow/prototypes/seller-risk/comparison/index.html", "prototype_focus": "快速比较多个卖家的风险差异"},
 		},
 		"consequences": []string{"易测试", "依赖显式"},
 	})

@@ -115,7 +115,7 @@ func TestDecisionSchemaSupportsInteractiveTechnologyAndUXConfirmation(t *testing
 				"rollback": "恢复当前页面", "tradeoffs": []any{"速度优先于引导"},
 				"prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html", "prototype_focus": "快速对比",
 			},
-			map[string]any{"name": "逐步引导", "tradeoffs": []any{"理解更容易但操作步骤更多"}, "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html"},
+			map[string]any{"name": "逐步引导", "tradeoffs": []any{"理解更容易但操作步骤更多"}, "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html", "prototype_focus": "低学习成本"},
 		},
 		"recommended_option":    "快速浏览",
 		"recommendation_reason": "现有用户每天需要比较大量卖家",
@@ -148,18 +148,18 @@ func TestInteractiveDecisionRequiresConsistentChoiceAndSafePrototype(t *testing.
 	if err := os.MkdirAll(filepath.Dir(secondPrototypePath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(prototypePath, []byte("<!doctype html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>体验方案</title><button>查看</button><style>@media (max-width: 640px) { button { transition: all .2s ease; } }</style>"), 0o644); err != nil {
+	if err := os.WriteFile(prototypePath, []byte("<!doctype html><html data-ai-flow-exploration=\"true\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>体验方案</title><button>查看</button><style>@media (max-width: 640px) { button { transition: all .2s ease; } }</style></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(secondPrototypePath, []byte("<!doctype html><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>体验方案</title><a href=\"#more\">更多</a><style>@media (prefers-reduced-motion: reduce) { * { animation: none; } }</style>"), 0o644); err != nil {
+	if err := os.WriteFile(secondPrototypePath, []byte("<!doctype html><html data-ai-flow-exploration=\"true\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>体验方案</title><a href=\"#more\">更多</a><style>@media (prefers-reduced-motion: reduce) { * { animation: none; } }</style></html>"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	decisionPath := filepath.Join(decisionDirectory, "ADR-20260817-a7b8c9d0.json")
 	decision := map[string]any{
 		"decision_type": "frontend-ux-ui", "status": "accepted",
 		"options": []any{
-			map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html"},
-			map[string]any{"name": "逐步引导", "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html"},
+			map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html", "prototype_focus": "高密度比较"},
+			map[string]any{"name": "逐步引导", "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html", "prototype_focus": "逐步理解"},
 		},
 		"recommended_option": "快速浏览", "recommendation_reason": "符合高频比较场景",
 		"confirmation": map[string]any{"status": "confirmed", "selected_option": "快速浏览"},
@@ -183,8 +183,8 @@ func TestInteractiveDecisionRequiresConsistentChoiceAndSafePrototype(t *testing.
 	decision["recommended_option"] = "快速浏览"
 	decision["confirmation"] = map[string]any{"status": "confirmed", "selected_option": "快速浏览"}
 	decision["options"] = []any{
-		map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/../../secrets.html"},
-		map[string]any{"name": "逐步引导", "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html"},
+		map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/../../secrets.html", "prototype_focus": "高密度比较"},
+		map[string]any{"name": "逐步引导", "prototype_path": ".ai-flow/prototypes/seller-risk/guided-flow/index.html", "prototype_focus": "逐步理解"},
 	}
 	if err := writeJSONAtomic(decisionPath, decision); err != nil {
 		t.Fatal(err)
