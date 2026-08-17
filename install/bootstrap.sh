@@ -12,6 +12,10 @@ fail() {
   exit 1
 }
 
+status() {
+  printf 'ai-flow bootstrap: %s\n' "$1" >&2
+}
+
 append_platform() {
   if [ -z "$PLATFORM_SELECTION" ]; then
     PLATFORM_SELECTION="$1"
@@ -81,9 +85,11 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
+status "downloading AI Flow ${VERSION} release package"
 curl -fsSL "$DOWNLOAD_BASE/coding-skills.tar.gz" -o "$BOOTSTRAP_DIR/coding-skills.tar.gz"
 curl -fsSL "$DOWNLOAD_BASE/checksums.txt" -o "$BOOTSTRAP_DIR/checksums.txt"
 
+status "verifying release checksum"
 EXPECTED=$(awk '$2 == "coding-skills.tar.gz" { print $1 }' "$BOOTSTRAP_DIR/checksums.txt")
 [ -n "$EXPECTED" ] || fail "release checksum does not contain coding-skills.tar.gz"
 if command -v sha256sum >/dev/null 2>&1; then
@@ -95,8 +101,10 @@ else
 fi
 [ "$EXPECTED" = "$ACTUAL" ] || fail "release checksum mismatch"
 
+status "extracting release package"
 tar -xzf "$BOOTSTRAP_DIR/coding-skills.tar.gz" -C "$BOOTSTRAP_DIR"
 SOURCE_DIR="$BOOTSTRAP_DIR/coding-skills"
 [ -x "$SOURCE_DIR/install/install.sh" ] || fail "release package is incomplete"
 
+status "installing into $TARGET_DIR"
 AI_FLOW_PLATFORMS="$PLATFORM_SELECTION" "$SOURCE_DIR/install/install.sh" "$COMMAND" --target "$TARGET_DIR" --source "$SOURCE_DIR"

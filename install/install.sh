@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.4"
+PACK_VERSION="0.2.5"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -21,6 +21,10 @@ usage() {
 fail() {
   printf 'ai-flow installer: %s\n' "$1" >&2
   exit 1
+}
+
+info() {
+  printf 'ai-flow installer: %s\n' "$1" >&2
 }
 
 select_platform() {
@@ -188,6 +192,13 @@ is_legacy_codex_pack() {
     && grep -q '^# Sync Project Knowledge$' "$legacy_root/sync-project-knowledge/SKILL.md"
 }
 
+has_complete_skill_pack() {
+  skill_pack_root="$1"
+  for required_skill in $CORE_SKILLS; do
+    [ -f "$skill_pack_root/$required_skill/SKILL.md" ] || return 1
+  done
+}
+
 INSTALL_MARKER="$TARGET_DIR/.ai-flow/install/version"
 if [ "$COMMAND" = "update" ] || [ "$COMMAND" = "uninstall" ]; then
   [ -f "$INSTALL_MARKER" ] || fail "no managed AI Flow installation found at target"
@@ -211,6 +222,12 @@ fi
 if [ "$COMMAND" != "uninstall" ] && [ -f "$TARGET_DIR/.ai-flow/install/platforms" ]; then
   parse_platform_selection "$(tr '\n' ',' < "$TARGET_DIR/.ai-flow/install/platforms")"
 fi
+
+selected_platform_display=""
+[ "$SELECT_CURSOR" -eq 0 ] || selected_platform_display="cursor"
+[ "$SELECT_CODEX" -eq 0 ] || selected_platform_display="${selected_platform_display:+$selected_platform_display,}codex"
+[ "$SELECT_CLAUDE" -eq 0 ] || selected_platform_display="${selected_platform_display:+$selected_platform_display,}claude"
+info "preparing AI Flow $PACK_VERSION for $TARGET_DIR (platforms: $selected_platform_display)"
 
 if [ "$COMMAND" = "install" ] && [ ! -f "$INSTALL_MARKER" ]; then
   LEGACY_CODEX_PACK=0
@@ -286,11 +303,13 @@ case "$ARCH_NAME" in
 esac
 PACKAGED_RUNTIME="$SOURCE_DIR/dist/flowctl-$OS_NAME-$ARCH_NAME"
 if [ "${AI_FLOW_BUILD_SOURCE:-0}" = "1" ]; then
+  info "building flowctl from source"
   command -v go >/dev/null 2>&1 || fail "AI_FLOW_BUILD_SOURCE=1 requires Go"
   [ -f "$SOURCE_DIR/go.mod" ] || fail "AI_FLOW_BUILD_SOURCE=1 requires repository source"
   (cd "$SOURCE_DIR" && go build -o "$BUILD_DIR/flowctl" ./cmd/flowctl)
   RUNTIME_SOURCE="$BUILD_DIR/flowctl"
 elif [ -x "$PACKAGED_RUNTIME" ]; then
+  info "using packaged flowctl for $OS_NAME/$ARCH_NAME"
   RUNTIME_SOURCE="$PACKAGED_RUNTIME"
 elif command -v go >/dev/null 2>&1 && [ -f "$SOURCE_DIR/go.mod" ]; then
   (cd "$SOURCE_DIR" && go build -o "$BUILD_DIR/flowctl" ./cmd/flowctl)
@@ -303,6 +322,8 @@ mkdir -p "$TARGET_DIR/.ai-flow/bin" "$TARGET_DIR/.ai-flow/install" "$TARGET_DIR/
 [ "$SELECT_CODEX" -eq 0 ] || mkdir -p "$TARGET_DIR/.agents/skills"
 [ "$SELECT_CURSOR" -eq 0 ] || mkdir -p "$TARGET_DIR/.cursor/skills" "$TARGET_DIR/.cursor/rules"
 [ "$SELECT_CLAUDE" -eq 0 ] || mkdir -p "$TARGET_DIR/.claude/skills"
+
+info "installing shared runtime and IDE Skill copies"
 
 for skill_name in $CORE_SKILLS; do
   [ -f "$SOURCE_DIR/skills/$skill_name/SKILL.md" ] || fail "missing source Skill: $skill_name"
@@ -351,9 +372,9 @@ if [ -f "$TARGET_DIR/.ai-flow/install/platforms" ]; then
     esac
   done < "$TARGET_DIR/.ai-flow/install/platforms"
 else
-  [ ! -f "$TARGET_DIR/.cursor/rules/ai-flow.mdc" ] || ACTIVE_CURSOR=1
-  [ ! -f "$TARGET_DIR/AGENTS.md" ] || ! grep -q '<!-- ai-flow:start -->' "$TARGET_DIR/AGENTS.md" || ACTIVE_CODEX=1
-  [ ! -f "$TARGET_DIR/.claude/skills/ai-flow/SKILL.md" ] || ACTIVE_CLAUDE=1
+  if [ -f "$TARGET_DIR/.cursor/rules/ai-flow.mdc" ] && has_complete_skill_pack "$TARGET_DIR/.cursor/skills"; then ACTIVE_CURSOR=1; fi
+  if [ -f "$TARGET_DIR/AGENTS.md" ] && grep -q '<!-- ai-flow:start -->' "$TARGET_DIR/AGENTS.md" && has_complete_skill_pack "$TARGET_DIR/.agents/skills"; then ACTIVE_CODEX=1; fi
+  if [ -f "$TARGET_DIR/.claude/skills/ai-flow/SKILL.md" ] && has_complete_skill_pack "$TARGET_DIR/.claude/skills"; then ACTIVE_CLAUDE=1; fi
 fi
 platform_file="$TARGET_DIR/.ai-flow/install/platforms"
 : > "$platform_file"
@@ -362,6 +383,7 @@ platform_file="$TARGET_DIR/.ai-flow/install/platforms"
 [ "$ACTIVE_CLAUDE" -eq 0 ] || printf '%s\n' claude >> "$platform_file"
 printf 'schema_version: 1\nprofile: %s\nplatforms:\n  cursor: %s\n  codex: %s\n  claude_code: %s\n' "$PROFILE" "$ACTIVE_CURSOR" "$ACTIVE_CODEX" "$ACTIVE_CLAUDE" > "$TARGET_DIR/.ai-flow/capabilities.yaml"
 
+info "running installation health check"
 "$TARGET_DIR/.ai-flow/bin/flowctl" doctor --root "$TARGET_DIR"
 active_platform_display=$(tr '\n' ',' < "$platform_file" | sed 's/,$//')
 printf 'Active IDE platforms: %s\n' "$active_platform_display"

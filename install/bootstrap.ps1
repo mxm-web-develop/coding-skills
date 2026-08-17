@@ -35,19 +35,23 @@ New-Item -ItemType Directory -Path $bootstrapDir | Out-Null
 try {
     $archive = Join-Path $bootstrapDir "coding-skills.zip"
     $checksums = Join-Path $bootstrapDir "checksums.txt"
+    Write-Host "ai-flow bootstrap: downloading AI Flow $Version release package"
     Invoke-WebRequest -Uri "$downloadBase/coding-skills.zip" -OutFile $archive
     Invoke-WebRequest -Uri "$downloadBase/checksums.txt" -OutFile $checksums
 
+    Write-Host "ai-flow bootstrap: verifying release checksum"
     $checksumLine = Get-Content -LiteralPath $checksums | Where-Object { $_ -match 'coding-skills\.zip$' } | Select-Object -First 1
     if ($null -eq $checksumLine) { throw "Release checksum does not contain coding-skills.zip" }
     $expected = ($checksumLine -split '\s+')[0].ToLowerInvariant()
     $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($expected -ne $actual) { throw "Release checksum mismatch" }
 
+    Write-Host "ai-flow bootstrap: extracting release package"
     Expand-Archive -LiteralPath $archive -DestinationPath $bootstrapDir
     $sourceDir = Join-Path $bootstrapDir "coding-skills"
     $installer = Join-Path $sourceDir "install/install.ps1"
     if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) { throw "Release package is incomplete" }
+    Write-Host "ai-flow bootstrap: installing into $targetPath"
     & $installer -Command $Command -Target $targetPath -Source $sourceDir -Profile core -Platforms $platformSelection
 } finally {
     if (Test-Path -LiteralPath $bootstrapDir) { Remove-Item -LiteralPath $bootstrapDir -Recurse -Force }

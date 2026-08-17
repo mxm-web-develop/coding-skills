@@ -66,6 +66,8 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 5. 调用包内平台安装器。
 6. 安装完成后删除临时目录。
 
+以上阶段会分别输出下载、校验、解压、安装和健康检查进度。网络下载期间不会再保持完全静默。
+
 ## 3. 指定目标目录和版本
 
 ### Shell 环境变量
@@ -74,21 +76,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.4 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.5 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.4 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.5 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.4"
+$env:AI_FLOW_VERSION="v0.2.5"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
@@ -253,3 +255,7 @@ git pull --ff-only
 4. 安装或更新后必须 Reload IDE Window，并新建一个 Agent chat；Cursor 在启动时发现 Skills，旧会话不会可靠刷新。
 5. Cursor 可输入 `/` 并选择 `initialize-ai-project`；Codex 可从 Skill 选择器选择它；Claude Code 可输入 `/initialize-ai-project` 或 `/ai-flow`。
 6. 如果显式调用能工作而自然语言不触发，检查 `.cursor/rules/ai-flow.mdc`、`AGENTS.md` 或 `CLAUDE.md` 是否被其他更高优先级规则覆盖。
+
+### `platforms OK` 但某个平台的 Skills 全部 missing
+
+这通常是旧安装只残留了 `AGENTS.md`、`CLAUDE.md`、Claude 入口或 Cursor Rule，但原生 Skill 目录已经被删除。`v0.2.5` 起，入口文件和完整的 14 个原生 Skills 必须同时存在才算已安装平台；单独残留的入口不会再污染 `.ai-flow/install/platforms`。重新执行所需平台的 `install` 即可修复。

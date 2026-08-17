@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.2.4 多 IDE 可恢复安装基线
+状态：v0.2.5 多 IDE 安装健康基线
 
 更新日期：2026-08-17
 
@@ -103,7 +103,16 @@
 
 验收：Cursor→Codex→Claude、Claude→Codex→Cursor 和一次性 `--all` 产生相同平台集合；均只有一套 `.ai-flow/` 和 `docs/board/`；新增平台遇到用户自建文件时停止且不覆盖。
 
-## 8. v0.3.0：团队协作与迁移
+## 8. 已完成的 v0.2.5：残留入口识别与安装进度
+
+- 平台探测要求 IDE 入口与完整 14 Skill 原生目录同时存在。
+- 旧 `AGENTS.md`、`CLAUDE.md`、Claude 入口或 Cursor Rule 残留不再单独激活平台。
+- bootstrap 显示下载、校验、解压和安装阶段。
+- 安装器显示目标路径、平台集合、运行时来源、Skill 安装和健康检查阶段。
+
+验收：只残留三端入口、执行 `--cursor` 时仅登记 Cursor 且 doctor 通过；网络下载开始后立即显示阶段进度。
+
+## 9. v0.3.0：团队协作与迁移
 
 - Work Item scope 重叠检测、lease 续期/接管和 worktree 辅助命令。
 - Agent/用户身份、Run、commit、PR 的审计关系。
@@ -114,14 +123,14 @@
 
 验收：多个 Agent 不会静默覆盖同一 revision 或重叠 scope；升级失败不丢项目数据；受保护路径缺少批准时不能进入发布门禁。
 
-## 9. v0.4.0：安全与生产交付 Profile
+## 10. v0.4.0：安全与生产交付 Profile
 
 - `secure`：依赖锁、SBOM、密钥扫描、漏洞证据、威胁模型和安全审批。
 - `delivery`：环境声明、部署证据、渐进发布、回滚和部署审批。
 - `observe`：日志、指标、trace、健康验证、事故记录和恢复报告。
 - MCP 只做能力适配；缺少供应商 MCP 时仍提供 CLI 或人工证据降级路径。
 
-## 10. 持续测试策略
+## 11. 持续测试策略
 
 - Unit：ID、状态转换、revision、锁、checksum、路径和看板汇总。
 - Contract：Skill 的输入、输出、停止条件和允许状态变化。
@@ -133,7 +142,7 @@
 - Release：六个二进制可执行格式、包内容、checksum 和远程 bootstrap。
 - Security：路径穿越、命令参数边界、供应链校验、敏感信息和权限边界。
 
-## 11. Definition of Done
+## 12. Definition of Done
 
 一个版本只有同时满足以下条件才算完成：
 

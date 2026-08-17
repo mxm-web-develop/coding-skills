@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.2.4"
+$PackVersion = "0.2.5"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -136,6 +136,13 @@ function Test-LegacyCodexPack([string]$Path) {
         -and $synchronizer.Contains("# Sync Project Knowledge")
 }
 
+function Test-CompleteSkillPack([string]$Path) {
+    foreach ($skillName in $CoreSkills) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Path "$skillName/SKILL.md") -PathType Leaf)) { return $false }
+    }
+    return $true
+}
+
 $TargetPath = (Resolve-Path -LiteralPath $Target).Path
 if ($TargetPath -eq [System.IO.Path]::GetPathRoot($TargetPath)) {
     throw "Refusing to install at filesystem root"
@@ -203,6 +210,8 @@ if ($Command -ne "uninstall") {
 $SelectCursor = $SelectedPlatforms.Contains("cursor")
 $SelectCodex = $SelectedPlatforms.Contains("codex")
 $SelectClaude = $SelectedPlatforms.Contains("claude")
+$selectedPlatformDisplay = @("cursor", "codex", "claude") | Where-Object { $SelectedPlatforms.Contains($_) }
+Write-Host "ai-flow installer: preparing AI Flow $PackVersion for $TargetPath (platforms: $($selectedPlatformDisplay -join ','))"
 $SelectedSkillRoots = @()
 if ($SelectCodex) { $SelectedSkillRoots += ".agents/skills" }
 if ($SelectCursor) { $SelectedSkillRoots += ".cursor/skills" }
@@ -275,6 +284,7 @@ $architecture = switch ($env:PROCESSOR_ARCHITECTURE) {
 $runtimePath = Join-Path $SourcePath "dist/flowctl-windows-$architecture.exe"
 $buildFromSource = $env:AI_FLOW_BUILD_SOURCE -eq "1"
 if ($buildFromSource -or -not (Test-Path -LiteralPath $runtimePath -PathType Leaf)) {
+    Write-Host "ai-flow installer: building flowctl from source"
     $goCommand = Get-Command go -ErrorAction SilentlyContinue
     if ($null -eq $goCommand) { throw "No compatible flowctl binary found and Go is unavailable" }
     $buildDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ai-flow-" + [guid]::NewGuid())
@@ -282,6 +292,8 @@ if ($buildFromSource -or -not (Test-Path -LiteralPath $runtimePath -PathType Lea
     $runtimePath = Join-Path $buildDir "flowctl.exe"
     Push-Location $SourcePath
     try { & go build -o $runtimePath ./cmd/flowctl } finally { Pop-Location }
+} else {
+    Write-Host "ai-flow installer: using packaged flowctl for windows/$architecture"
 }
 
 $directories = @(".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
@@ -291,6 +303,8 @@ if ($SelectClaude) { $directories += ".claude/skills" }
 foreach ($relativePath in $directories) {
     New-Item -ItemType Directory -Path (Join-Path $TargetPath $relativePath) -Force | Out-Null
 }
+
+Write-Host "ai-flow installer: installing shared runtime and IDE Skill copies"
 
 foreach ($skillName in $CoreSkills) {
     $sourceSkill = Join-Path $SourcePath "skills/$skillName"
@@ -331,10 +345,10 @@ if (Test-Path -LiteralPath $platformFile -PathType Leaf) {
         if ($platform -in @("cursor", "codex", "claude")) { [void]$ActivePlatforms.Add($platform) }
     }
 } else {
-    if (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc")) { [void]$ActivePlatforms.Add("cursor") }
+    if ((Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc")) -and (Test-CompleteSkillPack (Join-Path $TargetPath ".cursor/skills"))) { [void]$ActivePlatforms.Add("cursor") }
     $agentsPath = Join-Path $TargetPath "AGENTS.md"
-    if ((Test-Path -LiteralPath $agentsPath) -and (Select-String -LiteralPath $agentsPath -SimpleMatch '<!-- ai-flow:start -->' -Quiet)) { [void]$ActivePlatforms.Add("codex") }
-    if (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow/SKILL.md")) { [void]$ActivePlatforms.Add("claude") }
+    if ((Test-Path -LiteralPath $agentsPath) -and (Select-String -LiteralPath $agentsPath -SimpleMatch '<!-- ai-flow:start -->' -Quiet) -and (Test-CompleteSkillPack (Join-Path $TargetPath ".agents/skills"))) { [void]$ActivePlatforms.Add("codex") }
+    if ((Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow/SKILL.md")) -and (Test-CompleteSkillPack (Join-Path $TargetPath ".claude/skills"))) { [void]$ActivePlatforms.Add("claude") }
 }
 $activePlatformLines = @("cursor", "codex", "claude") | Where-Object { $ActivePlatforms.Contains($_) }
 Set-Content -LiteralPath $platformFile -Value $activePlatformLines -Encoding utf8
@@ -350,6 +364,7 @@ Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/capabilities.yaml") -V
     "  claude_code: $claudeState"
 ) -Encoding utf8
 
+Write-Host "ai-flow installer: running installation health check"
 & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") doctor --root $TargetPath
 Write-Host "Active IDE platforms: $($activePlatformLines -join ',')"
 Write-Host "AI Flow $PackVersion $Command completed at $TargetPath"

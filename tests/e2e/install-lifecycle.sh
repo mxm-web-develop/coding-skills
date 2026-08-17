@@ -10,9 +10,10 @@ RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-recovery-e2e.XXXXXX")
 RULE_CONFLICT_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-rule-conflict-e2e.XXXXXX")
 CODEX_RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-codex-recovery-e2e.XXXXXX")
 CLAUDE_RECOVERY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-claude-recovery-e2e.XXXXXX")
+STALE_ENTRY_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai-flow-stale-entry-e2e.XXXXXX")
 
 cleanup() {
-  rm -rf "$TEST_ROOT" "$CONFLICT_ROOT" "$NATIVE_CONFLICT_ROOT" "$RECOVERY_ROOT" "$RULE_CONFLICT_ROOT" "$CODEX_RECOVERY_ROOT" "$CLAUDE_RECOVERY_ROOT"
+  rm -rf "$TEST_ROOT" "$CONFLICT_ROOT" "$NATIVE_CONFLICT_ROOT" "$RECOVERY_ROOT" "$RULE_CONFLICT_ROOT" "$CODEX_RECOVERY_ROOT" "$CLAUDE_RECOVERY_ROOT" "$STALE_ENTRY_ROOT"
 }
 trap cleanup EXIT HUP INT TERM
 
@@ -128,5 +129,21 @@ rm -f "$CLAUDE_RECOVERY_ROOT/.claude/skills/ai-flow/.ai-flow-managed"
 "$REPO_ROOT/install/install.sh" install --claude --target "$CLAUDE_RECOVERY_ROOT" --source "$REPO_ROOT" >/dev/null
 [ -f "$CLAUDE_RECOVERY_ROOT/.claude/skills/ai-flow/.ai-flow-managed" ]
 [ "$(sed -n '1p' "$CLAUDE_RECOVERY_ROOT/.ai-flow/install/platforms")" = "claude" ]
+
+# Stale routing entries without their native Skill packs are not active
+# platforms. Installing Cursor must not make doctor validate empty Codex and
+# Claude directories left by a partially deleted old installation.
+mkdir -p "$STALE_ENTRY_ROOT/.cursor/rules" "$STALE_ENTRY_ROOT/.claude/skills"
+cp "$REPO_ROOT/adapters/cursor/ai-flow.mdc" "$STALE_ENTRY_ROOT/.cursor/rules/ai-flow.mdc"
+cp "$REPO_ROOT/adapters/codex/AGENTS.block.md" "$STALE_ENTRY_ROOT/AGENTS.md"
+cp "$REPO_ROOT/adapters/claude/CLAUDE.block.md" "$STALE_ENTRY_ROOT/CLAUDE.md"
+cp -R "$REPO_ROOT/adapters/claude/ai-flow" "$STALE_ENTRY_ROOT/.claude/skills/ai-flow"
+stale_output=$("$REPO_ROOT/install/install.sh" install --cursor --target "$STALE_ENTRY_ROOT" --source "$REPO_ROOT" 2>&1)
+printf '%s\n' "$stale_output" | grep -q 'preparing AI Flow'
+printf '%s\n' "$stale_output" | grep -q 'running installation health check'
+[ "$(tr '\n' ',' < "$STALE_ENTRY_ROOT/.ai-flow/install/platforms")" = "cursor," ]
+[ ! -e "$STALE_ENTRY_ROOT/.agents/skills/initialize-ai-project" ]
+[ ! -e "$STALE_ENTRY_ROOT/.claude/skills/initialize-ai-project" ]
+"$STALE_ENTRY_ROOT/.ai-flow/bin/flowctl" doctor --root "$STALE_ENTRY_ROOT" >/dev/null
 
 printf '%s\n' "AI Flow install lifecycle E2E passed"
