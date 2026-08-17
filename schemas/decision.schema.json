@@ -4,7 +4,7 @@
   "title": "AI Flow Architecture Decision",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "id", "revision", "status", "title", "context", "decision_type", "evaluation_criteria", "options", "recommended_option", "recommendation_reason", "confirmation", "decision", "consequences", "created_at", "updated_at"],
+  "required": ["schema_version", "id", "revision", "status", "title", "context", "decision", "consequences", "created_at", "updated_at"],
   "properties": {
     "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
     "id": { "$ref": "common.schema.json#/$defs/decisionId" },
@@ -61,5 +61,24 @@
     "superseded_by": { "type": ["string", "null"], "pattern": "^ADR-[0-9]{8}-[a-f0-9]{8}$" },
     "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
     "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["decision_type"] },
+      "then": {
+        "required": ["decision_type", "evaluation_criteria", "options", "recommended_option", "recommendation_reason", "confirmation"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "decision_type": { "const": "frontend-ux-ui" } },
+        "required": ["decision_type"]
+      },
+      "then": {
+        "properties": {
+          "options": { "minItems": 2, "maxItems": 3 }
+        }
+      }
+    }
+  ]
 }

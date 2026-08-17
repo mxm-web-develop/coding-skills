@@ -36,10 +36,6 @@ func validateSolutionDecisions(root string) []validationIssue {
 			continue
 		}
 		if strings.TrimSpace(decision.DecisionType) == "" {
-			add := func(message string) {
-				issues = append(issues, validationIssue{Path: relativeDisplay(root, path), Schema: "solution-confirmation", Message: message})
-			}
-			add("decision must declare its product or technical decision type")
 			continue
 		}
 		add := func(message string) {
@@ -68,6 +64,8 @@ func validateSolutionDecisions(root string) []validationIssue {
 		if strings.TrimSpace(decision.RecommendationReason) == "" {
 			add("interactive solution decision must explain the recommendation")
 		}
+		prototypeCount := 0
+		prototypePaths := map[string]bool{}
 		if decision.Confirmation == nil {
 			add("interactive solution decision must record whether the user has confirmed a direction")
 			continue
@@ -81,6 +79,34 @@ func validateSolutionDecisions(root string) []validationIssue {
 		}
 		if decision.Status == "accepted" && (decision.Confirmation.Status != "confirmed" || selected == "") {
 			add("accepted interactive solution decision requires a confirmed option")
+		}
+		if decision.DecisionType == "frontend-ux-ui" {
+			if len(decision.Options) < 2 || len(decision.Options) > 3 {
+				add("frontend UX decision should compare two or three HTML directions")
+			}
+			for _, option := range decision.Options {
+				if option.PrototypePath == nil || strings.TrimSpace(*option.PrototypePath) == "" {
+					add("frontend UX decision must keep every compared direction in an HTML prototype")
+					continue
+				}
+				prototypeCount++
+				normalized := filepath.ToSlash(strings.TrimSpace(*option.PrototypePath))
+				if prototypePaths[normalized] {
+					add("frontend UX decision must use distinct prototype files")
+					continue
+				}
+				prototypePaths[normalized] = true
+				if err := validatePrototypePath(root, *option.PrototypePath); err != nil {
+					add(fmt.Sprintf("prototype for option %s is unavailable or unsafe: %v", option.Name, err))
+					continue
+				}
+				if err := validatePrototypeExperience(root, *option.PrototypePath); err != nil {
+					add(fmt.Sprintf("prototype for option %s does not show responsive, interactive HTML evidence: %v", option.Name, err))
+				}
+			}
+			if prototypeCount < 2 {
+				add("frontend UX decision must include at least two distinct prototype directions")
+			}
 		}
 	}
 	return issues
@@ -106,6 +132,24 @@ func validatePrototypePath(root, prototypePath string) error {
 	}
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("path is not a regular file")
+	}
+	return nil
+}
+
+func validatePrototypeExperience(root, prototypePath string) error {
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(strings.TrimSpace(prototypePath))))
+	if err != nil {
+		return err
+	}
+	normalized := strings.ToLower(string(data))
+	if !strings.Contains(normalized, "meta name=\"viewport\"") {
+		return fmt.Errorf("missing responsive viewport metadata")
+	}
+	if !strings.Contains(normalized, "<button") && !strings.Contains(normalized, "href=") && !strings.Contains(normalized, "role=\"button\"") {
+		return fmt.Errorf("missing clickable interaction evidence")
+	}
+	if !strings.Contains(normalized, "@media") && !strings.Contains(normalized, "prefers-reduced-motion") && !strings.Contains(normalized, "transition") && !strings.Contains(normalized, "animation") {
+		return fmt.Errorf("missing responsive or motion evidence")
 	}
 	return nil
 }
