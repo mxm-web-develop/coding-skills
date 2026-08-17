@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/requirement.schema.json",
+  "title": "AI Flow Requirement",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "goal_id", "status", "statement", "acceptance_criteria", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/requirementId" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "goal_id": { "$ref": "common.schema.json#/$defs/goalId" },
+    "status": { "$ref": "common.schema.json#/$defs/status" },
+    "statement": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "acceptance_criteria": { "$ref": "common.schema.json#/$defs/stringList" },
+    "source_confidence": { "$ref": "common.schema.json#/$defs/sourceConfidence" },
+    "dependencies": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "uniqueItems": true },
+    "test_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/testId" }, "uniqueItems": true },
+    "supersedes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "uniqueItems": true },
+    "superseded_by": { "type": ["string", "null"], "pattern": "^REQ-[0-9]{8}-[a-f0-9]{8}$" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

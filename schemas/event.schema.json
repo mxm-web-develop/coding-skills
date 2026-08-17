@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/event.schema.json",
+  "title": "AI Flow Append-only Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "type", "object_type", "object_id", "timestamp"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "type": "string", "pattern": "^EVT-[0-9]{8}-[a-f0-9]{8}$" },
+    "type": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "object_type": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "object_id": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "run_id": { "type": "string" },
+    "revision": { "type": "integer", "minimum": 0 },
+    "timestamp": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "data": { "type": "object" }
+  }
+}

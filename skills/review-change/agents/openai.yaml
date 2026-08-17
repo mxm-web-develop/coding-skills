@@ -1,0 +1,4 @@
+interface:
+  display_name: "review-change"
+  short_description: "Run the review-change AI Flow workflow"
+  default_prompt: "Use $review-change to manage this AI Flow step."

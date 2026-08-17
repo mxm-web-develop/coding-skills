@@ -1,0 +1,55 @@
+schema_version: 1
+
+roots:
+  machine: .ai-flow
+  human: docs/board
+  shared_skills: .agents/skills
+
+machine_files:
+  manifest: .ai-flow/manifest.yaml
+  skill_lock: .ai-flow/skill-pack.lock.yaml
+  project_config: .ai-flow/project.yaml
+  capabilities: .ai-flow/capabilities.yaml
+  current_state: .ai-flow/state/current.yaml
+
+machine_directories:
+  append_only:
+    - .ai-flow/events
+    - .ai-flow/evidence
+  versioned_objects:
+    - .ai-flow/baseline
+    - .ai-flow/goals
+    - .ai-flow/requirements
+    - .ai-flow/plans
+    - .ai-flow/work-items
+    - .ai-flow/decisions
+    - .ai-flow/tests
+    - .ai-flow/runs
+    - .ai-flow/reports
+    - .ai-flow/releases
+  coordination:
+    - .ai-flow/locks
+  historical:
+    - .ai-flow/archive
+
+human_files:
+  - docs/board/STATUS.md
+  - docs/board/ROADMAP.md
+  - docs/board/CURRENT_STATE.md
+  - docs/board/RELEASES.md
+
+platform_entries:
+  cursor:
+    - .cursor/rules/ai-flow.mdc
+  codex:
+    - AGENTS.md
+  claude_code:
+    - CLAUDE.md
+    - .claude/skills/ai-flow/SKILL.md
+
+rules:
+  machine_state_is_source_of_truth: true
+  human_board_is_generated: true
+  arbitrary_workflow_docs_forbidden: true
+  archived_objects_excluded_from_active_context: true
+  generated_platform_entries_must_preserve_user_content: true

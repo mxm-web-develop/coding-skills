@@ -1,0 +1,4 @@
+interface:
+  display_name: "orchestrate-ai-delivery"
+  short_description: "Run the orchestrate-ai-delivery AI Flow workflow"
+  default_prompt: "Use $orchestrate-ai-delivery to manage this AI Flow step."

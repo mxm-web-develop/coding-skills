@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/test-spec.schema.json",
+  "title": "AI Flow Test Specification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "requirement_ids", "work_item_id", "level", "purpose", "command", "expected_result", "status", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/testId" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "requirement_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "minItems": 1, "uniqueItems": true },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "level": { "type": "string", "enum": ["unit", "integration", "contract", "end_to_end", "migration", "performance", "security"] },
+    "purpose": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "preconditions": { "$ref": "common.schema.json#/$defs/stringList" },
+    "command": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "expected_result": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "status": { "type": "string", "enum": ["draft", "red", "green", "blocked", "retired"] },
+    "evidence_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/evidenceId" }, "uniqueItems": true },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

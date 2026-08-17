@@ -1,0 +1,4 @@
+interface:
+  display_name: "integrate-git-change"
+  short_description: "Run the integrate-git-change AI Flow workflow"
+  default_prompt: "Use $integrate-git-change to manage this AI Flow step."

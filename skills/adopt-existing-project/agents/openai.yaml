@@ -1,0 +1,4 @@
+interface:
+  display_name: "adopt-existing-project"
+  short_description: "Run the adopt-existing-project AI Flow workflow"
+  default_prompt: "Use $adopt-existing-project to manage this AI Flow step."

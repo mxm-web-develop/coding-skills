@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/evidence.schema.json",
+  "title": "AI Flow Verification Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "work_item_id", "run_id", "test_id", "source", "trust", "result", "command", "exit_code", "git_sha", "started_at", "ended_at", "log_path", "log_sha256", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/evidenceId" },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "run_id": { "$ref": "common.schema.json#/$defs/runId" },
+    "test_id": { "type": "string", "minLength": 1 },
+    "source": { "type": "string", "enum": ["local", "ci", "external", "agent-claim"] },
+    "trust": { "type": "string", "enum": ["verified-local", "verified-ci", "unverified"] },
+    "result": { "type": "string", "enum": ["passed", "failed", "blocked", "unverified"] },
+    "command": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "exit_code": { "type": "integer" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "environment": { "type": "object", "additionalProperties": { "type": "string" } },
+    "started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "ended_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "log_path": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "log_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+    "external_uri": { "type": ["string", "null"], "format": "uri-reference" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

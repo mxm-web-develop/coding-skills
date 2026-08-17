@@ -1,0 +1,4 @@
+interface:
+  display_name: "research-and-design-solution"
+  short_description: "Run the research-and-design-solution AI Flow workflow"
+  default_prompt: "Use $research-and-design-solution to manage this AI Flow step."

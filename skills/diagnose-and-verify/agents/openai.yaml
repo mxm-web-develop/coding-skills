@@ -1,0 +1,4 @@
+interface:
+  display_name: "diagnose-and-verify"
+  short_description: "Run the diagnose-and-verify AI Flow workflow"
+  default_prompt: "Use $diagnose-and-verify to manage this AI Flow step."

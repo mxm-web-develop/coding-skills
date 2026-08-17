@@ -1,0 +1,4 @@
+interface:
+  display_name: "specify-tests"
+  short_description: "Run the specify-tests AI Flow workflow"
+  default_prompt: "Use $specify-tests to manage this AI Flow step."

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/checkpoint.schema.json",
+  "title": "AI Flow Harness Checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "run_id", "work_item_id", "sequence", "phase", "summary", "next_action", "git_sha", "completed_steps", "created_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/checkpointId" },
+    "run_id": { "$ref": "common.schema.json#/$defs/runId" },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "phase": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "summary": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "next_action": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "completed_steps": { "$ref": "common.schema.json#/$defs/stringList" },
+    "changed_files": { "$ref": "common.schema.json#/$defs/stringList" },
+    "open_questions": { "$ref": "common.schema.json#/$defs/stringList" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

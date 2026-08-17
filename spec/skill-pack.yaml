@@ -1,0 +1,68 @@
+schema_version: 1
+pack:
+  name: mxm-ai-flow
+  version: 0.1.0
+  canonical_skill_root: skills
+  target_skill_root: .agents/skills
+  machine_state_root: .ai-flow
+  human_board_root: docs/board
+
+compatibility:
+  standard: agent-skills
+  required_frontmatter:
+    - name
+    - description
+  forbidden_core_dependencies:
+    - vendor_specific_frontmatter
+    - vendor_specific_tool_names
+    - mandatory_mcp
+    - mandatory_subagents
+    - mandatory_hooks
+
+profiles:
+  core:
+    required: true
+    skills:
+      - initialize-ai-project
+      - orchestrate-ai-delivery
+      - adopt-existing-project
+      - discover-product-goal
+      - plan-product-delivery
+      - research-and-design-solution
+      - specify-tests
+      - implement-work-item
+      - diagnose-and-verify
+      - review-change
+      - integrate-git-change
+      - manage-release
+      - sync-project-knowledge
+  team:
+    extends: core
+    skills: []
+    enables:
+      - multi_agent_leases
+      - worktrees
+      - approval_matrix
+      - protected_path_owners
+  secure:
+    extends: team
+    skills:
+      - assess-security-and-supply-chain
+  delivery:
+    extends: secure
+    skills:
+      - deploy-release
+      - observe-and-recover
+
+platform_entries:
+  cursor:
+    discovery_root: .agents/skills
+    persistent_route: .cursor/rules/ai-flow.mdc
+  codex:
+    discovery_root: .agents/skills
+    persistent_route: AGENTS.md
+  claude_code:
+    discovery_root: .claude/skills
+    entry_skill: ai-flow
+    delegates_to: .agents/skills/orchestrate-ai-delivery/SKILL.md
+    persistent_route: CLAUDE.md

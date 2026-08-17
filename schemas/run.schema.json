@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/run.schema.json",
+  "title": "AI Flow Harness Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "work_item_id", "owner", "status", "phase", "git_sha", "checkpoint_ids", "evidence_ids", "started_at", "updated_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/runId" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "owner": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "status": { "type": "string", "enum": ["ready", "running", "checkpointed", "verifying", "reviewing", "completed", "blocked", "failed", "cancelled"] },
+    "phase": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "checkpoint_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/checkpointId" }, "uniqueItems": true },
+    "evidence_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/evidenceId" }, "uniqueItems": true },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_elapsed_minutes": { "type": "integer", "minimum": 1 },
+        "max_retries": { "type": "integer", "minimum": 0 },
+        "max_changed_files": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "started_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "completed_at": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

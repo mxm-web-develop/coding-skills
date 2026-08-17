@@ -1,0 +1,4 @@
+interface:
+  display_name: "plan-product-delivery"
+  short_description: "Run the plan-product-delivery AI Flow workflow"
+  default_prompt: "Use $plan-product-delivery to manage this AI Flow step."

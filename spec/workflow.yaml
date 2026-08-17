@@ -1,0 +1,101 @@
+schema_version: 1
+
+states:
+  - intake
+  - baselining
+  - goal_alignment
+  - planning
+  - researching
+  - test_specification
+  - implementing
+  - verifying
+  - reviewing
+  - integrating
+  - releasing
+  - syncing
+  - completed
+  - blocked
+  - failed
+  - cancelled
+
+entry_routes:
+  status_query:
+    sequence:
+      - orchestrate-ai-delivery
+      - flowctl_status
+    mutates_project: false
+  greenfield_goal:
+    sequence:
+      - initialize-ai-project
+      - discover-product-goal
+      - plan-product-delivery
+  existing_project_goal:
+    sequence:
+      - initialize-ai-project
+      - adopt-existing-project
+      - discover-product-goal
+      - plan-product-delivery
+  bug_fix:
+    sequence:
+      - orchestrate-ai-delivery
+      - specify-tests
+      - diagnose-and-verify
+      - review-change
+      - integrate-git-change
+      - manage-release
+      - sync-project-knowledge
+  feature_delivery:
+    sequence:
+      - orchestrate-ai-delivery
+      - discover-product-goal
+      - plan-product-delivery
+      - research-and-design-solution
+      - specify-tests
+      - implement-work-item
+      - diagnose-and-verify
+      - review-change
+      - integrate-git-change
+      - manage-release
+      - sync-project-knowledge
+
+required_traceability:
+  - goal_to_requirement
+  - requirement_to_work_item
+  - requirement_to_test
+  - work_item_to_commit
+  - commit_to_evidence
+  - evidence_to_release
+
+release_gates:
+  - schema_valid
+  - traceability_complete
+  - required_tests_verified
+  - blocking_review_findings_resolved
+  - git_revision_matches_evidence
+  - active_documents_not_superseded
+  - board_rendered_from_current_state
+
+harness:
+  states:
+    - ready
+    - running
+    - checkpointed
+    - verifying
+    - reviewing
+    - completed
+    - blocked
+    - failed
+    - cancelled
+  checkpoint_before:
+    - context_compaction
+    - external_wait
+    - user_pause
+    - retry
+    - phase_transition
+  required_budgets:
+    - elapsed_time
+    - retries
+    - change_scope
+  optional_budgets:
+    - tokens
+    - cost

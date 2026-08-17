@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/release.schema.json",
+  "title": "AI Flow Release",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "status", "previous_version", "version", "work_item_ids", "commit_shas", "evidence_ids", "summary", "known_issues", "rollback", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/releaseId" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "status": { "type": "string", "enum": ["planned", "ready", "released", "withdrawn"] },
+    "previous_version": { "type": "string" },
+    "version": { "type": "string", "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$" },
+    "work_item_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/workItemId" }, "uniqueItems": true },
+    "commit_shas": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/gitSha" }, "uniqueItems": true },
+    "evidence_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/evidenceId" }, "uniqueItems": true },
+    "summary": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "known_issues": { "$ref": "common.schema.json#/$defs/stringList" },
+    "migration": { "type": "string" },
+    "rollback": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "tag": { "type": ["string", "null"] },
+    "remote_url": { "type": ["string", "null"], "format": "uri-reference" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

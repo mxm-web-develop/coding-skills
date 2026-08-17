@@ -1,0 +1,4 @@
+interface:
+  display_name: "initialize-ai-project"
+  short_description: "Run the initialize-ai-project AI Flow workflow"
+  default_prompt: "Use $initialize-ai-project to manage this AI Flow step."

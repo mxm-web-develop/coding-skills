@@ -1,0 +1,4 @@
+interface:
+  display_name: "sync-project-knowledge"
+  short_description: "Run the sync-project-knowledge AI Flow workflow"
+  default_prompt: "Use $sync-project-knowledge to manage this AI Flow step."

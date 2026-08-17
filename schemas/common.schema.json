@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/common.schema.json",
+  "title": "AI Flow common definitions",
+  "$defs": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "nonEmpty": { "type": "string", "minLength": 1 },
+    "goalId": { "type": "string", "pattern": "^GOAL-[0-9]{8}-[a-f0-9]{8}$" },
+    "requirementId": { "type": "string", "pattern": "^REQ-[0-9]{8}-[a-f0-9]{8}$" },
+    "planId": { "type": "string", "pattern": "^PLAN-[0-9]{8}-[a-f0-9]{8}$" },
+    "workItemId": { "type": "string", "pattern": "^WI-[0-9]{8}-[a-f0-9]{8}$" },
+    "decisionId": { "type": "string", "pattern": "^ADR-[0-9]{8}-[a-f0-9]{8}$" },
+    "testId": { "type": "string", "pattern": "^TEST-[0-9]{8}-[a-f0-9]{8}$" },
+    "evidenceId": { "type": "string", "pattern": "^EV-[0-9]{8}-[a-f0-9]{8}$" },
+    "runId": { "type": "string", "pattern": "^RUN-[0-9]{8}-[a-f0-9]{8}$" },
+    "checkpointId": { "type": "string", "pattern": "^CP-[0-9]{8}-[a-f0-9]{8}$" },
+    "releaseId": { "type": "string", "pattern": "^REL-[0-9]{8}-[a-f0-9]{8}$" },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "accepted", "superseded", "archived", "rejected", "cancelled"]
+    },
+    "sourceConfidence": {
+      "type": "string",
+      "enum": ["observed", "inferred", "user-confirmed"]
+    },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "gitSha": { "type": "string", "pattern": "^([a-f0-9]{7,64}|unknown|not-a-git-repository)$" },
+    "stringList": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true
+    }
+  }
+}

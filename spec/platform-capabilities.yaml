@@ -1,0 +1,56 @@
+schema_version: 1
+
+portable_required:
+  - read_project_files
+  - write_project_files
+  - run_local_commands
+  - inspect_git
+  - load_skill_markdown
+
+capabilities:
+  cursor:
+    native_skill_standard: agent-skills
+    native_project_skill_paths:
+      - .agents/skills
+      - .cursor/skills
+    compatibility_skill_paths:
+      - .claude/skills
+      - .codex/skills
+    persistent_instruction: .cursor/rules/ai-flow.mdc
+    explicit_invocation: slash
+    optional:
+      - hooks
+      - subagents
+      - mcp
+      - cloud_agents
+  codex:
+    native_skill_standard: agent-skills
+    native_project_skill_paths:
+      - .agents/skills
+    persistent_instruction: AGENTS.md
+    explicit_invocation: skill_selector
+    optional:
+      - hooks
+      - subagents
+      - mcp
+      - long_running_goal
+  claude_code:
+    native_skill_standard: agent-skills
+    native_project_skill_paths:
+      - .claude/skills
+    persistent_instruction: CLAUDE.md
+    explicit_invocation: slash
+    optional:
+      - hooks
+      - subagents
+      - mcp
+      - goals
+      - background_agents
+
+degradation_rules:
+  hooks_unavailable: enforce_with_flowctl_and_ci
+  subagents_unavailable: run_work_items_serially
+  mcp_unavailable: use_local_cli_files_or_user_supplied_evidence
+  background_unavailable: resume_from_repository_checkpoint
+  remote_issue_tracker_unavailable: use_local_work_items
+  ci_unavailable: mark_evidence_local_and_require_explicit_release_policy

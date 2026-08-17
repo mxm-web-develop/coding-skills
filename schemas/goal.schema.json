@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/goal.schema.json",
+  "title": "AI Flow Goal",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "revision", "status", "title", "problem", "outcome", "actors", "in_scope", "non_goals", "acceptance_criteria", "created_at", "updated_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "id": { "$ref": "common.schema.json#/$defs/goalId" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "status": { "$ref": "common.schema.json#/$defs/status" },
+    "title": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "problem": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "outcome": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "actors": { "$ref": "common.schema.json#/$defs/stringList" },
+    "in_scope": { "$ref": "common.schema.json#/$defs/stringList" },
+    "non_goals": { "$ref": "common.schema.json#/$defs/stringList" },
+    "constraints": { "$ref": "common.schema.json#/$defs/stringList" },
+    "acceptance_criteria": { "$ref": "common.schema.json#/$defs/stringList" },
+    "success_measures": { "$ref": "common.schema.json#/$defs/stringList" },
+    "risks": { "$ref": "common.schema.json#/$defs/stringList" },
+    "open_questions": { "$ref": "common.schema.json#/$defs/stringList" },
+    "target_release": { "type": "string" },
+    "supersedes": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/goalId" }, "uniqueItems": true },
+    "superseded_by": { "type": ["string", "null"], "pattern": "^GOAL-[0-9]{8}-[a-f0-9]{8}$" },
+    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}

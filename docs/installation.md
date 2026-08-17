@@ -1,0 +1,191 @@
+# 安装、更新和卸载
+
+## 1. 支持环境
+
+| 系统 | 架构 | 安装入口 |
+| --- | --- | --- |
+| macOS | amd64、arm64 | `bootstrap.sh` |
+| Linux / WSL | amd64、arm64 | `bootstrap.sh` |
+| Windows PowerShell | amd64、arm64 | `bootstrap.ps1` |
+
+Release 包内包含静态 Go 二进制，目标项目无需安装 Go、Node.js 或 Python。
+
+## 2. 一行式安装
+
+先进入目标项目根目录。
+
+### macOS / Linux / WSL
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh
+```
+
+### Windows PowerShell
+
+```powershell
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+```
+
+远程 bootstrap 过程：
+
+1. 从 GitHub Releases 下载 `coding-skills.tar.gz` 或 `coding-skills.zip`。
+2. 下载 `checksums.txt`。
+3. 校验压缩包 SHA-256。
+4. 解压到临时目录。
+5. 调用包内平台安装器。
+6. 安装完成后删除临时目录。
+
+## 3. 指定目标目录和版本
+
+### Shell 环境变量
+
+使用环境变量：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.1.0 sh
+```
+
+也可以传参：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | sh -s -- --version v0.1.0 --target /path/to/project
+```
+
+### PowerShell 环境变量
+
+```powershell
+$env:AI_FLOW_TARGET="C:\work\my-project"
+$env:AI_FLOW_VERSION="v0.1.0"
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+Remove-Item Env:AI_FLOW_TARGET
+Remove-Item Env:AI_FLOW_VERSION
+```
+
+## 4. 从 Git clone 安装
+
+```bash
+git clone https://github.com/mxm-web-develop/coding-skills.git
+cd coding-skills
+./install/install.sh install --target /path/to/project --source .
+```
+
+PowerShell：
+
+```powershell
+git clone https://github.com/mxm-web-develop/coding-skills.git
+cd coding-skills
+.\install\install.ps1 -Command install -Target C:\work\my-project -Source .
+```
+
+源码安装优先使用 `dist/` 中与当前系统匹配的二进制。没有匹配二进制时，如果本机安装了 Go，则现场构建。
+
+## 5. 安装内容
+
+```text
+.agents/skills/<13 core skills>/
+.claude/skills/ai-flow/SKILL.md
+.cursor/rules/ai-flow.mdc
+.ai-flow/bin/flowctl[.exe]
+.ai-flow/runtime/schemas/*.schema.json
+.ai-flow/install/version
+.ai-flow/install/profile
+.ai-flow/capabilities.yaml
+AGENTS.md       # 添加带标记的 AI Flow 区块
+CLAUDE.md       # 添加带标记的 AI Flow 区块
+```
+
+安装器只维护 `<!-- ai-flow:start -->` 与 `<!-- ai-flow:end -->` 之间的内容，不覆盖文件中其他说明。
+
+## 6. 安装与初始化的区别
+
+安装完成时可能看到：
+
+```text
+project-state WARNING run initialize-ai-project when not initialized
+```
+
+这是正常状态。安装器不应该判断一个代码仓库当前开发到了哪里。请随后在 IDE 中提出“初始化这个项目”，或手动执行 `flowctl project init`。
+
+## 7. 更新
+
+### 远程更新
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_COMMAND=update sh
+```
+
+```powershell
+$env:AI_FLOW_COMMAND="update"
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+Remove-Item Env:AI_FLOW_COMMAND
+```
+
+### 本地更新
+
+```bash
+git pull --ff-only
+./install/install.sh update --target /path/to/project --source .
+```
+
+更新会替换工具管理的 Skills、入口、Schema 和二进制，不修改项目对象和人读看板。
+
+## 8. 卸载
+
+```bash
+./install/install.sh uninstall --target /path/to/project --source .
+```
+
+```powershell
+.\install\install.ps1 -Command uninstall -Target C:\work\my-project -Source .
+```
+
+卸载保留：
+
+- `.ai-flow/manifest.yaml`
+- Goals、Requirements、Work Items、Runs、Checkpoints、Evidence、Releases 和 archive
+- `docs/board/`
+- 用户原有 `AGENTS.md`、`CLAUDE.md` 内容
+
+如需删除项目数据，必须由用户另外明确处理。
+
+## 9. 健康检查
+
+```bash
+.ai-flow/bin/flowctl doctor --root .
+```
+
+检查内容：
+
+- 当前平台二进制。
+- 13 个 Core Skills。
+- Cursor、Codex、Claude Code 入口。
+- JSON Schema 安装数量。
+- 项目是否已经初始化。
+
+## 10. 常见问题
+
+### 安装器拒绝覆盖同名 Skill
+
+目标项目存在未被 AI Flow 管理的同名 Skill。安装器会停止，避免破坏用户文件。先检查冲突内容，再决定重命名或人工合并。
+
+### `update` 或 `uninstall` 提示没有安装标记
+
+只有存在 `.ai-flow/install/version` 时，安装器才认为这些文件由自己管理。不要手工创建标记来绕过保护，应重新执行正常安装或人工检查目录。
+
+### 找不到 Release
+
+确认仓库至少发布了一个 GitHub Release，并检查 `AI_FLOW_VERSION` 是否为实际 tag。
+
+### checksum 失败
+
+不要绕过。重新下载；若持续失败，检查代理、缓存和 GitHub Release 资产是否匹配。
+
+### IDE 没有发现 Skill
+
+1. 运行 `flowctl doctor`。
+2. 确认当前 IDE 打开的是目标项目根目录。
+3. 重新启动 IDE/Agent 会话，使其重新扫描 Skill。
+4. Claude Code 使用 `/ai-flow` 入口；公共业务 Skill 保存在 `.agents/skills/`。

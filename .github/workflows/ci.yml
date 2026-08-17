@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Go tests
+        run: go test ./...
+      - name: Go vet
+        run: go vet ./...
+      - name: Validate scripts and schemas
+        run: |
+          sh -n install/install.sh install/bootstrap.sh tests/e2e/*.sh
+          for schema in schemas/*.json; do jq empty "$schema"; done
+      - name: Run end-to-end workflow
+        run: |
+          for script in tests/e2e/*.sh; do "$script"; done

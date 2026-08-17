@@ -1,0 +1,4 @@
+interface:
+  display_name: "discover-product-goal"
+  short_description: "Run the discover-product-goal AI Flow workflow"
+  default_prompt: "Use $discover-product-goal to manage this AI Flow step."

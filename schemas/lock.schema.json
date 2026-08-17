@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/lock.schema.json",
+  "title": "AI Flow Work Item Lease",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "work_item_id", "run_id", "owner", "scope", "acquired_at", "expires_at"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "work_item_id": { "$ref": "common.schema.json#/$defs/workItemId" },
+    "run_id": { "$ref": "common.schema.json#/$defs/runId" },
+    "owner": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "scope": { "$ref": "common.schema.json#/$defs/stringList" },
+    "acquired_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "expires_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+  }
+}
