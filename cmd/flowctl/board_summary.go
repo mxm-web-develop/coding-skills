@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -415,6 +416,57 @@ func humanAction(action string) string {
 		return label
 	}
 	return "查看项目记录并确认下一步"
+}
+
+func decisionCurrentChoice(decision boardDecision) string {
+	if decision.Status == "accepted" && strings.TrimSpace(decision.Decision) != "" {
+		return decision.Decision
+	}
+	if decision.Confirmation != nil && decision.Confirmation.SelectedOption != nil {
+		if selected := strings.TrimSpace(*decision.Confirmation.SelectedOption); selected != "" {
+			return selected
+		}
+	}
+	if strings.TrimSpace(decision.RecommendedOption) != "" {
+		return "建议采用" + decision.RecommendedOption
+	}
+	return decision.Decision
+}
+
+func decisionConfirmationStatus(decision boardDecision) string {
+	if decision.Confirmation == nil {
+		return humanStatus(decision.Status)
+	}
+	labels := map[string]string{
+		"pending": "等待你确认", "confirmed": "已确认", "declined": "未采用", "revisit": "需要再比较",
+	}
+	return firstNonEmpty(labels[decision.Confirmation.Status], humanStatus(decision.Status))
+}
+
+func prototypeChoiceStatus(decision boardDecision, optionName string) string {
+	if decision.Confirmation != nil && decision.Confirmation.SelectedOption != nil &&
+		strings.TrimSpace(*decision.Confirmation.SelectedOption) == optionName {
+		return "已选择"
+	}
+	if strings.TrimSpace(decision.RecommendedOption) == optionName {
+		return "建议方向"
+	}
+	return "供比较"
+}
+
+func prototypePreviewLink(prototypePath string) string {
+	normalized := filepath.ToSlash(strings.TrimSpace(prototypePath))
+	if (!strings.HasPrefix(normalized, ".ai-flow/prototypes/") && !strings.HasPrefix(normalized, ".ai-flow/archive/design-explorations/")) ||
+		strings.Contains(normalized, "\n") || strings.Contains(normalized, "\r") ||
+		strings.Contains(normalized, "<") || strings.Contains(normalized, ">") {
+		return "预览文件待生成"
+	}
+	for _, segment := range strings.Split(normalized, "/") {
+		if segment == ".." {
+			return "预览文件待生成"
+		}
+	}
+	return fmt.Sprintf("[打开体验方案](<../../%s>)", normalized)
 }
 
 func mdCell(value string) string {

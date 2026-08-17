@@ -21,7 +21,7 @@ Explain the active goal in product language. Show target versions, development s
 
 ## CURRENT_STATE.md
 
-Show the current version and phase, confirmed needs for the active goal, current architecture/technical decisions, detected languages/frameworks/code organization, applicable development/testing approach, visual-check expectations, boundaries, risks, and unresolved technical facts.
+Show the current version and phase, confirmed needs for the active goal, current architecture/technical decisions, recommendation reasons and confirmation state, detected languages/frameworks/code organization, applicable development/testing approach, visual-check expectations, boundaries, risks, and unresolved technical facts. When an active UX/UI decision has HTML explorations, show a compact preview table with plain-language differences and safe clickable links.
 
 ## RELEASES.md
 
@@ -32,7 +32,7 @@ Render actual releases in descending semantic-version order. For each release sh
 - Use short natural-language labels for machine states and phases.
 - Do not display internal object names, raw IDs, state values, Skill names, Playbook names, abbreviations, hashes, machine directories, or storage implementation notes in the main board.
 - Prefer “开发阶段”“开发任务”“测试结果”“完成条件”“技术环境”“开发与测试规范” over Milestone, Work Item, Evidence, Gate, engineering profile, or Playbook.
-- Preserve exact machine-object traceability in non-rendered HTML comments generated with the board. Do not show raw identifiers or machine paths in the rendered page, and never require them to understand status.
+- Preserve exact machine-object traceability in non-rendered HTML comments generated with the board. Do not show raw identifiers or machine paths in the rendered page, and never require them to understand status. A validated clickable preview link is allowed when the path is required for the user to open an HTML experience exploration.
 - Use “未记录”“待确认” or “尚无证据” when facts are absent; never infer a positive result.
 - Escape table delimiters and collapse multiline text inside cells.
 - Keep archived/superseded objects out of current tables.

@@ -16,6 +16,7 @@ machine_files:
   engineering_profile: .ai-flow/baseline/engineering-profile.json
   workspace_document_inventory: .ai-flow/baseline/workspace-document-inventory.json
   workspace_structure_inventory: .ai-flow/baseline/workspace-structure-inventory.json
+  active_explorations: .ai-flow/prototypes
 
 machine_directories:
   append_only:
@@ -33,6 +34,8 @@ machine_directories:
     - .ai-flow/reports
     - .ai-flow/releases
     - .ai-flow/workspace-cleanup
+  working_artifacts:
+    - .ai-flow/prototypes
   coordination:
     - .ai-flow/locks
   historical:
@@ -40,6 +43,7 @@ machine_directories:
     - .ai-flow/archive/legacy-documents
     - .ai-flow/archive/legacy-code
     - .ai-flow/archive/legacy-files
+    - .ai-flow/archive/design-explorations
 
 human_files:
   - docs/board/STATUS.md
@@ -77,3 +81,6 @@ rules:
   workspace_cleanup_requires_explicit_post_initialization_request: true
   workspace_cleanup_requires_path_level_approval: true
   workspace_cleanup_is_component_and_language_aware: true
+  material_technical_choices_require_user_confirmation: true
+  uncertain_frontend_directions_use_isolated_html_explorations: true
+  ux_prototypes_are_not_production_code: true

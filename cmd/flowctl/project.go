@@ -36,7 +36,7 @@ func runProjectInit(args []string) error {
 	dirs := []string{
 		"state", "events", "baseline", "goals", "requirements", "plans",
 		"work-items", "decisions", "tests", "evidence", "runs", "reports",
-		"releases", "locks", "workspace-cleanup", "archive",
+		"releases", "locks", "workspace-cleanup", "prototypes", "archive",
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(filepath.Join(root, ".ai-flow", dir), 0o755); err != nil {

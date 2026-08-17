@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.2.6"
+$PackVersion = "0.3.0"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",

@@ -17,11 +17,12 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 4. Move superseded AI Flow snapshots to `.ai-flow/archive/<type>/<version>/` and remove them from active indexes. For pre-AI-Flow documents, apply only mappings already approved in `workspace-document-inventory.json` and follow the [legacy document cleanup contract](../adopt-existing-project/references/document-cleanup-contract.md).
    Treat legacy code/files as already authorized only when an approved `workspace-cleanup/PLAN-*.json` records the exact path, fingerprint, target or removal action, recovery method, and verified result. Synchronization never invents cleanup actions.
 5. Update current state using expected revision; stop and re-read on a conflict.
-6. Run `.ai-flow/bin/flowctl validate --root <root>` and resolve Schema or link errors.
-7. Read [references/board-contract.md](references/board-contract.md), then run `.ai-flow/bin/flowctl render-board --root <root>`.
-8. Verify that the four files in `docs/board/` use natural-language summaries and compact tables for versions, tasks, decisions, tests, and releases while remaining fully traceable to machine objects. Summarize legacy history by version without expanding archived prose back into active context.
-9. Verify every applied legacy-document and workspace-cleanup mapping against its recorded fingerprint and retain the recovery map.
-10. Report what changed, what was archived or removed, how it can be restored, what stayed protected, and any unresolved documentation or cleanup conflict.
+6. Run `.ai-flow/bin/flowctl validate --root <root> --machine-only` and resolve broken Goal → Requirement → Plan/Decision → Work Item → Test → Run/Checkpoint/Evidence → Release links and format errors.
+7. Read [references/board-contract.md](references/board-contract.md), then run `.ai-flow/bin/flowctl render-board --root <root>`. Never write or patch a board directly.
+8. Run `.ai-flow/bin/flowctl validate --root <root>` again. Do not report synchronization complete until the generated boards exactly match current machine state.
+9. Verify that the four files in `docs/board/` use natural-language summaries and compact tables for versions, tasks, decisions, tests, and releases while remaining fully traceable to machine objects. Summarize legacy history by version without expanding archived prose back into active context.
+10. Verify every applied legacy-document and workspace-cleanup mapping against its recorded fingerprint and retain the recovery map.
+11. Report what changed, what was archived or removed, how it can be restored, what stayed protected, and any unresolved documentation or cleanup conflict.
 
 ## Guardrails
 

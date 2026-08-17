@@ -33,6 +33,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 
 - Preserve pre-existing `AGENTS.md`, `CLAUDE.md`, `.cursor/`, and project documentation.
 - Never interpret the initial cleanup preference as approval to move files. Require an inventory and explicit approval of source-to-target mappings first.
+- Never handwrite project status pages. Generate all four human boards through `flowctl render-board` after the machine records are valid.
 - During initialization, never move, delete, rename, merge, or rewrite code, directories, generated outputs, caches, binaries, configuration, infrastructure, migrations, or other non-document content. Mark candidates with `initialization_action: mark-only` for later revalidation.
 - Do not invoke `clean-project-workspace` until initialization is complete and the user later makes an explicit workspace-cleanup request.
 - Do not infer a current version for an existing project without evidence or user confirmation.

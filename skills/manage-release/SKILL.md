@@ -12,7 +12,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 ## Procedure
 
 1. Read the current version, versioning policy, merged Work Items, evidence, review state, and unreleased changes.
-2. Confirm every included change is integrated and traceable.
+2. Confirm every included change is integrated and traceable from the version goal through needs, development tasks, tests, trusted passing results, commits, and the release; confirm that no material technology or UX/UI choice included in the release is still awaiting user confirmation.
 3. Classify impact as breaking, compatible feature, fix, or non-release change.
 4. Propose the next version; use SemVer unless the project explicitly defines another parseable policy.
 5. Generate a concise human summary and a machine release record.

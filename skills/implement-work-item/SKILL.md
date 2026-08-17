@@ -11,7 +11,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 
 ## Procedure
 
-1. Read the Work Item, Requirements, accepted decisions, test specification, current Checkpoint, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale.
+1. Read the Work Item, Requirements, accepted decisions, test specification, current Checkpoint, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale. Stop when a linked material technology or UX/UI choice still awaits user confirmation.
 2. Read [references/engineering-quality-baseline.md](references/engineering-quality-baseline.md), then select only the matching implementation playbook through [references/stack-router.md](references/stack-router.md).
 3. Read any installed community Skills selected in the engineering profile. Project conventions and accepted decisions take precedence.
 4. Confirm the working tree and target branch/worktree, then run `flowctl work start` to acquire the allowed-path writing lease. Resume the latest Checkpoint when a Run already exists.
@@ -28,5 +28,6 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 - Comment invariants, intent, tradeoffs, and surprising constraints. Do not narrate obvious syntax or compensate for unclear structure with comments.
 - Follow existing project thresholds and tooling. When none exist, split proactively by responsibility rather than imposing an arbitrary universal line limit.
 - Do not add dependencies, change public APIs, migrate data, commit, push, merge, tag, or publish without the required decision and routing.
+- Do not copy an HTML experience exploration into production as implementation; rebuild the confirmed behavior with the project's framework, components, accessibility rules, and tests.
 
 Read [references/implementation-contract.md](references/implementation-contract.md) before handing off.

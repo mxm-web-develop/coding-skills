@@ -1,0 +1,8 @@
+{
+  "name": "seller-desk",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "test:web": "node --test apps/web/test/*.test.js"
+  }
+}

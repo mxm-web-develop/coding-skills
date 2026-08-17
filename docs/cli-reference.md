@@ -35,7 +35,10 @@ flowctl status --root . --json
 ```bash
 flowctl validate --root .
 flowctl validate --root . --json
+flowctl validate --root . --machine-only
 ```
+
+完整校验会同时检查机读记录和四张由工具生成的人读看板是否一致。工作流正在更新记录时，先用 `--machine-only` 检查格式、关联和证据链，再运行 `render-board`，最后执行一次不带该参数的完整校验；这样手工改写或过期的看板不会被误报为最新状态。
 
 执行：
 
@@ -44,9 +47,10 @@ flowctl validate --root . --json
 3. `.ai-flow/baseline/workspace-document-inventory.json` 文档盘点、审批和恢复映射验证（文件存在时）。
 4. `.ai-flow/baseline/workspace-structure-inventory.json` 多语言组件图和初始化候选标记验证（文件存在时）。
 5. `.ai-flow/workspace-cleanup/*.json` 清理动作、组件/批次引用、逐路径审批摘要、当前内容指纹、恢复方式和最终验证记录（文件存在时）。
-6. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
-7. Evidence 日志路径引用检查。
-8. Event JSONL 逐行验证。
+6. Goal → Requirement → Plan/Decision → Work Item → Test → Run/Checkpoint/Evidence → Release 的存在性、归属关系和双向链接验证。
+7. 已替代记录的双向替代关系，以及正式发布包含已完成任务和可信通过测试的验证。
+8. Evidence 日志必须位于项目验证目录内，拒绝路径穿越或丢失文件。
+9. Event JSONL 逐行验证。
 
 ### cleanup digest
 
@@ -68,7 +72,7 @@ flowctl render-board --root .
 
 - `STATUS.md`：自然语言项目摘要、当前大版本、子版本进度、开发任务、测试项、证据、阻塞和下一步。
 - `ROADMAP.md`：当前目标、目标版本、里程碑、任务完成度和退出门禁。
-- `CURRENT_STATE.md`：当前需求、技术方案决策、语言、框架、代码组织方式、适用的开发与测试规范、边界和风险。
+- `CURRENT_STATE.md`：当前需求、技术方案推荐与确认状态、界面体验稿入口、语言、框架、代码组织方式、适用的开发与测试规范、边界和风险。
 - `RELEASES.md`：真实 Release 对象、版本变更、测试证据、已知问题、迁移和回滚。
 
 缺少事实时显示“未记录”“待确认”或“尚无证据”，不会猜测通过状态。
@@ -234,6 +238,18 @@ flowctl checkpoint resume \
 ```
 
 默认要求当前 Git SHA 与最新 Checkpoint 一致。明确接受漂移时添加 `--allow-git-drift`。
+
+在另一个 IDE 或 Agent 中接手时，先由原执行者保存 Checkpoint，再明确交接同一次运行：
+
+```bash
+flowctl checkpoint resume \
+  --root . \
+  --run RUN-20260817-1122aabb \
+  --owner "agent:cursor-session-2" \
+  --handoff-from "agent:codex-session-1"
+```
+
+工具只允许从已保存或已阻塞的位置交接，并同步更新任务、运行和写入租约，不会为换 IDE 创建重复运行记录。
 
 ## Evidence
 

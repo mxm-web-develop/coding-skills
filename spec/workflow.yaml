@@ -74,6 +74,22 @@ entry_routes:
       - manage-release
       - sync-project-knowledge
 
+solution_confirmation:
+  backend_or_architecture:
+    requires:
+      - viable_option_comparison
+      - strengths_and_weaknesses
+      - project_fit_and_migration_impact
+      - recommendation_with_reason
+      - user_confirmation_for_material_choice
+  frontend_ux_ui:
+    requires:
+      - two_or_three_distinct_html_directions_when_uncertain
+      - responsive_and_interactive_preview
+      - recommendation_with_reason
+      - user_confirmation_before_production_implementation
+  prototypes_are_production_code: false
+
 required_traceability:
   - goal_to_requirement
   - requirement_to_work_item
@@ -87,6 +103,7 @@ release_gates:
   - traceability_complete
   - required_tests_verified
   - engineering_profile_current
+  - material_solution_choices_confirmed
   - workspace_document_inventory_valid_when_present
   - workspace_structure_inventory_valid_when_present
   - workspace_cleanup_plan_valid_when_present
@@ -138,3 +155,24 @@ user_communication:
     - machine_directories
   technical_detail: on_request_or_when_actionable
   approval_choices: natural_language
+
+conversation_continuity:
+  reenter_from_repository_state_each_turn: true
+  interruption_types:
+    - status_or_explanation
+    - in_scope_clarification
+    - material_requirement_change
+    - independent_request
+    - replacement_or_cancellation
+    - unrelated_side_question
+    - resume_or_ide_switch
+  save_progress_before:
+    - material_scope_change
+    - replacement
+    - cancellation
+    - user_pause
+    - ide_handoff
+  unrelated_message_is_approval: false
+  continue_message_is_approval: false
+  invalidate_only_affected_downstream_records: true
+  regenerate_board_after_state_change: true

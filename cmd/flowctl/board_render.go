@@ -43,18 +43,22 @@ func renderBoard(root string) error {
 	if err := os.MkdirAll(boardDir, 0o755); err != nil {
 		return err
 	}
-	files := map[string]string{
-		"STATUS.md":        renderStatusBoard(data),
-		"ROADMAP.md":       renderRoadmapBoard(data),
-		"CURRENT_STATE.md": renderCurrentStateBoard(data),
-		"RELEASES.md":      renderReleasesBoard(data),
-	}
+	files := expectedBoardFiles(data)
 	for name, content := range files {
 		if err := writeBoardFile(filepath.Join(boardDir, name), content); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func expectedBoardFiles(data boardData) map[string]string {
+	return map[string]string{
+		"STATUS.md":        renderStatusBoard(data),
+		"ROADMAP.md":       renderRoadmapBoard(data),
+		"CURRENT_STATE.md": renderCurrentStateBoard(data),
+		"RELEASES.md":      renderReleasesBoard(data),
+	}
 }
 
 func renderStatusBoard(data boardData) string {
@@ -237,19 +241,52 @@ func renderCurrentStateBoard(data boardData) string {
 	}
 
 	builder.WriteString("\n## 开发方案决策\n\n")
-	builder.WriteString("| 决策 | 采用方案 | 主要影响 | 状态 |\n")
-	builder.WriteString("|---|---|---|---|\n")
+	builder.WriteString("| 需要确定的方向 | 当前建议或选择 | 为什么 | 主要影响 | 确认状态 |\n")
+	builder.WriteString("|---|---|---|---|---|\n")
 	decisionCount := 0
 	for _, decision := range data.Decisions {
 		if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
 			continue
 		}
 		trace := hiddenTrace("decision="+decision.ID, traceList("requirement", decision.RequirementIDs), traceList("work", decision.WorkItemIDs))
-		fmt.Fprintf(&builder, "| %s%s | %s | %s | %s |\n", mdCell(decision.Title), trace, mdCell(decision.Decision), mdCell(joinBoardText(decision.Consequences)), mdCell(humanStatus(decision.Status)))
+		fmt.Fprintf(&builder, "| %s%s | %s | %s | %s | %s |\n", mdCell(decision.Title), trace,
+			mdCell(decisionCurrentChoice(decision)), mdCell(decision.RecommendationReason),
+			mdCell(joinBoardText(decision.Consequences)), mdCell(decisionConfirmationStatus(decision)))
 		decisionCount++
 	}
 	if decisionCount == 0 {
-		builder.WriteString("| — | 尚未记录技术方案决策 | — | — |\n")
+		builder.WriteString("| — | 尚未记录技术方案决策 | — | — | — |\n")
+	}
+
+	prototypeCount := 0
+	for _, decision := range data.Decisions {
+		if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
+			continue
+		}
+		for _, option := range decision.Options {
+			if option.PrototypePath != nil && strings.TrimSpace(*option.PrototypePath) != "" {
+				prototypeCount++
+			}
+		}
+	}
+	if prototypeCount > 0 {
+		builder.WriteString("\n## 界面体验方案\n\n")
+		builder.WriteString("这些页面用于确认布局、视觉和交互方向，不是正式产品代码。\n\n")
+		builder.WriteString("| 体验方向 | 主要感受和验证重点 | 预览 | 当前选择 |\n")
+		builder.WriteString("|---|---|---|---|\n")
+		for _, decision := range data.Decisions {
+			if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
+				continue
+			}
+			for _, option := range decision.Options {
+				if option.PrototypePath == nil || strings.TrimSpace(*option.PrototypePath) == "" {
+					continue
+				}
+				focus := firstNonEmpty(option.PrototypeFocus, option.Summary, "等待补充体验说明")
+				fmt.Fprintf(&builder, "| %s | %s | %s | %s |\n", mdCell(option.Name), mdCell(focus),
+					prototypePreviewLink(*option.PrototypePath), mdCell(prototypeChoiceStatus(decision, option.Name)))
+			}
+		}
 	}
 
 	builder.WriteString("\n## 技术环境与开发约束\n\n")

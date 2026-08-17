@@ -44,7 +44,15 @@ func TestRenderBoardCreatesReadableVersionTaskDecisionAndTestViews(t *testing.T)
 	oldWork := WorkItem{SchemaVersion: 1, ID: "WI-20260701-22222222", Revision: 1, Kind: "feature", Title: "旧版已经完成的任务", Status: "done", Priority: "low", GoalID: &oldGoalID, RequirementIDs: []string{}, AcceptanceCriteria: []string{"旧版验收"}, Scope: []string{"legacy/**"}, EvidenceIDs: []string{}, CreatedAt: "2026-07-01T10:00:00Z", UpdatedAt: "2026-07-01T11:00:00Z"}
 	writeBoardJSONFixture(t, root, ".ai-flow/work-items/"+oldWork.ID+".json", oldWork)
 	writeBoardJSONFixture(t, root, ".ai-flow/decisions/ADR-20260817-a7b8c9d0.json", map[string]any{
-		"id": "ADR-20260817-a7b8c9d0", "status": "accepted", "title": "评分内核架构", "decision": "采用纯函数评分内核，I/O放在适配器", "consequences": []string{"易测试", "依赖显式"},
+		"id": "ADR-20260817-a7b8c9d0", "status": "accepted", "title": "评分内核架构",
+		"decision": "采用纯函数评分内核，I/O放在适配器", "recommended_option": "纯函数评分内核",
+		"recommendation_reason": "最符合当前团队的测试和维护要求",
+		"confirmation":          map[string]any{"status": "confirmed", "selected_option": "纯函数评分内核", "feedback": "先保持规则透明"},
+		"options": []map[string]any{
+			{"name": "纯函数评分内核", "summary": "强调可解释评分", "tradeoffs": []string{"需要显式适配I/O"}},
+			{"name": "数据对比页面", "summary": "强调横向比较", "tradeoffs": []string{"信息密度较高"}, "prototype_path": ".ai-flow/prototypes/seller-risk/comparison/index.html", "prototype_focus": "快速比较多个卖家的风险差异"},
+		},
+		"consequences": []string{"易测试", "依赖显式"},
 	})
 	writeBoardJSONFixture(t, root, ".ai-flow/tests/TEST-20260817-e5f6a7b8.json", map[string]any{
 		"id": "TEST-20260817-e5f6a7b8", "work_item_id": work.ID, "requirement_ids": []string{"REQ-20260817-b2c3d4e5"}, "level": "visual", "purpose": "确认桌面和移动端布局", "status": "green", "evidence_ids": []string{"EV-20260817-b8c9d0e1"},
@@ -65,17 +73,31 @@ func TestRenderBoardCreatesReadableVersionTaskDecisionAndTestViews(t *testing.T)
 	}
 	assertBoardContains(t, root, "STATUS.md", "项目当前处于 **V1** 大版本", "版本进度", "实现卖家风险评分页面", "界面效果", "确认桌面和移动端布局", "通过 1 / 失败 0")
 	assertBoardContains(t, root, "ROADMAP.md", "卖家画像与风险评分", "版本与开发阶段", "评分内核", "单元和视觉测试通过")
-	assertBoardContains(t, root, "CURRENT_STATE.md", "计算卖家风险评分", "采用纯函数评分内核", "TypeScript 5", "按产品功能划分模块", "开发与测试规范", "Playwright")
+	assertBoardContains(t, root, "CURRENT_STATE.md", "计算卖家风险评分", "采用纯函数评分内核", "最符合当前团队的测试和维护要求", "已确认", "界面体验方案", "打开体验方案", "快速比较多个卖家的风险差异", "TypeScript 5", "按产品功能划分模块", "开发与测试规范", "Playwright")
+	assertBoardContainsRaw(t, root, "CURRENT_STATE.md", "../../.ai-flow/prototypes/seller-risk/comparison/index.html")
 	assertBoardContains(t, root, "RELEASES.md", "v1.1.0", "新增卖家风险评分", "暂不支持跨店铺分析", "关闭 seller-risk 特性开关")
 	assertBoardNotContains(t, root, "STATUS.md", oldWork.Title, "1 个已完成", ".ai-flow", "Evidence", "Work Item", "TEST-", "WI-", "Playbook")
 	assertBoardNotContains(t, root, "ROADMAP.md", ".ai-flow", "Milestone", "Work Item", "完成门禁", "PLAN-")
-	assertBoardNotContains(t, root, "CURRENT_STATE.md", ".ai-flow", "Playbook", "feature modules", "REQ-", "Goal", "Requirement")
+	assertBoardNotContains(t, root, "CURRENT_STATE.md", "Playbook", "feature modules", "REQ-", "Goal", "Requirement")
 	assertBoardNotContains(t, root, "RELEASES.md", ".ai-flow", "Evidence", "REL-")
 	assertBoardContainsRaw(t, root, "STATUS.md", work.ID, "PLAN-20260817-c3d4e5f6", "TEST-20260817-e5f6a7b8", evidence.ID)
 	assertBoardContainsRaw(t, root, "STATUS.md", "ai-flow-trace:version=v1.1.0", "goal=GOAL-20260817-a1b2c3d4", "plan=PLAN-20260817-c3d4e5f6")
 	assertBoardContainsRaw(t, root, "ROADMAP.md", "GOAL-20260817-a1b2c3d4", "PLAN-20260817-c3d4e5f6", "MS-score")
 	assertBoardContainsRaw(t, root, "CURRENT_STATE.md", "REQ-20260817-b2c3d4e5", "ADR-20260817-a7b8c9d0")
 	assertBoardContainsRaw(t, root, "RELEASES.md", "REL-20260817-d0e1f2a3", work.ID, evidence.ID)
+
+	statusPath := filepath.Join(root, "docs", "board", "STATUS.md")
+	statusData, err := os.ReadFile(statusPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(statusPath, append(statusData, []byte("\nmanual status\n")...), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	issues := validateBoardFreshness(root)
+	if len(issues) != 1 || !strings.Contains(issues[0].Message, "stale or manually edited") {
+		t.Fatalf("manual board edit was not detected: %#v", issues)
+	}
 }
 
 func TestCompareVersionsUsesNumericSemverOrder(t *testing.T) {

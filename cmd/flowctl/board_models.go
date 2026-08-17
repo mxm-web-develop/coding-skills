@@ -41,13 +41,30 @@ type boardPlan struct {
 }
 
 type boardDecision struct {
-	ID             string   `json:"id"`
-	Status         string   `json:"status"`
-	Title          string   `json:"title"`
-	Decision       string   `json:"decision"`
-	Consequences   []string `json:"consequences"`
-	RequirementIDs []string `json:"requirement_ids"`
-	WorkItemIDs    []string `json:"work_item_ids"`
+	ID                   string                     `json:"id"`
+	Status               string                     `json:"status"`
+	Title                string                     `json:"title"`
+	Decision             string                     `json:"decision"`
+	RecommendedOption    string                     `json:"recommended_option"`
+	RecommendationReason string                     `json:"recommendation_reason"`
+	Options              []boardDecisionOption      `json:"options"`
+	Confirmation         *boardDecisionConfirmation `json:"confirmation"`
+	Consequences         []string                   `json:"consequences"`
+	RequirementIDs       []string                   `json:"requirement_ids"`
+	WorkItemIDs          []string                   `json:"work_item_ids"`
+}
+
+type boardDecisionOption struct {
+	Name           string  `json:"name"`
+	Summary        string  `json:"summary"`
+	PrototypePath  *string `json:"prototype_path"`
+	PrototypeFocus string  `json:"prototype_focus"`
+}
+
+type boardDecisionConfirmation struct {
+	Status         string  `json:"status"`
+	SelectedOption *string `json:"selected_option"`
+	Feedback       string  `json:"feedback"`
 }
 
 type boardTestSpec struct {

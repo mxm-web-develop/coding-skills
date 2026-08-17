@@ -174,6 +174,7 @@ func runCheckpointResume(args []string) error {
 	rootArg := fs.String("root", "", "project root")
 	runID := fs.String("run", "", "Run ID")
 	owner := fs.String("owner", "", "writer identity")
+	handoffFrom := fs.String("handoff-from", "", "current owner identity when explicitly transferring this run")
 	allowDrift := fs.Bool("allow-git-drift", false, "allow resuming from a different Git revision")
 	ttl := fs.Duration("ttl", 60*time.Minute, "renewed lease duration")
 	expected := fs.Int("expect-revision", 0, "optimistic run revision")
@@ -194,8 +195,18 @@ func runCheckpointResume(args []string) error {
 	if err := checkExpectedRevision(run.Revision, *expected); err != nil {
 		return err
 	}
-	if run.Owner != strings.TrimSpace(*owner) {
-		return fmt.Errorf("run is owned by %s, not %s", run.Owner, *owner)
+	newOwner := strings.TrimSpace(*owner)
+	previousOwner := run.Owner
+	if previousOwner != newOwner {
+		if strings.TrimSpace(*handoffFrom) == "" {
+			return fmt.Errorf("run is owned by %s; use --handoff-from %q for an explicit transfer", previousOwner, previousOwner)
+		}
+		if strings.TrimSpace(*handoffFrom) != previousOwner {
+			return fmt.Errorf("handoff owner mismatch: run is owned by %s", previousOwner)
+		}
+		if !contains([]string{"checkpointed", "blocked"}, run.Status) {
+			return fmt.Errorf("cannot transfer run in status %s; save a checkpoint first", run.Status)
+		}
 	}
 	checkpoint, err := latestCheckpoint(root, run.ID)
 	if err != nil {
@@ -214,7 +225,7 @@ func runCheckpointResume(args []string) error {
 		SchemaVersion: 1,
 		WorkItemID:    item.ID,
 		RunID:         run.ID,
-		Owner:         run.Owner,
+		Owner:         newOwner,
 		Scope:         item.Scope,
 		AcquiredAt:    now.Format(time.RFC3339),
 		ExpiresAt:     now.Add(*ttl).Format(time.RFC3339),
@@ -223,6 +234,7 @@ func runCheckpointResume(args []string) error {
 		return err
 	}
 	run.Status = "running"
+	run.Owner = newOwner
 	run.Revision++
 	run.UpdatedAt = now.Format(time.RFC3339)
 	if err := writeJSONAtomic(runPath(root, run.ID), &run); err != nil {
@@ -230,12 +242,19 @@ func runCheckpointResume(args []string) error {
 	}
 	item.Status = "in_progress"
 	item.BlockedReason = nil
+	item.Owner = &newOwner
+	item.RunID = &run.ID
 	item.Revision++
 	item.UpdatedAt = now.Format(time.RFC3339)
 	if err := writeJSONAtomic(workItemPath(root, item.ID), &item); err != nil {
 		return err
 	}
-	if err := appendEvent(root, "checkpoint.resumed", "run", run.ID, run.ID, run.Revision, map[string]any{"checkpoint_id": checkpoint.ID}); err != nil {
+	eventData := map[string]any{"checkpoint_id": checkpoint.ID}
+	if previousOwner != newOwner {
+		eventData["handoff_from"] = previousOwner
+		eventData["handoff_to"] = newOwner
+	}
+	if err := appendEvent(root, "checkpoint.resumed", "run", run.ID, run.ID, run.Revision, eventData); err != nil {
 		return err
 	}
 	return printJSON(checkpoint)

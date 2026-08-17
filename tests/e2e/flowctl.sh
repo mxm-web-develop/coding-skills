@@ -14,6 +14,7 @@ trap cleanup EXIT HUP INT TERM
 FLOWCTL="$TEST_ROOT/.ai-flow/bin/flowctl"
 
 "$FLOWCTL" project init --root "$TEST_ROOT" --mode greenfield --name "E2E Project" >/dev/null
+[ -d "$TEST_ROOT/.ai-flow/prototypes" ]
 cp "$REPO_ROOT/tests/fixtures/engineering-profile.json" "$TEST_ROOT/.ai-flow/baseline/engineering-profile.json"
 cp "$REPO_ROOT/tests/fixtures/workspace-document-inventory.json" "$TEST_ROOT/.ai-flow/baseline/workspace-document-inventory.json"
 cp "$REPO_ROOT/tests/fixtures/workspace-structure-inventory.json" "$TEST_ROOT/.ai-flow/baseline/workspace-structure-inventory.json"
@@ -43,8 +44,9 @@ fi
 mv "$EVIDENCE_LOG.original" "$EVIDENCE_LOG"
 
 "$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --evidence "$EVIDENCE_ID" >/dev/null
-"$FLOWCTL" validate --root "$TEST_ROOT" >/dev/null
+"$FLOWCTL" validate --root "$TEST_ROOT" --machine-only >/dev/null
 "$FLOWCTL" render-board --root "$TEST_ROOT" >/dev/null
+"$FLOWCTL" validate --root "$TEST_ROOT" >/dev/null
 
 [ -f "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json" ]
 [ -f "$TEST_ROOT/.ai-flow/runs/$RUN_ID/checkpoints/$CHECKPOINT_ID.json" ]

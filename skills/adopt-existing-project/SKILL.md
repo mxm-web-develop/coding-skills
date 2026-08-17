@@ -23,7 +23,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 7. Follow [references/workspace-inventory-contract.md](references/workspace-inventory-contract.md) and write `.ai-flow/baseline/workspace-structure-inventory.json` for non-document structure and possible cleanup candidates. Every candidate must use `initialization_action: mark-only`; do not create executable cleanup mappings during adoption.
 8. Present a compact natural-language account of the current version, working features, test situation, conflicting or uncertain documents, and suggested document moves. Show each proposed source and destination in understandable terms. Ask whether to apply exactly that list; retain mode, revision, hashes, and classifications internally.
 9. Apply only approved document mappings, verify target hashes, update the document inventory to `applied` or `partial`, and preserve a reversible path map. Never delete historical content.
-10. Write the confirmed current baseline under `.ai-flow/baseline/`, update current state, and invoke `sync-project-knowledge`.
+10. Write the confirmed current baseline under `.ai-flow/baseline/`, update current state, and invoke `sync-project-knowledge`. Never handwrite or patch files in `docs/board/`.
 11. Hand off to `profile-project-engineering`, then `discover-product-goal` and `plan-product-delivery`. Base new requirements on the user-confirmed current version, implemented capabilities, unresolved risks, and archived-history summary.
 
 ## Guardrails

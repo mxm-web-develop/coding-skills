@@ -17,7 +17,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 4. Split milestones into small vertical Work Items containing behavior, tests, implementation, and documentation where applicable.
 5. Assign each Work Item a scope, inputs, outputs, acceptance criteria, dependencies, risk, and likely change areas.
 6. Identify items safe to run in parallel and declare non-overlapping file or component boundaries.
-7. Put research spikes before decisions they unblock; do not disguise uncertain research as implementation.
+7. Put research spikes and user-facing option exploration before decisions they unblock; do not disguise uncertain research or HTML UX prototypes as production implementation.
 8. Validate that every Requirement maps to at least one Work Item and planned test.
 9. Present the arrangement as numbered stages and plain-language development tasks. Explain what the user will be able to see or verify after each stage, why the order matters, and which work can happen together. Ask whether to proceed with that arrangement, then persist the internal plan and task objects.
 

@@ -64,3 +64,29 @@ func TestPlatformEntriesRequireNaturalUserLanguage(t *testing.T) {
 		}
 	}
 }
+
+func TestConversationContinuityKeepsInterruptionsAndApprovalsSeparate(t *testing.T) {
+	repositoryRoot := filepath.Join("..", "..")
+	continuityPath := filepath.Join(repositoryRoot, "skills", "orchestrate-ai-delivery", "references", "conversation-continuity.md")
+	continuity, err := os.ReadFile(continuityPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	continuityText := string(continuity)
+	for _, required := range []string{
+		"Status or explanation question", "Material addition or changed acceptance", "Unrelated side question",
+		"Resume request or IDE switch", "A reply counts as approval only when it clearly answers the exact pending choice",
+		"does not invalidate completed work", "what can be reused",
+	} {
+		if !strings.Contains(continuityText, required) {
+			t.Errorf("conversation continuity contract is missing %q", required)
+		}
+	}
+	orchestrator, err := os.ReadFile(filepath.Join(repositoryRoot, "skills", "orchestrate-ai-delivery", "SKILL.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(orchestrator), "references/conversation-continuity.md") {
+		t.Fatal("orchestrator does not route interrupted conversations through the continuity contract")
+	}
+}

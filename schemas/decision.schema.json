@@ -12,10 +12,47 @@
     "status": { "$ref": "common.schema.json#/$defs/status" },
     "title": { "$ref": "common.schema.json#/$defs/nonEmpty" },
     "context": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "decision_type": { "type": "string", "enum": ["backend-technology", "architecture", "data", "api", "frontend-ux-ui", "cross-cutting", "other"] },
     "goal_id": { "type": ["string", "null"], "pattern": "^GOAL-[0-9]{8}-[a-f0-9]{8}$" },
     "requirement_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "uniqueItems": true },
     "work_item_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/workItemId" }, "uniqueItems": true },
-    "options": { "type": "array", "minItems": 1, "items": { "type": "object", "required": ["name", "tradeoffs"], "properties": { "name": { "$ref": "common.schema.json#/$defs/nonEmpty" }, "tradeoffs": { "$ref": "common.schema.json#/$defs/stringList" } }, "additionalProperties": false } },
+    "evaluation_criteria": { "$ref": "common.schema.json#/$defs/stringList" },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "tradeoffs"],
+        "properties": {
+          "name": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+          "tradeoffs": { "$ref": "common.schema.json#/$defs/stringList" },
+          "summary": { "type": "string" },
+          "strengths": { "$ref": "common.schema.json#/$defs/stringList" },
+          "weaknesses": { "$ref": "common.schema.json#/$defs/stringList" },
+          "project_fit": { "type": "string" },
+          "risks": { "$ref": "common.schema.json#/$defs/stringList" },
+          "adoption_impact": { "type": "string" },
+          "testing_impact": { "type": "string" },
+          "rollback": { "type": "string" },
+          "prototype_path": { "type": ["string", "null"] },
+          "prototype_focus": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "recommended_option": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "recommendation_reason": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "confirmation": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["pending", "confirmed", "declined", "revisit"] },
+        "selected_option": { "type": ["string", "null"] },
+        "feedback": { "type": "string" },
+        "confirmed_at": { "anyOf": [{ "$ref": "common.schema.json#/$defs/timestamp" }, { "type": "null" }] }
+      },
+      "additionalProperties": false
+    },
     "decision": { "$ref": "common.schema.json#/$defs/nonEmpty" },
     "consequences": { "$ref": "common.schema.json#/$defs/stringList" },
     "rollback": { "type": "string" },

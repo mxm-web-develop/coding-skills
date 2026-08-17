@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.6"
+PACK_VERSION="0.3.0"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"

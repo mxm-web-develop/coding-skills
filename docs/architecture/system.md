@@ -1,8 +1,8 @@
 # AI Flow 系统架构
 
-状态：v0.2.6 工作区治理基线
+状态：v0.3.0 真实交互与追踪闭环
 
-目标版本：v0.2.6
+目标版本：v0.3.0
 适用平台：Cursor、Codex、Claude Code
 
 ## 1. 结论
@@ -105,7 +105,7 @@ flowchart LR
 | 5 | `discover-product-goal` | 多轮讨论目标、边界、角色、验收和非目标 | goal、requirements |
 | 6 | `plan-product-delivery` | 拆模块、工作项、依赖、里程碑和并行边界 | plan、work-items |
 | 7 | `profile-project-engineering` | 识别真实技术栈、架构、质量命令、视觉需求和可用社区 Skill | engineering profile、playbook selection |
-| 8 | `research-and-design-solution` | 调研候选方案，写决策、约束和回滚设计 | research、ADR、design |
+| 8 | `research-and-design-solution` | 交互式比较技术方案；前端方向不明确时制作隔离 HTML 体验稿，取得确认后写决策、约束和回滚设计 | research、ADR、HTML exploration、design |
 | 9 | `specify-tests` | 按技术栈定义验收、单元、集成、E2E、视觉和回归案例 | test-spec、traceability |
 | 10 | `implement-work-item` | 按工程画像、模块化基线和已批准测试落地最小代码变更 | code diff、implementation report |
 | 11 | `diagnose-and-verify` | 复现失败、定位根因、修复并收集可信测试证据 | diagnosis、evidence、verification |
@@ -149,7 +149,7 @@ flowchart TB
 - Templates：空白项目与既有项目的初始机读/人读资料。
 - CI：在 Agent 之外再次验证 Schema、追踪关系、文档新鲜度和测试证据。
 
-## 7. v0.2.6 仓库结构
+## 7. v0.3.0 仓库结构
 
 ```text
 coding-skills/
@@ -309,7 +309,7 @@ ready → running → checkpointed → running → verifying → reviewing → c
 - 结论来源：对象 ID 和 `supersedes`/`superseded_by` 链。
 - 人读视图：从当前状态生成，不人工维护重复事实。
 
-四份人读看板采用“自然语言结论在前、表格结果在后”：`STATUS.md` 展示当前大版本、子版本任务和测试；`ROADMAP.md` 展示目标版本与开发阶段；`CURRENT_STATE.md` 展示当前需求、开发方案决策和技术环境；`RELEASES.md` 展示真实版本、测试结果、已知问题和恢复方式。精确对象关系写入不渲染的 HTML 追踪标记，普通用户不会看到内部编号；旧大版本的已完成任务不堆积在状态页，而进入发布历史。
+四份人读看板采用“自然语言结论在前、表格结果在后”：`STATUS.md` 展示当前大版本、子版本任务和测试；`ROADMAP.md` 展示目标版本与开发阶段；`CURRENT_STATE.md` 展示当前需求、开发方案的推荐依据与确认状态、可打开的界面体验稿和技术环境；`RELEASES.md` 展示真实版本、测试结果、已知问题和恢复方式。精确对象关系写入不渲染的 HTML 追踪标记，普通用户不会看到内部编号；旧大版本的已完成任务不堆积在状态页，而进入发布历史。
 
 ### 12.2 多 Agent 并发
 
@@ -374,7 +374,7 @@ Profile：
 
 一个变更只有同时满足以下条件才可进入发布阶段：
 
-- Requirement → Work Item → Commit → Test Evidence → Release 可双向追踪。
+- Goal → Requirement → Plan/Decision → Work Item → Test → Run/Checkpoint/Evidence → Release 的链接存在、归属一致并可双向追踪；替代关系也必须双向一致。
 - 所有必需测试真实运行并通过，或有明确批准的例外。
 - 工程画像对当前技术栈仍有效；适用的 UI 变更包含功能、截图回归和视觉审查证据。
 - 评审无未处理的阻塞发现。

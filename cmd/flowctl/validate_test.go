@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -89,5 +90,99 @@ func TestEngineeringProfileSchema(t *testing.T) {
 	}
 	if err := compiled["engineering-profile.schema.json"].Validate(profile); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDecisionSchemaSupportsInteractiveTechnologyAndUXConfirmation(t *testing.T) {
+	compiled, err := compileSchemas(filepath.Join("..", "..", "schemas"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	decision := map[string]any{
+		"schema_version":      1,
+		"id":                  "ADR-20260817-a7b8c9d0",
+		"revision":            1,
+		"status":              "accepted",
+		"title":               "运营页面体验方向",
+		"context":             "需要在快速浏览和逐步引导之间选择",
+		"decision_type":       "frontend-ux-ui",
+		"evaluation_criteria": []any{"信息获取速度", "移动端可用性", "实现和维护成本"},
+		"options": []any{
+			map[string]any{
+				"name": "快速浏览", "summary": "高信息密度看板", "strengths": []any{"比较速度快"},
+				"weaknesses": []any{"新用户学习成本较高"}, "project_fit": "沿用现有表格组件",
+				"risks": []any{"移动端拥挤"}, "adoption_impact": "无需新增依赖", "testing_impact": "增加手机视口测试",
+				"rollback": "恢复当前页面", "tradeoffs": []any{"速度优先于引导"},
+				"prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html", "prototype_focus": "快速对比",
+			},
+			map[string]any{"name": "逐步引导", "tradeoffs": []any{"理解更容易但操作步骤更多"}},
+		},
+		"recommended_option":    "快速浏览",
+		"recommendation_reason": "现有用户每天需要比较大量卖家",
+		"confirmation": map[string]any{
+			"status": "confirmed", "selected_option": "快速浏览", "feedback": "保留移动端详情抽屉", "confirmed_at": "2026-08-17T12:00:00Z",
+		},
+		"decision":     "采用快速浏览方向，并保留移动端详情抽屉",
+		"consequences": []any{"桌面端对比效率提高"},
+		"rollback":     "恢复当前页面",
+		"sources":      []any{"现有组件和用户反馈"},
+		"created_at":   "2026-08-17T11:00:00Z",
+		"updated_at":   "2026-08-17T12:00:00Z",
+	}
+	if err := compiled["decision.schema.json"].Validate(decision); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestInteractiveDecisionRequiresConsistentChoiceAndSafePrototype(t *testing.T) {
+	root := t.TempDir()
+	decisionDirectory := filepath.Join(root, ".ai-flow", "decisions")
+	prototypePath := filepath.Join(root, ".ai-flow", "prototypes", "seller-risk", "fast-scan", "index.html")
+	if err := os.MkdirAll(decisionDirectory, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(prototypePath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(prototypePath, []byte("<!doctype html><title>体验方案</title>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	decisionPath := filepath.Join(decisionDirectory, "ADR-20260817-a7b8c9d0.json")
+	decision := map[string]any{
+		"decision_type": "frontend-ux-ui", "status": "accepted",
+		"options": []any{
+			map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/fast-scan/index.html"},
+			map[string]any{"name": "逐步引导"},
+		},
+		"recommended_option": "快速浏览", "recommendation_reason": "符合高频比较场景",
+		"confirmation": map[string]any{"status": "confirmed", "selected_option": "快速浏览"},
+	}
+	if err := writeJSONAtomic(decisionPath, decision); err != nil {
+		t.Fatal(err)
+	}
+	if issues := validateSolutionDecisions(root); len(issues) != 0 {
+		t.Fatalf("valid interactive decision produced issues: %#v", issues)
+	}
+
+	decision["recommended_option"] = "不存在的方向"
+	decision["confirmation"] = map[string]any{"status": "pending", "selected_option": nil}
+	if err := writeJSONAtomic(decisionPath, decision); err != nil {
+		t.Fatal(err)
+	}
+	if issues := validateSolutionDecisions(root); len(issues) < 2 {
+		t.Fatalf("inconsistent interactive decision produced too few issues: %#v", issues)
+	}
+
+	decision["recommended_option"] = "快速浏览"
+	decision["confirmation"] = map[string]any{"status": "confirmed", "selected_option": "快速浏览"}
+	decision["options"] = []any{
+		map[string]any{"name": "快速浏览", "prototype_path": ".ai-flow/prototypes/seller-risk/../../secrets.html"},
+		map[string]any{"name": "逐步引导"},
+	}
+	if err := writeJSONAtomic(decisionPath, decision); err != nil {
+		t.Fatal(err)
+	}
+	if issues := validateSolutionDecisions(root); len(issues) == 0 {
+		t.Fatal("prototype path traversal unexpectedly passed validation")
 	}
 }

@@ -14,7 +14,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, evidence, and current engineering profile.
 2. Check requirement compliance and missing acceptance behavior.
 3. Check correctness, error handling, compatibility, data integrity, concurrency, security, performance, and operations as applicable.
-4. Check architectural fit, module/file responsibility, pure-core/effect boundaries, public API scope, generated code, and whether any decision changed without a superseding record. Flag multipurpose monoliths and comments that obscure rather than explain intent.
+4. Check architectural fit, module/file responsibility, pure-core/effect boundaries, public API scope, generated code, whether material technology/UX choices were confirmed, and whether any decision changed without a superseding record. Flag multipurpose monoliths and comments that obscure rather than explain intent.
 5. Check stack-appropriate test quality, regression coverage, selected community Skill provenance, and evidence revision freshness. Require functional and visual evidence for applicable UI changes.
 6. Run focused independent checks when needed and safe.
 7. Report findings by severity with precise file/line evidence and a concrete failure scenario.
@@ -26,5 +26,6 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 - Do not modify the reviewed change during an independent review unless the user explicitly asks for fixes.
 - Do not report style-only noise already enforced by tools.
 - Do not approve when evidence was produced for a different Git revision.
+- Do not approve UI code merely because it resembles a confirmed HTML exploration; require framework-appropriate accessibility, responsiveness, interaction, and visual evidence.
 
 Read [references/review-contract.md](references/review-contract.md) before finalizing the review.

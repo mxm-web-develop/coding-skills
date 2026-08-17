@@ -38,6 +38,7 @@ func runValidate(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
 	rootArg := fs.String("root", "", "project root")
 	jsonOutput := fs.Bool("json", false, "emit JSON")
+	machineOnly := fs.Bool("machine-only", false, "validate machine records without checking generated human boards")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -78,6 +79,9 @@ func runValidate(args []string) error {
 		}
 	}
 	semanticIssues := validateSemanticLinks(root)
+	if !*machineOnly {
+		semanticIssues = append(semanticIssues, validateBoardFreshness(root)...)
+	}
 	if len(semanticIssues) > 0 {
 		summary.Valid = false
 		summary.Issues = append(summary.Issues, semanticIssues...)
@@ -269,54 +273,10 @@ func readValidationValues(target validationTarget) ([]any, error) {
 }
 
 func validateSemanticLinks(root string) []validationIssue {
-	issues := []validationIssue{}
-	addMissing := func(path, target string) {
-		if _, err := os.Stat(target); os.IsNotExist(err) {
-			issues = append(issues, validationIssue{Path: relativeDisplay(root, path), Schema: "semantic-links", Message: "missing linked object: " + relativeDisplay(root, target)})
-		}
-	}
-	workFiles, _ := listJSONFiles(filepath.Join(root, ".ai-flow", "work-items"))
-	for _, path := range workFiles {
-		var item WorkItem
-		if readJSON(path, &item) != nil {
-			continue
-		}
-		if item.GoalID != nil {
-			addMissing(path, filepath.Join(root, ".ai-flow", "goals", *item.GoalID+".json"))
-		}
-		for _, id := range item.RequirementIDs {
-			addMissing(path, filepath.Join(root, ".ai-flow", "requirements", id+".json"))
-		}
-		for _, id := range item.EvidenceIDs {
-			addMissing(path, evidencePath(root, id))
-		}
-	}
-	runFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
-	for _, path := range runFiles {
-		var run HarnessRun
-		if readJSON(path, &run) != nil {
-			continue
-		}
-		addMissing(path, workItemPath(root, run.WorkItemID))
-		for _, id := range run.CheckpointIDs {
-			addMissing(path, checkpointPath(root, run.ID, id))
-		}
-		for _, id := range run.EvidenceIDs {
-			addMissing(path, evidencePath(root, id))
-		}
-	}
-	evidenceFiles, _ := listJSONFiles(filepath.Join(root, ".ai-flow", "evidence"))
-	for _, path := range evidenceFiles {
-		var evidence Evidence
-		if readJSON(path, &evidence) != nil {
-			continue
-		}
-		addMissing(path, workItemPath(root, evidence.WorkItemID))
-		addMissing(path, runPath(root, evidence.RunID))
-		addMissing(path, filepath.Join(root, filepath.FromSlash(evidence.LogPath)))
-	}
+	issues := validateTraceability(root)
 	issues = append(issues, validateWorkspaceStructureInventory(root)...)
 	issues = append(issues, validateWorkspaceCleanupPlans(root)...)
+	issues = append(issues, validateSolutionDecisions(root)...)
 	return issues
 }
 
