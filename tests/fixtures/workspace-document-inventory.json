@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "revision": 2,
+  "scanned_at": "2026-08-17T12:00:00Z",
+  "git_sha": "not-a-git-repository",
+  "mode": "summarize-and-archive",
+  "status": "applied",
+  "current_version": "v1.2.0",
+  "roots_scanned": ["."],
+  "exclusions": [".git", ".ai-flow", "node_modules"],
+  "documents": [
+    {
+      "source_path": "docs/old/v1-plan.md",
+      "source_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "tracked": true,
+      "classification": "historical",
+      "action": "summarize-and-archive",
+      "version_bucket": "v1.0.0",
+      "version_evidence": ["Document title declares V1", "Confirmed by user"],
+      "reason": "Superseded by the accepted V1.2 plan",
+      "target_path": ".ai-flow/archive/legacy-documents/v1.0.0/docs/old/v1-plan.md",
+      "approval": "approved",
+      "result": "moved",
+      "target_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "source_path": "README.md",
+      "source_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "tracked": true,
+      "classification": "protected",
+      "action": "keep",
+      "version_bucket": "v1.2.0",
+      "version_evidence": ["Current repository entry point"],
+      "reason": "Active root documentation remains discoverable",
+      "target_path": null,
+      "approval": "not-required",
+      "result": "kept",
+      "target_sha256": null
+    }
+  ],
+  "summary": {
+    "current_authority": ["README.md"],
+    "historical_versions": [
+      {
+        "version": "v1.0.0",
+        "documents": ["docs/old/v1-plan.md"],
+        "themes": ["Initial product plan"]
+      }
+    ],
+    "conflicts": [],
+    "duplicates": [],
+    "unknowns": [],
+    "promoted_facts": ["Current version confirmed as v1.2.0"]
+  },
+  "approval": {
+    "required": true,
+    "status": "approved",
+    "approved_by": "project-owner",
+    "approved_at": "2026-08-17T12:10:00Z",
+    "mapping_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "applied_at": "2026-08-17T12:15:00Z"
+}

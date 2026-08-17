@@ -1,4 +1,4 @@
 interface:
-  display_name: "sync-project-knowledge"
-  short_description: "Run the sync-project-knowledge AI Flow workflow"
-  default_prompt: "Use $sync-project-knowledge to manage this AI Flow step."
+  display_name: "Sync Project Knowledge"
+  short_description: "Sync current truth and versioned document archives"
+  default_prompt: "Use $sync-project-knowledge to refresh current project truth, concise boards, and approved versioned archives."

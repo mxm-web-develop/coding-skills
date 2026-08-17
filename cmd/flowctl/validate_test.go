@@ -11,8 +11,8 @@ func TestCompileAllSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(compiled) != 13 {
-		t.Fatalf("compiled %d schemas, want 13 object schemas plus common definitions", len(compiled))
+	if len(compiled) != 14 {
+		t.Fatalf("compiled %d schemas, want 14 object schemas plus common definitions", len(compiled))
 	}
 	for _, required := range []string{
 		"work-item.schema.json",
@@ -21,10 +21,80 @@ func TestCompileAllSchemas(t *testing.T) {
 		"evidence.schema.json",
 		"event.schema.json",
 		"engineering-profile.schema.json",
+		"workspace-document-inventory.schema.json",
 	} {
 		if compiled[required] == nil {
 			t.Fatalf("missing compiled schema %s", required)
 		}
+	}
+}
+
+func TestWorkspaceDocumentInventoryFixture(t *testing.T) {
+	compiled, err := compileSchemas(filepath.Join("..", "..", "schemas"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	values, err := readValidationValues(validationTarget{Path: filepath.Join("..", "..", "tests", "fixtures", "workspace-document-inventory.json")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := compiled["workspace-document-inventory.schema.json"].Validate(values[0]); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWorkspaceDocumentInventoryRejectsUnsafePlans(t *testing.T) {
+	compiled, err := compileSchemas(filepath.Join("..", "..", "schemas"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := filepath.Join("..", "..", "tests", "fixtures", "workspace-document-inventory.json")
+	cases := []struct {
+		name   string
+		mutate func(map[string]any)
+	}{
+		{
+			name: "audit only cannot move",
+			mutate: func(inventory map[string]any) {
+				inventory["mode"] = "audit-only"
+			},
+		},
+		{
+			name: "protected document cannot archive",
+			mutate: func(inventory map[string]any) {
+				document := inventory["documents"].([]any)[1].(map[string]any)
+				document["action"] = "archive"
+				document["target_path"] = ".ai-flow/archive/legacy-documents/v1.2.0/README.md"
+				document["approval"] = "approved"
+			},
+		},
+		{
+			name: "source path cannot escape root",
+			mutate: func(inventory map[string]any) {
+				document := inventory["documents"].([]any)[0].(map[string]any)
+				document["source_path"] = "../outside.md"
+			},
+		},
+		{
+			name: "moved document requires approval",
+			mutate: func(inventory map[string]any) {
+				document := inventory["documents"].([]any)[0].(map[string]any)
+				document["approval"] = "rejected"
+			},
+		},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			values, err := readValidationValues(validationTarget{Path: fixture})
+			if err != nil {
+				t.Fatal(err)
+			}
+			inventory := values[0].(map[string]any)
+			test.mutate(inventory)
+			if err := compiled["workspace-document-inventory.schema.json"].Validate(inventory); err == nil {
+				t.Fatal("unsafe inventory unexpectedly validated")
+			}
+		})
 	}
 }
 

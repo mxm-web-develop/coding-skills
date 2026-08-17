@@ -14,6 +14,7 @@ machine_files:
   capabilities: .ai-flow/capabilities.yaml
   current_state: .ai-flow/state/current.yaml
   engineering_profile: .ai-flow/baseline/engineering-profile.json
+  workspace_document_inventory: .ai-flow/baseline/workspace-document-inventory.json
 
 machine_directories:
   append_only:
@@ -34,6 +35,7 @@ machine_directories:
     - .ai-flow/locks
   historical:
     - .ai-flow/archive
+    - .ai-flow/archive/legacy-documents
 
 human_files:
   - docs/board/STATUS.md
@@ -58,3 +60,5 @@ rules:
   arbitrary_workflow_docs_forbidden: true
   archived_objects_excluded_from_active_context: true
   generated_platform_entries_must_preserve_user_content: true
+  legacy_document_moves_require_path_level_approval: true
+  legacy_document_archives_preserve_original_paths_and_hashes: true

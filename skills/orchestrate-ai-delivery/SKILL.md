@@ -23,6 +23,7 @@ Treat repository state as the source of truth and dispatch the smallest complete
 
 - Answer read-only status questions by reading machine state; do not start the full delivery chain.
 - Route language/framework decisions through the engineering profile. Do not let an execution Skill guess a different stack or silently acquire third-party Skills.
+- Treat cleanup of pre-AI-Flow documents as an adoption workflow: inventory first, obtain path-level approval, then apply only approved reversible mappings.
 - Keep one active writing owner per Work Item and scope. Serialize overlapping changes.
 - Start writing with `flowctl work start`; resume interrupted work with `flowctl checkpoint latest` and `flowctl checkpoint resume`.
 - On verification failure, return to diagnosis or design; never mark work complete from prose alone.

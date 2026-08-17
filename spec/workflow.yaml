@@ -3,6 +3,7 @@ schema_version: 1
 states:
   - intake
   - baselining
+  - document_audit
   - engineering_profiling
   - goal_alignment
   - planning
@@ -76,6 +77,7 @@ release_gates:
   - traceability_complete
   - required_tests_verified
   - engineering_profile_current
+  - workspace_document_inventory_valid_when_present
   - required_visual_evidence_verified
   - blocking_review_findings_resolved
   - git_revision_matches_evidence

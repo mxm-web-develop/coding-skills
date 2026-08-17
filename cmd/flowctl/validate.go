@@ -165,6 +165,12 @@ func collectValidationTargets(root string) ([]validationTarget, error) {
 	} else if err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
+	workspaceDocumentInventory := filepath.Join(root, ".ai-flow", "baseline", "workspace-document-inventory.json")
+	if info, err := os.Stat(workspaceDocumentInventory); err == nil && !info.IsDir() {
+		targets = append(targets, validationTarget{Path: workspaceDocumentInventory, Schema: "workspace-document-inventory.schema.json"})
+	} else if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
 	flat := map[string]string{
 		"goals":        "goal.schema.json",
 		"requirements": "requirement.schema.json",

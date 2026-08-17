@@ -43,15 +43,36 @@
 
 1. `initialize-ai-project` 识别 existing 模式。
 2. `adopt-existing-project` 只读扫描 Git、tag、目录、依赖、测试、CI、版本和文档。
-3. 输出分为 `observed`、`inferred`、`user-confirmed`。
-4. 用户确认当前版本和项目基线。
-5. 基线写入 `.ai-flow/baseline/`。
-6. `profile-project-engineering` 根据清单、锁文件、配置、CI、代码布局和现有测试生成工程画像。
-7. 之后才讨论新的 Goal 和计划。
+3. 如果发现散落历史文档，询问用户选择 `keep`、`audit-only` 或 `summarize-and-archive`。
+4. 输出分为 `observed`、`inferred`、`user-confirmed`。
+5. 用户确认当前版本和项目基线；归档模式还需要另一次逐路径批准。
+6. 基线和文档清单写入 `.ai-flow/baseline/`，批准的历史资料按版本进入 `.ai-flow/archive/legacy-documents/`。
+7. `profile-project-engineering` 根据清单、锁文件、配置、CI、代码布局和现有测试生成工程画像。
+8. `discover-product-goal` 和 `plan-product-delivery` 才开始讨论基于当前版本的新需求与开发计划。
 
 Agent 不得在接管过程中修改业务代码，也不能把推断当成事实。
 
-### 3.1 工程画像与社区 Skill
+### 3.1 工作区文档盘点与归档
+
+初始化对既有或文档密集型项目提供三种选择：
+
+- `keep`：保持现有文档位置，不建立移动计划。
+- `audit-only`：只生成当前权威、历史、重复、冲突、未知和受保护文档清单。
+- `summarize-and-archive`：先完成相同的只读盘点，再让用户批准精确的源路径 → 目标路径映射。
+
+初次说“帮我清理”不等于授权移动。只有分类为历史或已确认重复的文件才能进入归档；当前 README、LICENSE/NOTICE、CONTRIBUTING、SECURITY、CODEOWNERS、当前 CHANGELOG、活动 ADR/索引、运行手册和被构建/CI/工具引用的文档默认受保护。
+
+归档结构保留原相对路径：
+
+```text
+.ai-flow/archive/legacy-documents/<version-bucket>/<original-relative-path>
+```
+
+版本优先依据文档元数据、Git tag、已确认发布记录、版本目录/文件名和用户确认。只有提交日期时使用 `unversioned` 或 `unknown`，不能猜版本。`.ai-flow/baseline/workspace-document-inventory.json` 保存原路径、目标路径、SHA-256、版本依据、批准人和执行结果，可用于恢复和审计。
+
+完成后，看板只展示当前权威、各历史版本摘要、冲突和未知数量；不会把旧文档全文重新放回活跃上下文。
+
+### 3.2 工程画像与社区 Skill
 
 `.ai-flow/baseline/engineering-profile.json` 记录真实语言、框架、架构边界、构建/质量命令、测试系统、视觉验证要求和选中的 Playbook。清单、锁文件、框架配置、CI 或测试工具变化后，技术任务开始前必须刷新画像。
 

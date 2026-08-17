@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/workspace-document-inventory.schema.json",
+  "title": "AI Flow workspace document inventory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "revision", "scanned_at", "git_sha", "mode", "status", "current_version", "roots_scanned", "exclusions", "documents", "summary", "approval"],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
+    "revision": { "$ref": "common.schema.json#/$defs/revision" },
+    "scanned_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+    "git_sha": { "$ref": "common.schema.json#/$defs/gitSha" },
+    "mode": { "type": "string", "enum": ["audit-only", "summarize-and-archive"] },
+    "status": { "type": "string", "enum": ["proposed", "approved", "applied", "partial", "declined"] },
+    "current_version": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+    "roots_scanned": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relativePath" },
+      "uniqueItems": true
+    },
+    "exclusions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/relativePath" },
+      "uniqueItems": true
+    },
+    "documents": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/document" }
+    },
+    "summary": { "$ref": "#/$defs/summary" },
+    "approval": { "$ref": "#/$defs/approval" },
+    "applied_at": {
+      "oneOf": [
+        { "$ref": "common.schema.json#/$defs/timestamp" },
+        { "type": "null" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "audit-only" } } },
+      "then": {
+        "properties": {
+          "documents": {
+            "items": {
+              "properties": {
+                "action": { "enum": ["keep", "ignore"] },
+                "approval": { "enum": ["not-required", "rejected"] },
+                "result": { "enum": ["pending", "kept", "skipped"] }
+              }
+            }
+          },
+          "approval": {
+            "properties": {
+              "required": { "const": false },
+              "status": { "const": "not-required" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "mode": { "const": "summarize-and-archive" } } },
+      "then": {
+        "properties": {
+          "approval": {
+            "properties": {
+              "required": { "const": true }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["approved", "applied", "partial"] } } },
+      "then": {
+        "properties": {
+          "approval": {
+            "properties": {
+              "status": { "const": "approved" },
+              "approved_by": { "type": "string", "minLength": 1 },
+              "approved_at": { "$ref": "common.schema.json#/$defs/timestamp" },
+              "mapping_sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "relativePath": {
+      "allOf": [
+        { "type": "string", "minLength": 1 },
+        { "not": { "pattern": "^[/\\\\]" } },
+        { "not": { "pattern": "(^|[/\\\\])\\.\\.([/\\\\]|$)" } }
+      ]
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_path", "source_sha256", "tracked", "classification", "action", "version_bucket", "version_evidence", "reason", "target_path", "approval", "result"],
+      "properties": {
+        "source_path": { "$ref": "#/$defs/relativePath" },
+        "source_sha256": { "$ref": "common.schema.json#/$defs/sha256" },
+        "tracked": { "type": "boolean" },
+        "classification": { "type": "string", "enum": ["active", "historical", "duplicate", "unknown", "protected", "generated", "vendor"] },
+        "action": { "type": "string", "enum": ["keep", "archive", "summarize-and-archive", "ignore"] },
+        "version_bucket": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "version_evidence": { "$ref": "common.schema.json#/$defs/stringList" },
+        "reason": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "target_path": {
+          "oneOf": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/relativePath" },
+                { "pattern": "^\\.ai-flow/archive/legacy-documents/" }
+              ]
+            },
+            { "type": "null" }
+          ]
+        },
+        "approval": { "type": "string", "enum": ["pending", "approved", "rejected", "not-required"] },
+        "result": { "type": "string", "enum": ["pending", "moved", "kept", "skipped", "conflict"] },
+        "target_sha256": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "classification": { "enum": ["active", "unknown", "protected", "generated", "vendor"] } } },
+          "then": { "properties": { "action": { "enum": ["keep", "ignore"] } } }
+        },
+        {
+          "if": { "properties": { "action": { "enum": ["archive", "summarize-and-archive"] } } },
+          "then": {
+            "properties": {
+              "classification": { "enum": ["historical", "duplicate"] },
+              "target_path": {
+                "allOf": [
+                  { "$ref": "#/$defs/relativePath" },
+                  { "pattern": "^\\.ai-flow/archive/legacy-documents/" }
+                ]
+              },
+              "approval": { "enum": ["pending", "approved", "rejected"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "result": { "const": "moved" } } },
+          "then": {
+            "properties": {
+              "approval": { "const": "approved" },
+              "target_path": { "type": "string", "pattern": "^\\.ai-flow/archive/legacy-documents/" },
+              "target_sha256": { "$ref": "common.schema.json#/$defs/sha256" }
+            }
+          }
+        }
+      ]
+    },
+    "historicalVersion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "documents", "themes"],
+      "properties": {
+        "version": { "$ref": "common.schema.json#/$defs/nonEmpty" },
+        "documents": { "$ref": "common.schema.json#/$defs/stringList" },
+        "themes": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["current_authority", "historical_versions", "conflicts", "duplicates", "unknowns", "promoted_facts"],
+      "properties": {
+        "current_authority": { "$ref": "common.schema.json#/$defs/stringList" },
+        "historical_versions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/historicalVersion" }
+        },
+        "conflicts": { "$ref": "common.schema.json#/$defs/stringList" },
+        "duplicates": { "$ref": "common.schema.json#/$defs/stringList" },
+        "unknowns": { "$ref": "common.schema.json#/$defs/stringList" },
+        "promoted_facts": { "$ref": "common.schema.json#/$defs/stringList" }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "status", "approved_by", "approved_at", "mapping_sha256"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["not-required", "pending", "approved", "rejected"] },
+        "approved_by": { "type": ["string", "null"], "minLength": 1 },
+        "approved_at": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/timestamp" },
+            { "type": "null" }
+          ]
+        },
+        "mapping_sha256": {
+          "oneOf": [
+            { "$ref": "common.schema.json#/$defs/sha256" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

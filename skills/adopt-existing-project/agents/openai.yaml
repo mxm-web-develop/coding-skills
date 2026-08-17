@@ -1,4 +1,4 @@
 interface:
-  display_name: "adopt-existing-project"
-  short_description: "Run the adopt-existing-project AI Flow workflow"
-  default_prompt: "Use $adopt-existing-project to manage this AI Flow step."
+  display_name: "Adopt Existing Project"
+  short_description: "Baseline code and organize legacy documentation"
+  default_prompt: "Use $adopt-existing-project to baseline this repository and propose a safe, versioned legacy-document cleanup."

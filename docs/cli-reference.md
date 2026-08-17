@@ -41,9 +41,10 @@ flowctl validate --root . --json
 
 1. Draft 2020-12 JSON Schema 验证。
 2. `.ai-flow/baseline/engineering-profile.json` 工程画像验证（文件存在时）。
-3. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
-4. Evidence 日志路径引用检查。
-5. Event JSONL 逐行验证。
+3. `.ai-flow/baseline/workspace-document-inventory.json` 文档盘点、审批和恢复映射验证（文件存在时）。
+4. Goal/Requirement/Work Item/Run/Checkpoint/Evidence 链接验证。
+5. Evidence 日志路径引用检查。
+6. Event JSONL 逐行验证。
 
 ### render-board
 

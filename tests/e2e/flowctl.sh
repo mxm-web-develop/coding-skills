@@ -14,6 +14,7 @@ FLOWCTL="$TEST_ROOT/.ai-flow/bin/flowctl"
 
 "$FLOWCTL" project init --root "$TEST_ROOT" --mode greenfield --name "E2E Project" >/dev/null
 cp "$REPO_ROOT/tests/fixtures/engineering-profile.json" "$TEST_ROOT/.ai-flow/baseline/engineering-profile.json"
+cp "$REPO_ROOT/tests/fixtures/workspace-document-inventory.json" "$TEST_ROOT/.ai-flow/baseline/workspace-document-inventory.json"
 WORK_ID=$("$FLOWCTL" work create --root "$TEST_ROOT" --kind bug --title "Prove the delivery loop" --acceptance "proof command passes" --scope "src/**")
 RUN_ID=$("$FLOWCTL" work start --root "$TEST_ROOT" --id "$WORK_ID" --owner "e2e-agent")
 CHECKPOINT_ID=$("$FLOWCTL" checkpoint save --root "$TEST_ROOT" --run "$RUN_ID" --phase implementing --summary "Prepared proof" --next "Run proof" --completed "created work item")

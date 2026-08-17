@@ -11,6 +11,7 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 - 模块化代码门禁：按职责拆分多文件、核心逻辑优先纯函数、副作用显式隔离、注释解释意图和约束。
 - Web UI 同时要求功能 E2E、Playwright 截图回归和人工/AI 视觉设计审查。
 - 空白项目和既有项目两种初始化方式。
+- 既有或文档密集型工作区可选择保持原样、只读盘点，或在逐路径批准后按版本总结归档散落历史文档。
 - 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
 - Work Item、Harness Run、Checkpoint、Evidence 状态机。
 - 测试证据绑定真实命令、退出码、Git SHA、日志和 SHA-256。
@@ -72,6 +73,8 @@ Agent 会先判断项目属于哪一种模式：
 
 - `greenfield`：空白或尚未开始开发的项目，先讨论第一个产品目标。
 - `existing`：已经有代码、Git 历史、依赖、测试或版本记录的项目，先只读扫描并由用户确认基线。
+
+如果既有项目散落着大量历史方案、旧报告或重复文档，Agent 会继续询问：保持原样、只做只读盘点，还是生成精确清单后总结并归档。选择归档不会立即移动文件；必须再次确认每一条源路径和目标路径。批准的历史文档按版本进入 `.ai-flow/archive/legacy-documents/`，当前 README、许可证、当前 ADR、运行手册和工具引用文档默认保留原位。
 
 也可以手动初始化：
 
@@ -209,7 +212,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.2.0 sh
+  | AI_FLOW_VERSION=v0.2.1 sh
 ```
 
 ## 卸载
@@ -254,4 +257,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.2.0` 提供 14 个 Core Skills，在三 IDE 选择安装基线上增加工程画像、语言/框架开发与测试 Playbook、社区 Skill 可信路由，以及 Web 功能与视觉验证。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。
+`v0.2.1` 提供 14 个 Core Skills 和 15 个 JSON Schema，在技术栈自适应执行层上增加既有工作区文档盘点、逐路径审批、版本化归档和恢复映射。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。

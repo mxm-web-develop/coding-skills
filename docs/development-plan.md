@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.2.0 执行层基线
+状态：v0.2.1 工作区接管基线
 
 更新日期：2026-08-17
 
@@ -26,7 +26,7 @@
 
 ### 状态和文档
 
-- 14 个 Draft 2020-12 JSON Schema。
+- 15 个 Draft 2020-12 JSON Schema。
 - 对象 Schema、Event JSONL 和跨对象引用校验。
 - `.ai-flow/` 机器事实与 `docs/board/` 人读看板分离。
 - 看板显示版本、目标、下一动作、Work Item 和 Evidence 摘要。
@@ -59,7 +59,18 @@
 
 验收：技术任务必须使用当前工程画像；所有 Core Skills 和 Schema 通过验证；安装器在三 IDE 安装完整的 14 Skill 执行包。
 
-## 4. v0.3.0：团队协作与迁移
+## 4. 已完成的 v0.2.1：既有工作区文档治理
+
+- 初始化对既有或文档密集型项目询问 `keep`、`audit-only` 或 `summarize-and-archive`。
+- 发现和移动分成两个审批阶段；只接受用户批准的精确源路径 → 目标路径。
+- 文档按当前、历史、重复、未知、受保护、生成和供应商内容分类。
+- 历史文档按有证据的版本归档并保留原相对路径；不能确定版本时进入 `unversioned`/`unknown`。
+- `workspace-document-inventory.json` 记录哈希、版本依据、审批、执行结果和恢复映射，并由独立 Schema 校验。
+- 归档完成后才基于确认的当前版本、能力和风险讨论新需求与开发计划。
+
+验收：未批准文件不会移动；受保护文件默认保留；目标哈希与源哈希一致；旧资料不再污染活跃上下文但仍可恢复。
+
+## 5. v0.3.0：团队协作与迁移
 
 - Work Item scope 重叠检测、lease 续期/接管和 worktree 辅助命令。
 - Agent/用户身份、Run、commit、PR 的审计关系。
@@ -70,18 +81,18 @@
 
 验收：多个 Agent 不会静默覆盖同一 revision 或重叠 scope；升级失败不丢项目数据；受保护路径缺少批准时不能进入发布门禁。
 
-## 5. v0.4.0：安全与生产交付 Profile
+## 6. v0.4.0：安全与生产交付 Profile
 
 - `secure`：依赖锁、SBOM、密钥扫描、漏洞证据、威胁模型和安全审批。
 - `delivery`：环境声明、部署证据、渐进发布、回滚和部署审批。
 - `observe`：日志、指标、trace、健康验证、事故记录和恢复报告。
 - MCP 只做能力适配；缺少供应商 MCP 时仍提供 CLI 或人工证据降级路径。
 
-## 6. 持续测试策略
+## 7. 持续测试策略
 
 - Unit：ID、状态转换、revision、锁、checksum、路径和看板汇总。
 - Contract：Skill 的输入、输出、停止条件和允许状态变化。
-- Schema：合法对象、工程画像、非法状态、悬空引用和 Event JSONL。
+- Schema：合法对象、工程画像、工作区文档清单、非法状态、悬空引用和 Event JSONL。
 - Stack：各语言/框架 Playbook 路由、社区 Skill 来源记录和项目规则优先级。
 - Web：Playwright 功能、截图回归、trace 与人工/AI 视觉审查契约。
 - E2E：空白/既有项目、成功、失败、篡改、中断恢复、更新和卸载。
@@ -89,7 +100,7 @@
 - Release：六个二进制可执行格式、包内容、checksum 和远程 bootstrap。
 - Security：路径穿越、命令参数边界、供应链校验、敏感信息和权限边界。
 
-## 7. Definition of Done
+## 8. Definition of Done
 
 一个版本只有同时满足以下条件才算完成：
 

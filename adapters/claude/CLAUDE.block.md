@@ -7,6 +7,7 @@ This repository uses AI Flow. Route project status, features, bugs, refactors, t
 - Bind every mutation to a Goal, Requirement, or Work Item.
 - Before technical design, implementation, testing, diagnosis, or review, require a current `.ai-flow/baseline/engineering-profile.json` via `profile-project-engineering`; use its stack playbooks and selected installed community Skills.
 - Never scatter workflow reports outside the declared AI Flow directories.
+- During existing-project adoption, legacy-document cleanup is opt-in and requires a read-only inventory plus explicit approval of exact source-to-target mappings before any move.
 - Do not claim tests passed without recorded command evidence for the current Git revision.
 - Do not push, merge, tag, publish, deploy, delete, or rewrite history without explicit authorization and policy support.
 <!-- ai-flow:end -->

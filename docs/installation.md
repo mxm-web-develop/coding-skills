@@ -58,21 +58,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.0 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.1 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.0 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.1 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.0"
+$env:AI_FLOW_VERSION="v0.2.1"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
