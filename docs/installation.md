@@ -60,21 +60,21 @@ PowerShell 可使用 `cursor`、`codex`、`claude` 或逗号组合，例如 `cur
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.2 sh -s -- --cursor
+  | AI_FLOW_TARGET=/path/to/project AI_FLOW_VERSION=v0.2.3 sh -s -- --cursor
 ```
 
 也可以传参：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | sh -s -- --version v0.2.2 --target /path/to/project --cursor
+  | sh -s -- --version v0.2.3 --target /path/to/project --cursor
 ```
 
 ### PowerShell 环境变量
 
 ```powershell
 $env:AI_FLOW_TARGET="C:\work\my-project"
-$env:AI_FLOW_VERSION="v0.2.2"
+$env:AI_FLOW_VERSION="v0.2.3"
 $env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_TARGET
@@ -217,7 +217,11 @@ git pull --ff-only
 
 ### `update` 或 `uninstall` 提示没有安装标记
 
-只有存在 `.ai-flow/install/version` 时，安装器才认为这些文件由自己管理。不要手工创建标记来绕过保护，应重新执行正常安装或人工检查目录。
+`update` 和 `uninstall` 要求 `.ai-flow/install/version`。如果这个标记被手动删除，请重新执行 `install`，不要手工伪造标记。安装器会通过 Skill 的 `.ai-flow-managed` 标记或旧版 Cursor Rule 的多项 AI Flow 内容签名恢复受管安装；无法确认归属的同名文件仍会停止并要求人工检查。Cursor Rule 的独立版本标记只用于审计，不能单独授权覆盖内容不匹配的文件。
+
+### 重新安装提示 `existing unmanaged Cursor ai-flow rule`
+
+从 `v0.2.3` 起，安装器可以识别旧版本生成的 `.cursor/rules/ai-flow.mdc`，即使中心安装标记已被删除，也可以直接重新执行安装。若仍出现该错误，说明该文件不符合 AI Flow 生成规则的签名，安装器会保护它不被覆盖；请先查看内容并决定是否重命名或人工合并。
 
 ### 找不到 Release
 

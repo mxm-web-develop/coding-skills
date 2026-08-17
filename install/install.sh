@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.2.2"
+PACK_VERSION="0.2.3"
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -142,13 +142,27 @@ remove_managed_files() {
     rm -rf "$TARGET_DIR/.claude/skills/$skill_name"
   done
   rm -rf "$TARGET_DIR/.claude/skills/ai-flow"
-  rm -f "$TARGET_DIR/.cursor/rules/ai-flow.mdc"
+  rm -f "$TARGET_DIR/.cursor/rules/ai-flow.mdc" "$TARGET_DIR/.cursor/rules/ai-flow.mdc.ai-flow-managed"
   rm -f "$TARGET_DIR/.ai-flow/bin/flowctl" "$TARGET_DIR/.ai-flow/bin/flowctl.exe"
   rm -f "$TARGET_DIR/.ai-flow/install/version" "$TARGET_DIR/.ai-flow/install/profile"
   rm -f "$TARGET_DIR/.ai-flow/install/platforms"
   rm -rf "$TARGET_DIR/.ai-flow/runtime/schemas"
   remove_block "$TARGET_DIR/AGENTS.md"
   remove_block "$TARGET_DIR/CLAUDE.md"
+}
+
+is_managed_skill() {
+  candidate_skill="$1"
+  [ -d "$candidate_skill" ] && [ -f "$candidate_skill/SKILL.md" ] && [ -f "$candidate_skill/.ai-flow-managed" ]
+}
+
+is_managed_cursor_rule() {
+  candidate_rule="$1"
+  [ -f "$candidate_rule" ] || return 1
+  grep -q '^description: Route repository development through AI Flow$' "$candidate_rule" \
+    && grep -q 'This repository uses AI Flow' "$candidate_rule" \
+    && grep -q '\.ai-flow/manifest.yaml' "$candidate_rule" \
+    && grep -q 'orchestrate-ai-delivery' "$candidate_rule"
 }
 
 INSTALL_MARKER="$TARGET_DIR/.ai-flow/install/version"
@@ -170,12 +184,17 @@ fi
 
 if [ "$COMMAND" = "install" ] && [ ! -f "$INSTALL_MARKER" ]; then
   for skill_name in $CORE_SKILLS; do
-    [ "$SELECT_CODEX" -eq 0 ] || [ ! -e "$TARGET_DIR/.agents/skills/$skill_name" ] || fail "existing unmanaged Skill would be overwritten: .agents/skills/$skill_name"
-    [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$TARGET_DIR/.cursor/skills/$skill_name" ] || fail "existing unmanaged Skill would be overwritten: .cursor/skills/$skill_name"
-    [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$TARGET_DIR/.claude/skills/$skill_name" ] || fail "existing unmanaged Skill would be overwritten: .claude/skills/$skill_name"
+    codex_skill="$TARGET_DIR/.agents/skills/$skill_name"
+    cursor_skill="$TARGET_DIR/.cursor/skills/$skill_name"
+    claude_skill="$TARGET_DIR/.claude/skills/$skill_name"
+    [ "$SELECT_CODEX" -eq 0 ] || [ ! -e "$codex_skill" ] || is_managed_skill "$codex_skill" || fail "existing unmanaged Skill would be overwritten: .agents/skills/$skill_name"
+    [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$cursor_skill" ] || is_managed_skill "$cursor_skill" || fail "existing unmanaged Skill would be overwritten: .cursor/skills/$skill_name"
+    [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$claude_skill" ] || is_managed_skill "$claude_skill" || fail "existing unmanaged Skill would be overwritten: .claude/skills/$skill_name"
   done
-  [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$TARGET_DIR/.claude/skills/ai-flow" ] || fail "existing unmanaged Claude ai-flow entry would be overwritten"
-  [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$TARGET_DIR/.cursor/rules/ai-flow.mdc" ] || fail "existing unmanaged Cursor ai-flow rule would be overwritten"
+  claude_entry="$TARGET_DIR/.claude/skills/ai-flow"
+  cursor_rule="$TARGET_DIR/.cursor/rules/ai-flow.mdc"
+  [ "$SELECT_CLAUDE" -eq 0 ] || [ ! -e "$claude_entry" ] || is_managed_skill "$claude_entry" || fail "existing unmanaged Claude ai-flow entry would be overwritten"
+  [ "$SELECT_CURSOR" -eq 0 ] || [ ! -e "$cursor_rule" ] || is_managed_cursor_rule "$cursor_rule" || fail "existing unmanaged Cursor ai-flow rule would be overwritten"
 fi
 
 if [ -f "$INSTALL_MARKER" ]; then
@@ -261,6 +280,7 @@ if [ "$SELECT_CLAUDE" -eq 1 ]; then
 fi
 if [ "$SELECT_CURSOR" -eq 1 ]; then
   cp "$SOURCE_DIR/adapters/cursor/ai-flow.mdc" "$TARGET_DIR/.cursor/rules/ai-flow.mdc"
+  printf '%s\n' "$PACK_VERSION" > "$TARGET_DIR/.cursor/rules/ai-flow.mdc.ai-flow-managed"
 fi
 if [ "$SELECT_CODEX" -eq 1 ]; then
   upsert_block "$TARGET_DIR/AGENTS.md" "$SOURCE_DIR/adapters/codex/AGENTS.block.md"

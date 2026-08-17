@@ -13,7 +13,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.2.2"
+$PackVersion = "0.2.3"
 $CoreSkills = @(
     "initialize-ai-project",
     "orchestrate-ai-delivery",
@@ -80,6 +80,21 @@ function Set-AIFlowBlock([string]$Path, [string]$BlockPath) {
     Add-Content -LiteralPath $Path -Value (Get-Content -LiteralPath $BlockPath)
 }
 
+function Test-ManagedSkill([string]$Path) {
+    return (Test-Path -LiteralPath $Path -PathType Container) `
+        -and (Test-Path -LiteralPath (Join-Path $Path "SKILL.md") -PathType Leaf) `
+        -and (Test-Path -LiteralPath (Join-Path $Path ".ai-flow-managed") -PathType Leaf)
+}
+
+function Test-ManagedCursorRule([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $false }
+    $content = Get-Content -LiteralPath $Path -Raw
+    return $content.Contains("description: Route repository development through AI Flow") `
+        -and $content.Contains("This repository uses AI Flow") `
+        -and $content.Contains(".ai-flow/manifest.yaml") `
+        -and $content.Contains("orchestrate-ai-delivery")
+}
+
 $TargetPath = (Resolve-Path -LiteralPath $Target).Path
 if ($TargetPath -eq [System.IO.Path]::GetPathRoot($TargetPath)) {
     throw "Refusing to install at filesystem root"
@@ -100,6 +115,7 @@ function Remove-ManagedFiles {
     $managedPaths = @(
         ".claude/skills/ai-flow",
         ".cursor/rules/ai-flow.mdc",
+        ".cursor/rules/ai-flow.mdc.ai-flow-managed",
         ".ai-flow/bin/flowctl.exe",
         ".ai-flow/bin/flowctl",
         ".ai-flow/install/version",
@@ -146,15 +162,18 @@ if ($SelectClaude) { $SelectedSkillRoots += ".claude/skills" }
 if ($Command -eq "install" -and -not (Test-Path -LiteralPath $InstallMarker -PathType Leaf)) {
     foreach ($skillName in $CoreSkills) {
         foreach ($skillRoot in $SelectedSkillRoots) {
-            if (Test-Path -LiteralPath (Join-Path $TargetPath "$skillRoot/$skillName")) {
+            $existingSkill = Join-Path $TargetPath "$skillRoot/$skillName"
+            if ((Test-Path -LiteralPath $existingSkill) -and -not (Test-ManagedSkill $existingSkill)) {
                 throw "Existing unmanaged Skill would be overwritten: $skillRoot/$skillName"
             }
         }
     }
-    if ($SelectClaude -and (Test-Path -LiteralPath (Join-Path $TargetPath ".claude/skills/ai-flow"))) {
+    $claudeEntry = Join-Path $TargetPath ".claude/skills/ai-flow"
+    if ($SelectClaude -and (Test-Path -LiteralPath $claudeEntry) -and -not (Test-ManagedSkill $claudeEntry)) {
         throw "Existing unmanaged Claude ai-flow entry would be overwritten"
     }
-    if ($SelectCursor -and (Test-Path -LiteralPath (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"))) {
+    $cursorRule = Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"
+    if ($SelectCursor -and (Test-Path -LiteralPath $cursorRule) -and -not (Test-ManagedCursorRule $cursorRule)) {
         throw "Existing unmanaged Cursor ai-flow rule would be overwritten"
     }
 }
@@ -228,7 +247,9 @@ if ($SelectClaude) {
     Set-Content -LiteralPath (Join-Path $claudeTarget ".ai-flow-managed") -Value $PackVersion -Encoding utf8
 }
 if ($SelectCursor) {
-    Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/cursor/ai-flow.mdc") -Destination (Join-Path $TargetPath ".cursor/rules/ai-flow.mdc") -Force
+    $cursorRuleTarget = Join-Path $TargetPath ".cursor/rules/ai-flow.mdc"
+    Copy-Item -LiteralPath (Join-Path $SourcePath "adapters/cursor/ai-flow.mdc") -Destination $cursorRuleTarget -Force
+    Set-Content -LiteralPath "$cursorRuleTarget.ai-flow-managed" -Value $PackVersion -Encoding utf8
 }
 Copy-Item -LiteralPath $runtimePath -Destination (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") -Force
 $schemaTarget = Join-Path $TargetPath ".ai-flow/runtime/schemas"

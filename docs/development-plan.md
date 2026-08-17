@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.2.2 自然语言看板基线
+状态：v0.2.3 可恢复安装基线
 
 更新日期：2026-08-17
 
@@ -82,7 +82,17 @@
 
 验收：人读看板不要求用户理解对象状态码；大版本/小版本、任务、方案、测试和发布结果均可从表格直接查看；缺失信息不会被推断为通过。
 
-## 6. v0.3.0：团队协作与迁移
+## 6. 已完成的 v0.2.3：部分安装恢复
+
+- 为 Cursor Rule 增加独立的受管版本标记。
+- 中心安装标记丢失时，允许接管带 `.ai-flow-managed` 的 Skill 副本。
+- 通过稳定 AI Flow 签名识别旧版 `.cursor/rules/ai-flow.mdc`。
+- 对无法确认归属的同名 Rule 和 Skill 继续拒绝覆盖。
+- Shell 与 PowerShell 安装器采用相同恢复规则。
+
+验收：删除 `.ai-flow/install/version` 并保留旧版 Cursor Rule 后可重新安装；用户自建的同名 Rule 仍保持原样且安装失败。
+
+## 7. v0.3.0：团队协作与迁移
 
 - Work Item scope 重叠检测、lease 续期/接管和 worktree 辅助命令。
 - Agent/用户身份、Run、commit、PR 的审计关系。
@@ -93,14 +103,14 @@
 
 验收：多个 Agent 不会静默覆盖同一 revision 或重叠 scope；升级失败不丢项目数据；受保护路径缺少批准时不能进入发布门禁。
 
-## 7. v0.4.0：安全与生产交付 Profile
+## 8. v0.4.0：安全与生产交付 Profile
 
 - `secure`：依赖锁、SBOM、密钥扫描、漏洞证据、威胁模型和安全审批。
 - `delivery`：环境声明、部署证据、渐进发布、回滚和部署审批。
 - `observe`：日志、指标、trace、健康验证、事故记录和恢复报告。
 - MCP 只做能力适配；缺少供应商 MCP 时仍提供 CLI 或人工证据降级路径。
 
-## 8. 持续测试策略
+## 9. 持续测试策略
 
 - Unit：ID、状态转换、revision、锁、checksum、路径和看板汇总。
 - Contract：Skill 的输入、输出、停止条件和允许状态变化。
@@ -112,7 +122,7 @@
 - Release：六个二进制可执行格式、包内容、checksum 和远程 bootstrap。
 - Security：路径穿越、命令参数边界、供应链校验、敏感信息和权限边界。
 
-## 9. Definition of Done
+## 10. Definition of Done
 
 一个版本只有同时满足以下条件才算完成：
 

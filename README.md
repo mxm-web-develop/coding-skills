@@ -215,7 +215,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.2.2 sh
+  | AI_FLOW_VERSION=v0.2.3 sh
 ```
 
 ## 卸载
@@ -261,4 +261,4 @@ cd coding-skills
 
 ## 当前版本
 
-`v0.2.2` 提供 14 个 Core Skills 和 15 个 JSON Schema，并将人读看板升级为自然语言管理视图：当前大版本、子版本进度、开发任务、技术决策、测试证据和真实发布记录一目了然。安全扫描、部署和生产观测 Skills 将作为后续可选 Profile 发布。
+`v0.2.3` 提供 14 个 Core Skills 和 15 个 JSON Schema，并将人读看板升级为自然语言管理视图，同时支持在安装标记被部分删除后安全识别并接管旧版 AI Flow Cursor 规则。真正由用户维护的同名 Rule 或 Skill 仍不会被覆盖。
