@@ -416,4 +416,6 @@ cd coding-skills
 
 ## 当前版本
 
+`v0.3.1` 是 `v0.3.0` 的小幅修订：当实现、计划、评审或诊断过程中发现任务范围/需求范围/测试范围与原计划不一致时，禁止在面向用户的多选确认里暴露 "WI / WI scope / scope JSON / ADR / Evidence" 之类的内部标签或内部 ID。具体翻译规则和正反范例见 `skills/orchestrate-ai-delivery/references/user-communication-contract.md` 末尾的 "When you have to ask about scope, plan, or backlog changes" 章节。
+
 `v0.3.0` 提供 15 个 Core Skills 和 17 个 JSON Schema。新版增加技术方案对比与前端 HTML 体验稿确认，固化对话中断、补充、恢复和跨 IDE 交接，并对需求、方案、任务、测试、证据与发布关系做完整校验。人读看板由工具统一生成并检查新鲜度，Cursor、Codex、Claude Code 继续共享唯一 `.ai-flow/` 与 `docs/board/`。

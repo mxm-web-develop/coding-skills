@@ -1,8 +1,8 @@
 # AI Flow 开发计划
 
-状态：v0.3.0 真实交互与追踪闭环
+状态：v0.3.1 用户面语言收紧
 
-更新日期：2026-08-17
+更新日期：2026-08-18
 
 计划原则：先确保三套 IDE 共用一个可安装、可恢复、可验证的小闭环，再增加团队并发、远程平台和生产交付复杂度。
 
@@ -124,6 +124,12 @@
 - 看板隐藏需求/测试对象编号和机器目录，将里程碑、门禁、证据、工程画像等改为开发阶段、完成条件、测试结果和技术环境；精确对象关系保留在不渲染的追踪标记中。
 
 验收：15 个 Core Skills 和 17 个 Schema 全部通过；初始化候选无法表达清理动作；共享/未知/受保护路径无法归档；未经逐路径批准的内容无法执行；完成状态必须关联最终 Git revision 和验证记录；三 IDE 安装后共享相同清理状态。
+
+## 8. 已完成的 v0.3.1：用户面语言收紧
+
+- 收紧 `user-communication-contract.md`：新增 "When you have to ask about scope, plan, or backlog changes" 章节，给出内部标签到用户面语言的完整翻译表，以及两张正反对比范例（含一张原样复刻的"漏出 WI 标签"反例）。
+- 在 `implement-work-item`、`plan-product-delivery`、`review-change`、`diagnose-and-verify` 四个 Skill 的 user-communication-contract 引用行后追加显式指引：每次涉及范围/计划/需求/测试范围调整的确认问题，先去读那一节再生成问法。
+- 升级 `flowctl` 运行时版本号为 0.3.1，`spec/skill-pack.yaml` 同步。
 
 ## 9. 已完成的 v0.3.0：真实交互与追踪闭环
 

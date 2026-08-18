@@ -1,7 +1,7 @@
 schema_version: 1
 pack:
   name: mxm-ai-flow
-  version: 0.3.0
+  version: 0.3.1
   canonical_skill_root: skills
   target_skill_roots:
     codex: .agents/skills
