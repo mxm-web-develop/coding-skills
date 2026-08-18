@@ -199,7 +199,7 @@ func createTraceabilityFixture(t *testing.T) string {
 		t.Fatal(err)
 	}
 	writeTraceFixture(t, root, "evidence", traceEvidenceID, Evidence{
-		SchemaVersion: 1, ID: traceEvidenceID, WorkItemID: traceWorkID, RunID: traceRunID, TestID: traceTestID,
+		SchemaVersion: 1, ID: traceEvidenceID, WorkItemID: traceWorkID, RunID: pointer(traceRunID), TestID: traceTestID,
 		Source: "local", Trust: "verified-local", Result: "passed", Command: []string{"go", "test", "./..."}, ExitCode: 0,
 		GitSHA: repoSHA, Environment: map[string]string{"os": "test"}, StartedAt: traceTime, EndedAt: traceTime,
 		LogPath: logRelative, LogSHA256: logSHA, CreatedAt: traceTime,

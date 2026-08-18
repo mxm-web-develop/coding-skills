@@ -209,7 +209,18 @@ func validateTraceability(root string) []validationIssue {
 		for _, evidenceID := range object.Value.EvidenceIDs {
 			evidence, evidenceFound := graph.evidence[evidenceID]
 			require(object.Path, "verification record", evidenceID, evidenceFound)
-			if evidenceFound && (evidence.Value.RunID != object.Value.ID || evidence.Value.WorkItemID != object.Value.WorkItemID) {
+			if !evidenceFound {
+				continue
+			}
+			// Standalone evidence (agent-claim or --mode=external) has no RunID;
+			// only check the development-task back-reference and skip run alignment.
+			if evidence.Value.RunID == nil {
+				if evidence.Value.WorkItemID != object.Value.WorkItemID {
+					add(object.Path, "linked standalone verification record belongs to another task: "+evidenceID)
+				}
+				continue
+			}
+			if *evidence.Value.RunID != object.Value.ID || evidence.Value.WorkItemID != object.Value.WorkItemID {
 				add(object.Path, "linked verification record belongs to another run or task: "+evidenceID)
 			}
 		}
@@ -226,11 +237,19 @@ func validateTraceability(root string) []validationIssue {
 	for _, object := range graph.evidence {
 		work, workFound := graph.workItems[object.Value.WorkItemID]
 		require(object.Path, "development task", object.Value.WorkItemID, workFound)
-		run, runFound := graph.runs[object.Value.RunID]
-		require(object.Path, "development run", object.Value.RunID, runFound)
 		if workFound && !contains(work.Value.EvidenceIDs, object.Value.ID) {
 			add(object.Path, "development task does not point back to verification record")
 		}
+		// Standalone evidence (agent-claim or --mode=external) skips the
+		// harness-run link entirely.
+		if object.Value.RunID == nil {
+			if object.Value.Source == "local" {
+				add(object.Path, "local verification record must be linked to a development run")
+			}
+			continue
+		}
+		run, runFound := graph.runs[*object.Value.RunID]
+		require(object.Path, "development run", *object.Value.RunID, runFound)
 		if runFound && (!contains(run.Value.EvidenceIDs, object.Value.ID) || run.Value.WorkItemID != object.Value.WorkItemID) {
 			add(object.Path, "development run does not point back consistently to verification record")
 		}

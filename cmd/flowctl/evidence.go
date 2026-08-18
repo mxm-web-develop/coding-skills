@@ -103,7 +103,7 @@ func runEvidenceCommand(args []string) error {
 		SchemaVersion: 1,
 		ID:            evidenceID,
 		WorkItemID:    item.ID,
-		RunID:         run.ID,
+		RunID:         evidenceRunID(run),
 		TestID:        strings.TrimSpace(*testID),
 		Source:        "local",
 		Trust:         "verified-local",
@@ -136,19 +136,36 @@ func runEvidenceRecord(args []string) error {
 	fs := flag.NewFlagSet("evidence record", flag.ContinueOnError)
 	rootArg := fs.String("root", "", "project root")
 	workID := fs.String("work", "", "Work Item ID")
-	runID := fs.String("run", "", "Run ID")
+	runID := fs.String("run", "", "Run ID (optional when source=agent-claim or mode=external)")
 	testID := fs.String("test", "", "Test ID or stable test name")
 	source := fs.String("source", "external", "external, ci, or agent-claim")
+	mode := fs.String("mode", "run", "run ties this record to a harness run; external records a standalone evidence without a run")
 	uri := fs.String("uri", "", "external evidence URI")
 	description := fs.String("description", "", "claim or external evidence description")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	// source=local is produced by `evidence run`, not by `evidence record`.
+	// Check this first so the error message is precise.
+	if *source == "local" {
+		return errors.New("--source=local is reserved for `evidence run`; use external, ci, or agent-claim here")
+	}
 	if !contains([]string{"external", "ci", "agent-claim"}, *source) {
 		return errors.New("--source must be external, ci, or agent-claim")
 	}
+	if !contains([]string{"run", "external"}, *mode) {
+		return errors.New("--mode must be run or external")
+	}
 	if strings.TrimSpace(*testID) == "" || strings.TrimSpace(*description) == "" {
 		return errors.New("--test and --description are required")
+	}
+	// --run is required only when the source and mode both demand a harness run.
+	requiresRun := *mode == "run" && *source != "agent-claim"
+	if requiresRun && strings.TrimSpace(*runID) == "" {
+		return errors.New("--run is required for this --source/--mode combination (use --mode=external or --source=agent-claim to record standalone evidence)")
+	}
+	if !requiresRun && strings.TrimSpace(*runID) != "" {
+		return errors.New("--run is ignored in this --source/--mode combination; omit it")
 	}
 	root, item, run, err := loadEvidenceContext(*rootArg, *workID, *runID)
 	if err != nil {
@@ -181,7 +198,7 @@ func runEvidenceRecord(args []string) error {
 		SchemaVersion: 1,
 		ID:            id,
 		WorkItemID:    item.ID,
-		RunID:         run.ID,
+		RunID:         evidenceRunID(run),
 		TestID:        strings.TrimSpace(*testID),
 		Source:        *source,
 		Trust:         "unverified",
@@ -228,7 +245,11 @@ func runEvidenceList(args []string) error {
 		if err := readJSON(path, &evidence); err != nil {
 			return err
 		}
-		if (*workID == "" || evidence.WorkItemID == *workID) && (*runID == "" || evidence.RunID == *runID) && (*result == "" || evidence.Result == *result) {
+		evRunID := ""
+		if evidence.RunID != nil {
+			evRunID = *evidence.RunID
+		}
+		if (*workID == "" || evidence.WorkItemID == *workID) && (*runID == "" || evRunID == *runID) && (*result == "" || evidence.Result == *result) {
 			items = append(items, evidence)
 		}
 	}
@@ -309,6 +330,10 @@ func loadEvidenceContext(rootArg, workID, runID string) (string, WorkItem, Harne
 	if err != nil {
 		return "", item, HarnessRun{}, err
 	}
+	if strings.TrimSpace(runID) == "" {
+		// Standalone evidence (agent-claim or --mode=external): no harness run.
+		return root, item, HarnessRun{}, nil
+	}
 	run, err := readRun(root, runID)
 	if err != nil {
 		return "", item, run, err
@@ -333,13 +358,37 @@ func persistEvidence(root string, item *WorkItem, run *HarnessRun, evidence *Evi
 	if err := writeJSONAtomic(workItemPath(root, item.ID), item); err != nil {
 		return err
 	}
-	run.EvidenceIDs = uniqueAppend(run.EvidenceIDs, evidence.ID)
-	run.Status = "verifying"
-	run.Phase = "verifying"
-	run.Revision++
-	run.UpdatedAt = now
-	if err := writeJSONAtomic(runPath(root, run.ID), run); err != nil {
-		return err
+	// When the evidence is recorded without a harness run (agent-claim or
+	// --mode=external), only the development task gets the back-reference and
+	// no run state is touched.
+	eventTarget := ""
+	if run != nil && run.ID != "" {
+		run.EvidenceIDs = uniqueAppend(run.EvidenceIDs, evidence.ID)
+		run.Status = "verifying"
+		run.Phase = "verifying"
+		run.Revision++
+		run.UpdatedAt = now
+		if err := writeJSONAtomic(runPath(root, run.ID), run); err != nil {
+			return err
+		}
+		eventTarget = run.ID
 	}
-	return appendEvent(root, "evidence.recorded", "evidence", evidence.ID, run.ID, 1, map[string]any{"result": evidence.Result, "trust": evidence.Trust, "work_item_id": item.ID})
+	eventExtras := map[string]any{"result": evidence.Result, "trust": evidence.Trust, "work_item_id": item.ID}
+	if run == nil || run.ID == "" {
+		eventExtras["standalone"] = true
+	}
+	return appendEvent(root, "evidence.recorded", "evidence", evidence.ID, eventTarget, 1, eventExtras)
+}
+
+
+// evidenceRunID returns a pointer to the harness run's ID for evidence.RunID,
+// or nil when the run is empty (standalone evidence: agent-claim or
+// --mode=external). It is intentionally a thin wrapper so the nil branch is
+// expressed at every callsite.
+func evidenceRunID(run HarnessRun) *string {
+	if run.ID == "" {
+		return nil
+	}
+	id := run.ID
+	return &id
 }

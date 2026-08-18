@@ -426,7 +426,7 @@ func TestCleanupCompletionEvidenceMustMatchTaskResultAndRevision(t *testing.T) {
 	afterEvidenceID := "EV-20260817-44444444"
 	completedGitSHA := "not-a-git-repository"
 	beforeEvidence := Evidence{
-		SchemaVersion: 1, ID: beforeEvidenceID, WorkItemID: "WI-20260817-11111111", RunID: "RUN-20260817-33333333",
+		SchemaVersion: 1, ID: beforeEvidenceID, WorkItemID: "WI-20260817-11111111", RunID: pointer("RUN-20260817-33333333"),
 		TestID: "workspace-cleanup", Source: "local", Trust: "verified-local", Result: "passed", Command: []string{"verify"},
 		ExitCode: 0, GitSHA: completedGitSHA, StartedAt: "2026-08-17T11:58:00Z", EndedAt: "2026-08-17T11:59:00Z",
 		LogPath: ".ai-flow/evidence/logs/before.log", LogSHA256: logDigest, CreatedAt: "2026-08-17T11:59:00Z",

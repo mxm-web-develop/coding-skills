@@ -270,7 +270,10 @@ flowctl evidence run \
 
 ### record
 
+手动记录外部测试、CI 报告或代理自己的声明。默认行为是把记录挂在某个具体的开发任务执行上；`--mode=external` 或 `--source=agent-claim` 可以独立成一条记录，不需要绑定开发执行。
+
 ```bash
+# 挂在开发执行上（向后兼容，写法没变）
 flowctl evidence record \
   --root . \
   --work WI-20260817-ab12cd34 \
@@ -279,9 +282,34 @@ flowctl evidence record \
   --source external \
   --uri "https://example.test/report/123" \
   --description "Manual UAT report"
+
+# CI 上游报告：不绑定开发执行
+flowctl evidence record \
+  --root . \
+  --work WI-20260817-ab12cd34 \
+  --test CI-PAYMENT-PIPELINE \
+  --source external \
+  --mode external \
+  --uri "https://ci.example.test/builds/4567" \
+  --description "CI build #4567"
+
+# 代理自己的声明：自动脱离开发执行，不需要 --run
+flowctl evidence record \
+  --root . \
+  --work WI-20260817-ab12cd34 \
+  --test AGENT-VISUAL-CHECK \
+  --source agent-claim \
+  --description "代理手工巡检确认弹窗体验与设计稿一致"
 ```
 
-手动记录始终为 `unverified`，不能单独支持 Work Item 完成。
+`--source` 与 `--mode` 的组合约束：
+
+- `--source=local` 仅由 `evidence run` 产生，`evidence record` 不接受。
+- `--mode=run`（默认）+ `--source=external|ci` 时必须传 `--run`，传 `--run` 才会被接受。
+- `--mode=run` + `--source=agent-claim` 不需要也不允许 `--run`：代理声明不挂在开发执行上。
+- `--mode=external` 不管 `--source` 是什么都不绑 `--run`。
+
+手动记录始终为 `unverified`，不能单独支持 Work Item 完成（来源是 `agent-claim` 时同样为 `unverified`，因为没有任何命令可重现）。
 
 ### list / show
 

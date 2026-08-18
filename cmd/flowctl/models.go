@@ -74,7 +74,12 @@ type Evidence struct {
 	SchemaVersion int               `json:"schema_version"`
 	ID            string            `json:"id"`
 	WorkItemID    string            `json:"work_item_id"`
-	RunID         string            `json:"run_id"`
+	// RunID is optional. It is required when Source = "local" (the command
+	// executed by flowctl evidence run) and otherwise carries the harness run
+	// that produced this record. For Source = "agent-claim" or when mode =
+	// "external", RunID may be nil: the record is logged against the
+	// development task only, without a harness run.
+	RunID         *string           `json:"run_id,omitempty"`
 	TestID        string            `json:"test_id"`
 	Source        string            `json:"source"`
 	Trust         string            `json:"trust"`
