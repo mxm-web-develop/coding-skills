@@ -143,3 +143,80 @@ Good:
 ```
 
 Say “尚未确认”“还没有测试记录” or “目前无法判断” when evidence is missing. Do not turn an internal unknown value into a confident user-facing claim.
+
+## When you have to ask about scope, plan, or backlog changes
+
+This is the single most common place where internal vocabulary leaks into the user prompt. The agent has the Work Item record, the plan JSON, or the requirement list in front of it, and copies the labels straight into the question. Never do that.
+
+### Translation rules for these questions
+
+- "Work Item" / "WI" / "vertical slice" / "task object" / "backlog entry" → "开发任务" or "这一项任务"
+- "Work Item scope" / "WI scope" / "task scope" / "scope JSON" → "这项任务要改的文件范围" or "这一项任务当前涉及的文件"
+- "plan object" / "plan JSON" / "milestone object" → "开发安排" or "阶段划分"
+- "Requirement" / "REQ-" → "要支持的内容" or "这次需要满足的需求"
+- "Decision" / "ADR" / "decision record" → "技术选择" or "已确定的设计"
+- "Evidence" / "evidence record" → "测试结果" or "刚刚跑过的测试证据"
+- "Checkpoint" / "checkpoint id" → "上次保存的进度" or "刚才中断的位置"
+- "Goal" / "goal object" → "这一版的目标"
+- Internal IDs (`fdd1b619`, `WI-7`, `MS-2`, etc.) → omit; refer to the task by what it does, not by its identifier
+- "Worktree" / "lease" / "owner" → omit unless the user explicitly asked about the parallel-execution setup
+
+### Bad vs. good when the implementation reveals a scope mismatch
+
+Bad (this leaked into a real conversation and confused the user):
+
+```text
+WI fdd1b619 scope 只写了 PopupPrototype.tsx，事实上推荐值条要改 FormDecisionCard。
+这是 WI scope 间接表达还是 WI 本身写错了？
+
+A. WI scope 是间接表达：实际改 FormDecisionCard + InterruptCardShell（推荐）
+B. 严格 WI scope：仅改 PopupPrototype.tsx（可能动不了业务）
+C. 先修改 WI scope JSON 加上 FormDecisionCard.tsx 再动（推荐）
+D. Other…
+```
+
+Good:
+
+```text
+开始动手前发现一点对不齐：你说这一版要改的是结算页的弹窗，但要让推荐值条真的生效，还得顺带改一下推荐卡片和中断卡的壳子。
+
+我看到三种走法，各有利弊，你选一个：
+
+- 按字面执行：只改弹窗。但推荐值条拿不到数据，看起来会和现在一样
+- 顺手一起改：弹窗、推荐卡片、中断卡一起调，弹窗测试需要扩展到覆盖新文件
+- 先扩范围再动：先把这次的任务范围更新成"弹窗 + 推荐卡片 + 中断卡"，然后再动手
+
+我倾向第二种，一次到位；如果你想严格控制这一版范围，就走第一种或第三种。你怎么定？
+```
+
+### Bad vs. good when proposing a plan split
+
+Bad:
+
+```text
+按 3MS+7WI 拆解，已生成 7 个 Work Item / 2 个 Milestone，是否 approve plan？
+```
+
+Good:
+
+```text
+我建议把这一版拆成三个阶段、共七项开发任务，每项都能单独验收。下面是按顺序的安排和每一步能看到的产出：
+
+| 阶段 | 包含的任务 | 完成后你能看到 |
+| --- | --- | --- |
+| 1. 数据通路 | 评分模型、对接接口、缓存层 | 离线评分跑通，接口有真实数据 |
+| 2. 运营页面 | 列表页、详情页、筛选 | 能在网页上看到每位卖家的画像 |
+| 3. 风险提示 | 阈值规则、提示弹窗 | 风险评分高的卖家自动出提示 |
+
+第二和第三阶段可以并行。如果你觉得这个切法 OK，我就按这个开始；想合并或调整哪一段也直接说。
+```
+
+### When you absolutely must show a path or identifier
+
+If the user explicitly asks to audit or debug the workflow (e.g. "show me what file was changed", "why did you skip that step"), surface identifiers in a clearly secondary line:
+
+```text
+刚才那次失败是接口权限不足（详细：API 返回 403，对应内部记录 .ai-flow/evidence/2026-08-18-.../log.txt）。
+```
+
+Do not put the path, ID, or status code in the question line. It is a footnote, not a headline.

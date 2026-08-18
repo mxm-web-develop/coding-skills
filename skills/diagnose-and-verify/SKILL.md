@@ -9,6 +9,8 @@ Separate symptoms, design causes, implementation causes, and verified outcomes.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Report the visible problem, root cause, fix, test result, and remaining risk; keep internal task, run, checkpoint, and evidence terminology out of the default response.
 
+When diagnosis shows the fix needs to touch code outside the originally agreed scope, do not surface internal labels in the question. Read [When you have to ask about scope, plan, or backlog changes](../orchestrate-ai-delivery/references/user-communication-contract.md#when-you-have-to-ask-about-scope-plan-or-backlog-changes) and phrase every such question in plain product/project language.
+
 ## Procedure
 
 1. Read the Requirement, Work Item, test specification, implementation handoff, existing evidence, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale.

@@ -9,6 +9,8 @@ Deliver the smallest correct, maintainable change within the approved scope.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Describe the feature or fix being implemented, current progress, tests, and next step; do not narrate leases, Work Item state, checkpoints, playbook names, or Skill selection.
 
+When the implementation reveals that the task's file scope, requirement scope, or test scope is wrong or incomplete, do not surface internal labels. Read [When you have to ask about scope, plan, or backlog changes](../orchestrate-ai-delivery/references/user-communication-contract.md#when-you-have-to-ask-about-scope-plan-or-backlog-changes) and phrase every such question in plain product/project language. Translate "Work Item scope", "WI", "vertical slice", and any internal ID before they reach the user.
+
 ## Procedure
 
 1. Read the Work Item, Requirements, accepted decisions, test specification, current Checkpoint, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale. Stop when a linked material technology or UX/UI choice still awaits user confirmation.

@@ -9,6 +9,8 @@ Create independently checkable pieces of product value.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Keep milestone, vertical-slice, Work Item, plan-object, ID, gate, and abbreviation vocabulary inside machine records.
 
+When presenting a plan split, milestone list, or task breakdown to the user, do not use internal plan-object labels. Read [When you have to ask about scope, plan, or backlog changes](../orchestrate-ai-delivery/references/user-communication-contract.md#when-you-have-to-ask-about-scope-plan-or-backlog-changes) and phrase every stage, task, and approval request in plain product/project language. Never use shorthand such as "3 milestones / 7 work items", "3MS+7WI", "vertical slices", "backlog entry", or any internal ID as the primary wording.
+
 ## Procedure
 
 1. Read the accepted Goal, Requirements, baseline, and active decisions.

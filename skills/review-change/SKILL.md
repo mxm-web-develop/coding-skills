@@ -9,6 +9,8 @@ Review the actual diff and evidence, not the implementer's summary.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Lead with whether the change is safe to continue, then explain concrete problems and impact; keep severity codes, object IDs, and workflow routing secondary unless the user asks for review detail.
 
+When the review identifies a scope, requirement, or test gap that needs a user decision, do not surface internal labels. Read [When you have to ask about scope, plan, or backlog changes](../orchestrate-ai-delivery/references/user-communication-contract.md#when-you-have-to-ask-about-scope-plan-or-backlog-changes) and phrase every finding, option, and approval request in plain product/project language. Translate "Work Item", "Requirement", "Evidence", "Decision", "ADR", and any internal ID before they reach the user.
+
 ## Procedure
 
 1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, evidence, and current engineering profile.
