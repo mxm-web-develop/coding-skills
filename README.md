@@ -416,6 +416,8 @@ cd coding-skills
 
 ## 当前版本
 
+`v0.4.0` 给每个未发布的版本都配了一份"人话版"的开发方案，方便 PM、团队成员和相关方在没有 AI Flow 背景的情况下也能看明白这一版要做什么、怎么拆、用了什么技术、有什么风险。`render-board` 现在除了原有的四份看板外，还会同步生成 `docs/board/PLANS.md`（所有未发布版本的方案索引）和 `docs/board/plans/v<版本>.md`（每份方案文档）；方案用面向/要解决的问题/完成后能提供/范围内/不在范围内/验收要点/阶段划分/开发任务清单/技术选型/风险与依赖这类自然语言小节组织，不再以原始 ID 或状态机值作为主语。同步在 `user-communication-contract.md` 增加"禁止漏词表"小节，明确禁止在面向用户的话术里出现 `§2`/`WI`/`DEC`/`form_decisions`/`in_progress`/commit SHA 这类内部词作为主语。
+
 `v0.3.1` 是 `v0.3.0` 的小幅修订：当实现、计划、评审或诊断过程中发现任务范围/需求范围/测试范围与原计划不一致时，禁止在面向用户的多选确认里暴露 "WI / WI scope / scope JSON / ADR / Evidence" 之类的内部标签或内部 ID。具体翻译规则和正反范例见 `skills/orchestrate-ai-delivery/references/user-communication-contract.md` 末尾的 "When you have to ask about scope, plan, or backlog changes" 章节。
 
 `v0.3.0` 提供 15 个 Core Skills 和 17 个 JSON Schema。新版增加技术方案对比与前端 HTML 体验稿确认，固化对话中断、补充、恢复和跨 IDE 交接，并对需求、方案、任务、测试、证据与发布关系做完整校验。人读看板由工具统一生成并检查新鲜度，Cursor、Codex、Claude Code 继续共享唯一 `.ai-flow/` 与 `docs/board/`。

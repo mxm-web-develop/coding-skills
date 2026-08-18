@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.3.1 用户面语言收紧
+状态：v0.4.0 每版一份人话版开发方案 + 收紧对外表达
 
 更新日期：2026-08-18
 
@@ -124,6 +124,16 @@
 - 看板隐藏需求/测试对象编号和机器目录，将里程碑、门禁、证据、工程画像等改为开发阶段、完成条件、测试结果和技术环境；精确对象关系保留在不渲染的追踪标记中。
 
 验收：15 个 Core Skills 和 17 个 Schema 全部通过；初始化候选无法表达清理动作；共享/未知/受保护路径无法归档；未经逐路径批准的内容无法执行；完成状态必须关联最终 Git revision 和验证记录；三 IDE 安装后共享相同清理状态。
+
+## 7.4 已完成的 v0.4.0：每版一份人话版开发方案
+
+- 看板渲染时同步产出 `docs/board/PLANS.md`（所有未发布版本的方案索引）和 `docs/board/plans/v<版本>.md`（每份方案文档），已发布版本不再生成对应方案文档。
+- 每份方案包含固定小节：本计划面向 / 要解决的问题 / 完成后能提供 / 范围内 / 不在范围内 / 验收要点 / 阶段划分（含"完成后能看到"/"完成条件"/"本阶段包含的开发任务"） / 开发任务清单（任务/类型/阶段/状态/负责人） / 技术选型（方向/推荐方案/备选/取舍要点） / 风险与依赖（风险或依赖/影响/缓解） / 相关材料。
+- 方案全文以自然语言表达，不以原始 ID、状态机值、内部短名或 commit SHA 作为主语；精确对象关系仍保留在不渲染的 HTML 注释里供追踪。
+- 新增 `expectedPlanFiles` / `planVersionLabel` / `normalizeVersionLabel` / `renderPlanIndex` / `humanPlanState` / `renderPlanDoc` / `milestoneWorkBullets` 等渲染辅助；既有的 `humanStatus` / `humanKind` / `humanOwner` / `mdCell` / `compareVersions` / `writeBoardFile` 等 helper 沿用。
+- 全面收紧对外表达：新增 `user-communication-contract.md` 末尾的"禁止漏词表"小节，把 `§2 / §N` 短链、`WI / DEC / REQ / MS / ADR` 简称、`WI-7 / fdd1b619` 内部 ID、`form_decisions / form_field_guide` 模块短名、`in_progress / review / blocked` 状态机值、commit SHA 在用户面话术里作为主语全部列入禁止项，并给出"应说"对照短语 + 三道自检关。
+- `sync-project-knowledge` SKILL.md 第 7 步和第 9 步同步更新：说明 `render-board` 现在会同时产出索引和每版方案；`board-contract.md` 新增 PLANS.md 和 per-version plan documents 两章，规定小节结构、语言规则、跳过条件和原子的批量写入。
+- 升级 `flowctl` 运行时版本号为 0.4.0，`spec/skill-pack.yaml` 同步。
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧
 

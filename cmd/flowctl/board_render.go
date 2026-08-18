@@ -49,16 +49,72 @@ func renderBoard(root string) error {
 			return err
 		}
 	}
+	planFiles := expectedPlanFiles(data)
+	if len(planFiles) > 0 {
+		plansDir := filepath.Join(boardDir, "plans")
+		if err := os.MkdirAll(plansDir, 0o755); err != nil {
+			return err
+		}
+		for name, content := range planFiles {
+			if err := writeBoardFile(filepath.Join(boardDir, name), content); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
 func expectedBoardFiles(data boardData) map[string]string {
-	return map[string]string{
+	files := map[string]string{
 		"STATUS.md":        renderStatusBoard(data),
 		"ROADMAP.md":       renderRoadmapBoard(data),
 		"CURRENT_STATE.md": renderCurrentStateBoard(data),
 		"RELEASES.md":      renderReleasesBoard(data),
 	}
+	if index := renderPlanIndex(data); index != "" {
+		files["PLANS.md"] = index
+	}
+	return files
+}
+
+// expectedPlanFiles returns per-version plan documents under docs/board/plans/.
+// Plans without a target version are skipped. Plans whose target version has
+// already been released (a boardRelease with the same Version) are also skipped
+// because the published release artifacts already cover them.
+func expectedPlanFiles(data boardData) map[string]string {
+	files := map[string]string{}
+	released := map[string]bool{}
+	for _, release := range data.Releases {
+		if release.Version != "" {
+			released[release.Version] = true
+		}
+	}
+	seen := map[string]bool{}
+	for _, plan := range data.Plans {
+		version := planVersionLabel(plan, data)
+		if version == "" || released[version] || seen[version] {
+			continue
+		}
+		seen[version] = true
+		files["plans/"+version+".md"] = renderPlanDoc(data, plan)
+	}
+	return files
+}
+
+// planVersionLabel returns the user-visible version string for a plan, in
+// priority order: explicit target_release on any of its milestones, the goal
+// it belongs to, or the plan itself. Returns "" when no version can be
+// determined (the caller should skip emitting a per-version document).
+func planVersionLabel(plan boardPlan, data boardData) string {
+	for _, milestone := range plan.Milestones {
+		if milestone.TargetRelease != "" {
+			return normalizeVersionLabel(milestone.TargetRelease)
+		}
+	}
+	if goal := boardGoalByID(data, plan.GoalID); goal != nil && goal.TargetRelease != "" {
+		return normalizeVersionLabel(goal.TargetRelease)
+	}
+	return ""
 }
 
 func renderStatusBoard(data boardData) string {
@@ -506,4 +562,362 @@ func writeBoardFile(path, content string) error {
 		return err
 	}
 	return os.Rename(tempName, path)
+}
+
+
+// renderPlanIndex produces docs/board/PLANS.md, an index of every per-version
+// plan document. Returns "" when there are no plans to index, so the caller
+// can omit the file entirely instead of writing an empty index.
+func renderPlanIndex(data boardData) string {
+	plans := make([]boardPlan, 0, len(data.Plans))
+	for _, plan := range data.Plans {
+		if planVersionLabel(plan, data) != "" {
+			plans = append(plans, plan)
+		}
+	}
+	if len(plans) == 0 {
+		return ""
+	}
+	sort.SliceStable(plans, func(i, j int) bool {
+		left := planVersionLabel(plans[i], data)
+		right := planVersionLabel(plans[j], data)
+		if left != right {
+			return compareVersions(left, right) > 0
+		}
+		return plans[i].ID < plans[j].ID
+	})
+	released := map[string]bool{}
+	for _, release := range data.Releases {
+		if release.Version != "" {
+			released[release.Version] = true
+		}
+	}
+	var builder strings.Builder
+	builder.WriteString("# 开发计划索引\n\n")
+	builder.WriteString("本目录按目标版本号组织每一版的开发计划、阶段划分、技术选型与风险依赖。详细任务以自然语言写成，")
+	builder.WriteString("与 `docs/board/STATUS.md` 中的实时进度、`docs/board/RELEASES.md` 中的发布历史保持一致。\n\n")
+	builder.WriteString("## 当前计划\n\n")
+	builder.WriteString("| 版本 | 目标 | 阶段数 | 任务数 | 状态 | 计划文件 |\n")
+	builder.WriteString("|---|---|---:|---:|---|---|\n")
+	activeCount := 0
+	for _, plan := range plans {
+		version := planVersionLabel(plan, data)
+		goal := boardGoalByID(data, plan.GoalID)
+		target := ""
+		if goal != nil {
+			target = goal.Title
+		}
+		if target == "" {
+			target = plan.Title
+		}
+		state := humanPlanState(plan.Status)
+		if released[version] {
+			state = "已发布"
+		}
+		link := fmt.Sprintf("[%s](./plans/%s.md)", version, version)
+		fmt.Fprintf(&builder, "| %s | %s | %d | %d | %s | %s |\n",
+			mdCell(version), mdCell(target), len(plan.Milestones), len(plan.WorkItemIDs), mdCell(state), link)
+		if !released[version] {
+			activeCount++
+		}
+	}
+	builder.WriteString("\n")
+	if activeCount == 0 {
+		builder.WriteString("> 当前没有进行中的开发计划。下一个版本的需求与方案讨论完成后会自动出现新条目。\n")
+	} else {
+		builder.WriteString("点击对应版本查看该版的完整计划。同一版本如有多份计划（例如调整后的二次拆分），以最新一份为准。\n")
+	}
+	return builder.String()
+}
+
+func humanPlanState(status string) string {
+	switch status {
+	case "active":
+		return "进行中"
+	case "draft":
+		return "草稿"
+	case "superseded":
+		return "已替代"
+	case "cancelled":
+		return "已取消"
+	}
+	if status == "" {
+		return "未记录"
+	}
+	return status
+}
+
+// normalizeVersionLabel ensures the per-version file name always carries a
+// leading "v" so filenames sort correctly (v1.10.0 > v1.9.0).
+func normalizeVersionLabel(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if !strings.HasPrefix(value, "v") && !strings.HasPrefix(value, "V") {
+		return "v" + value
+	}
+	if strings.HasPrefix(value, "V") {
+		return "v" + value[1:]
+	}
+	return value
+}
+
+// renderPlanDoc produces a single per-version plan document. The output is a
+// narrative document written for human readers (PM, dev team, stakeholders):
+// each milestone is described by the user-visible outcome it produces, the
+// task list is summarized in plain language, technical choices are explained
+// in terms of strengths/weaknesses rather than ADR IDs, and any risk or
+// dependency that affects this version is surfaced.
+func renderPlanDoc(data boardData, plan boardPlan) string {
+	version := planVersionLabel(plan, data)
+	if version == "" {
+		return ""
+	}
+	goal := boardGoalByID(data, plan.GoalID)
+
+	var builder strings.Builder
+	fmt.Fprintf(&builder, "# %s 开发计划\n\n", version)
+
+	leadGoal := ""
+	problem := ""
+	outcome := ""
+	if goal != nil {
+		leadGoal = goal.Title
+		problem = goal.Problem
+		outcome = goal.Outcome
+	}
+	if leadGoal == "" {
+		leadGoal = plan.Title
+	}
+	if leadGoal != "" {
+		fmt.Fprintf(&builder, "> **本计划面向** %s。", leadGoal)
+	}
+	if problem != "" {
+		fmt.Fprintf(&builder, " **要解决的问题**：%s", problem)
+	}
+	if outcome != "" {
+		fmt.Fprintf(&builder, " **完成后能提供**：%s。", outcome)
+	}
+	builder.WriteString("\n\n")
+	builder.WriteString("这份文档按目标版本组织，描述阶段划分、各项开发任务、技术选型与风险依赖，给团队成员、PM 和相关方阅读。\n\n")
+
+	if goal != nil {
+		if len(goal.InScope) > 0 {
+			builder.WriteString("## 范围内\n\n")
+			for _, item := range goal.InScope {
+				builder.WriteString("- " + item + "\n")
+			}
+			builder.WriteString("\n")
+		}
+		if len(goal.NonGoals) > 0 {
+			builder.WriteString("## 不在范围内\n\n")
+			for _, item := range goal.NonGoals {
+				builder.WriteString("- " + item + "\n")
+			}
+			builder.WriteString("\n")
+		}
+		if len(goal.AcceptanceCriteria) > 0 {
+			builder.WriteString("## 验收要点\n\n")
+			for _, item := range goal.AcceptanceCriteria {
+				builder.WriteString("- " + item + "\n")
+			}
+			builder.WriteString("\n")
+		}
+	}
+
+	if len(plan.Milestones) > 0 {
+		builder.WriteString("## 阶段划分\n\n")
+		for index, milestone := range plan.Milestones {
+			title := milestone.Title
+			if title == "" {
+				title = fmt.Sprintf("阶段 %d", index+1)
+			}
+			fmt.Fprintf(&builder, "### %d. %s\n\n", index+1, title)
+			if milestone.Outcome != "" {
+				fmt.Fprintf(&builder, "**完成后能看到**：%s\n\n", milestone.Outcome)
+			}
+			if len(milestone.ExitGates) > 0 {
+				builder.WriteString("**完成条件**：\n\n")
+				for _, gate := range milestone.ExitGates {
+					builder.WriteString("- " + gate + "\n")
+				}
+				builder.WriteString("\n")
+			}
+			milestoneWork := milestoneWorkBullets(data, plan, milestone)
+			if milestoneWork != "" {
+				builder.WriteString("**本阶段包含的开发任务**：\n\n")
+				builder.WriteString(milestoneWork)
+				builder.WriteString("\n")
+			}
+		}
+	}
+
+	if len(plan.WorkItemIDs) > 0 {
+		builder.WriteString("## 开发任务清单\n\n")
+		builder.WriteString("| 任务 | 类型 | 负责人 | 当前状态 | 测试结果 |\n")
+		builder.WriteString("|---|---|---|---|---|\n")
+		for _, workID := range plan.WorkItemIDs {
+			work := boardWorkByID(data, workID)
+			if work == nil {
+				continue
+			}
+			owner := ""
+			if work.Owner != nil {
+				owner = *work.Owner
+			}
+			passed, failed, other := evidenceCountsForWork(data, work.ID)
+			testSummary := testSummaryShort(passed, failed, other)
+			fmt.Fprintf(&builder, "| %s | %s | %s | %s | %s |\n",
+				mdCell(work.Title), mdCell(humanKind(work.Kind)),
+				mdCell(ownerOrUnassigned(owner)), mdCell(humanStatus(work.Status)), mdCell(testSummary))
+		}
+		builder.WriteString("\n")
+		builder.WriteString("完整任务记录在 `.ai-flow/work-items/`；当前进度同步在 `docs/board/STATUS.md`。\n\n")
+	}
+
+	chosen := decisionsForPlan(data, plan)
+	if len(chosen) > 0 {
+		builder.WriteString("## 技术选型\n\n")
+		builder.WriteString("| 决策点 | 选择 | 原因 | 确认状态 |\n")
+		builder.WriteString("|---|---|---|---|\n")
+		for _, decision := range chosen {
+			summary := decision.Decision
+			if summary == "" {
+				summary = decision.RecommendedOption
+			}
+			state := decisionConfirmationState(decision)
+			fmt.Fprintf(&builder, "| %s | %s | %s | %s |\n",
+				mdCell(decision.Title), mdCell(summary),
+				mdCell(decision.RecommendationReason), mdCell(state))
+		}
+		builder.WriteString("\n")
+	} else if data.Engineering != nil {
+		if stack := technologyList(data.Engineering.Languages); stack != "" {
+			fmt.Fprintf(&builder, "## 当前技术环境\n\n本计划基于仓库当前的技术环境：%s。\n\n", stack)
+		}
+	}
+
+	if goal != nil && len(goal.Risks) > 0 {
+		builder.WriteString("## 风险与依赖\n\n")
+		for _, risk := range goal.Risks {
+			builder.WriteString("- " + risk + "\n")
+		}
+		builder.WriteString("\n")
+	}
+
+	builder.WriteString("---\n\n")
+	builder.WriteString("**相关材料**\n\n")
+	builder.WriteString("- 当前进度：`docs/board/STATUS.md`\n")
+	builder.WriteString("- 路线图：`docs/board/ROADMAP.md`\n")
+	builder.WriteString("- 技术与体验决策明细：`docs/board/CURRENT_STATE.md`\n")
+	builder.WriteString("- 已发布版本：`docs/board/RELEASES.md`\n")
+	builder.WriteString("- 全部计划索引：`docs/board/PLANS.md`\n")
+	return builder.String()
+}
+
+func ownerOrUnassigned(value string) string {
+	if value == "" {
+		return "未指派"
+	}
+	return value
+}
+
+func testSummaryShort(passed, failed, other int) string {
+	if passed == 0 && failed == 0 && other == 0 {
+		return "尚无测试记录"
+	}
+	parts := []string{}
+	if passed > 0 {
+		parts = append(parts, fmt.Sprintf("通过 %d", passed))
+	}
+	if failed > 0 {
+		parts = append(parts, fmt.Sprintf("失败 %d", failed))
+	}
+	if other > 0 {
+		parts = append(parts, fmt.Sprintf("待确认 %d", other))
+	}
+	return strings.Join(parts, "，")
+}
+
+func decisionConfirmationState(decision boardDecision) string {
+	if decision.Confirmation == nil {
+		return "待确认"
+	}
+	switch decision.Confirmation.Status {
+	case "confirmed":
+		return "已确认"
+	case "rejected":
+		return "已驳回"
+	case "superseded":
+		return "已替代"
+	}
+	return "待确认"
+}
+
+// decisionsForPlan returns accepted or recommended decisions whose requirement
+// IDs or work item IDs overlap with the plan, in the order they were made.
+func decisionsForPlan(data boardData, plan boardPlan) []boardDecision {
+	out := make([]boardDecision, 0, len(data.Decisions))
+	for _, decision := range data.Decisions {
+		if decision.Status == "superseded" || decision.Status == "cancelled" {
+			continue
+		}
+		if intersectsAny(decision.RequirementIDs, planGoalRequirementIDs(data, plan)) {
+			out = append(out, decision)
+			continue
+		}
+		if intersectsAny(decision.WorkItemIDs, plan.WorkItemIDs) {
+			out = append(out, decision)
+		}
+	}
+	return out
+}
+
+func planGoalRequirementIDs(data boardData, plan boardPlan) []string {
+	goal := boardGoalByID(data, plan.GoalID)
+	if goal == nil {
+		return nil
+	}
+	ids := make([]string, 0)
+	for _, req := range data.Requirements {
+		if req.GoalID == goal.ID {
+			ids = append(ids, req.ID)
+		}
+	}
+	return ids
+}
+
+func intersectsAny(haystack []string, needles []string) bool {
+	for _, h := range haystack {
+		for _, n := range needles {
+			if h == n {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// milestoneWorkBullets returns a bullet list of the Work Item titles that
+// belong to a milestone (matched by overlapping requirement IDs). Returns
+// an empty string when no Work Item matches.
+func milestoneWorkBullets(data boardData, plan boardPlan, milestone boardMilestone) string {
+	var builder strings.Builder
+	count := 0
+	for _, workID := range plan.WorkItemIDs {
+		work := boardWorkByID(data, workID)
+		if work == nil || work.Status == "cancelled" {
+			continue
+		}
+		if !intersects(work.RequirementIDs, milestone.RequirementIDs) {
+			continue
+		}
+		count++
+		fmt.Fprintf(&builder, "- %s\n", work.Title)
+	}
+	if count == 0 {
+		return ""
+	}
+	return strings.TrimRight(builder.String(), "\n")
 }

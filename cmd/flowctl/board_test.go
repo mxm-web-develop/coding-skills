@@ -182,3 +182,145 @@ func stripHTMLComments(content string) string {
 		content = content[:start] + content[end:]
 	}
 }
+
+func TestRenderBoardWritesPerVersionPlanDocumentsAndIndex(t *testing.T) {
+	root := t.TempDir()
+	for _, directory := range []string{"state", "goals", "requirements", "plans", "work-items", "decisions", "tests", "evidence", "releases", "baseline"} {
+		if err := os.MkdirAll(filepath.Join(root, ".ai-flow", directory), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeBoardTextFixture(t, root, ".ai-flow/manifest.yaml", "schema_version: 1\n")
+	writeBoardTextFixture(t, root, ".ai-flow/project.yaml", "name: Seller Platform\nmode: existing\nprofile: core\ncurrent_version: v1.0.0\n")
+	writeBoardTextFixture(t, root, ".ai-flow/state/current.yaml", "revision: 8\nphase: implementing\nstatus: active\ncurrent_version: v1.1.0\nactive_goal: GOAL-20260817-a1b2c3d4\nnext_action: implement_work_item\ntests: pending\nupdated_at: 2026-08-17T13:30:00Z\n")
+
+	writeBoardJSONFixture(t, root, ".ai-flow/goals/GOAL-20260817-a1b2c3d4.json", map[string]any{
+		"id": "GOAL-20260817-a1b2c3d4", "status": "accepted", "title": "卖家画像与风险评分",
+		"problem":      "平台缺少卖家风险判断",
+		"outcome":      "运营可以查看可解释的卖家评分",
+		"target_release": "v1.1.0",
+		"in_scope":     []string{"评分模型", "运营页面"},
+		"non_goals":    []string{"自动封禁卖家"},
+		"acceptance_criteria": []string{"评分可解释", "运营页面可查看"},
+		"risks":        []string{"历史数据不足"},
+	})
+	writeBoardJSONFixture(t, root, ".ai-flow/requirements/REQ-20260817-b2c3d4e5.json", map[string]any{
+		"id": "REQ-20260817-b2c3d4e5", "goal_id": "GOAL-20260817-a1b2c3d4", "status": "accepted",
+		"statement": "计算卖家风险评分", "acceptance_criteria": []string{"评分范围为0到100"}, "test_ids": []string{"TEST-20260817-e5f6a7b8"},
+	})
+	writeBoardJSONFixture(t, root, ".ai-flow/plans/PLAN-20260817-c3d4e5f6.json", map[string]any{
+		"id": "PLAN-20260817-c3d4e5f6", "goal_id": "GOAL-20260817-a1b2c3d4", "status": "active", "title": "V1.1交付计划",
+		"work_item_ids": []string{"WI-20260817-d4e5f6a7"},
+		"milestones": []map[string]any{
+			{"id": "MS-score", "title": "评分内核", "outcome": "完成纯函数评分内核", "requirement_ids": []string{"REQ-20260817-b2c3d4e5"}, "exit_gates": []string{"单元测试通过"}, "target_release": "v1.1.0"},
+		},
+	})
+	owner := "codex-agent"
+	writeBoardJSONFixture(t, root, ".ai-flow/work-items/WI-20260817-d4e5f6a7.json", map[string]any{
+		"id": "WI-20260817-d4e5f6a7", "revision": 1, "kind": "feature", "title": "实现卖家风险评分内核",
+		"status": "in_progress", "priority": "high", "requirement_ids": []string{"REQ-20260817-b2c3d4e5"},
+		"owner": &owner,
+	})
+	writeBoardJSONFixture(t, root, ".ai-flow/decisions/DEC-20260817-aaaa.json", map[string]any{
+		"id": "DEC-20260817-aaaa", "status": "proposed", "title": "评分内核架构",
+		"decision": "纯函数评分内核，I/O 放在适配器",
+		"recommended_option": "纯函数 + 适配器",
+		"recommendation_reason": "易测试，依赖显式，可独立版本化",
+		"requirement_ids": []string{"REQ-20260817-b2c3d4e5"},
+		"work_item_ids":    []string{"WI-20260817-d4e5f6a7"},
+		"confirmation":     map[string]any{"status": "confirmed", "selected_option": "纯函数 + 适配器", "feedback": "OK"},
+	})
+	// A plan that has already been released should be skipped from per-version docs.
+	writeBoardJSONFixture(t, root, ".ai-flow/plans/PLAN-20260701-oldone.json", map[string]any{
+		"id": "PLAN-20260701-oldone", "goal_id": "GOAL-20260817-a1b2c3d4", "status": "superseded", "title": "V0.9 plan",
+		"work_item_ids": []string{},
+		"milestones":    []map[string]any{{"id": "MS-old", "title": "old", "outcome": "old", "target_release": "v0.9.0"}},
+	})
+	writeBoardJSONFixture(t, root, ".ai-flow/releases/REL-20260817-old.json", map[string]any{
+		"id": "REL-20260817-old", "status": "published", "version": "v0.9.0", "summary": "old release",
+		"work_item_ids": []string{}, "evidence_ids": []string{}, "known_issues": []string{}, "updated_at": "2026-07-01T00:00:00Z",
+	})
+
+	if err := renderBoard(root); err != nil {
+		t.Fatal(err)
+	}
+
+	// PLANS.md index must exist and list only unreleased plans.
+	indexBytes, err := os.ReadFile(filepath.Join(root, "docs", "board", "PLANS.md"))
+	if err != nil {
+		t.Fatalf("PLANS.md not written: %v", err)
+	}
+	index := string(indexBytes)
+	if !strings.Contains(index, "开发计划索引") {
+		t.Errorf("PLANS.md missing header, got:\n%s", index)
+	}
+	if !strings.Contains(index, "v1.1.0") {
+		t.Errorf("PLANS.md should list v1.1.0, got:\n%s", index)
+	}
+	if !strings.Contains(index, "v0.9.0") {
+		t.Errorf("PLANS.md should still list released v0.9.0 (historical record), got:\n%s", index)
+	}
+	if !strings.Contains(index, "已发布") {
+		t.Errorf("PLANS.md should mark v0.9.0 as released, got:\n%s", index)
+	}
+
+	// plans/v1.1.0.md must exist with natural-language content.
+	planBytes, err := os.ReadFile(filepath.Join(root, "docs", "board", "plans", "v1.1.0.md"))
+	if err != nil {
+		t.Fatalf("plans/v1.1.0.md not written: %v", err)
+	}
+	plan := string(planBytes)
+	mustContain := []string{
+		"v1.1.0 开发计划",
+		"本计划面向",
+		"阶段划分",
+		"开发任务清单",
+		"技术选型",
+		"风险与依赖",
+		"评分内核",
+		"实现卖家风险评分内核",
+		"纯函数评分内核",
+	}
+	for _, fragment := range mustContain {
+		if !strings.Contains(plan, fragment) {
+			t.Errorf("plans/v1.1.0.md missing %q\n---\n%s", fragment, plan)
+		}
+	}
+	// Internal IDs should not appear as the primary wording.
+	forbidden := []string{"WI fdd1b619", "WI-20260817-d4e5f6a7", "DEC-20260817-aaaa"}
+	for _, fragment := range forbidden {
+		if strings.Contains(plan, fragment) {
+			t.Errorf("plans/v1.1.0.md leaks internal ID %q", fragment)
+		}
+	}
+
+	// Released version's per-version doc must NOT be written.
+	if _, err := os.Stat(filepath.Join(root, "docs", "board", "plans", "v0.9.0.md")); err == nil {
+		t.Errorf("plans/v0.9.0.md should not be written for a released version")
+	}
+}
+
+func TestExpectedPlanFilesSkipsUnversionedPlans(t *testing.T) {
+	data := boardData{
+		Plans: []boardPlan{
+			{ID: "P-1", GoalID: "G-x", Status: "active", Milestones: []boardMilestone{{ID: "MS-1", TargetRelease: "v2.0.0"}}},
+			{ID: "P-2", GoalID: "G-y", Status: "active"},
+		},
+		Goals: []boardGoal{{ID: "G-y", Status: "accepted", Title: "no-version", TargetRelease: ""}},
+	}
+	files := expectedPlanFiles(data)
+	if _, ok := files["plans/v2.0.0.md"]; !ok {
+		t.Errorf("expected plans/v2.0.0.md, got %v", keys(files))
+	}
+	if len(files) != 1 {
+		t.Errorf("expected only one plan file (P-2 has no version), got %v", keys(files))
+	}
+}
+
+func keys(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}

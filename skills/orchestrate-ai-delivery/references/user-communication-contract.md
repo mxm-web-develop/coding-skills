@@ -220,3 +220,37 @@ If the user explicitly asks to audit or debug the workflow (e.g. "show me what f
 ```
 
 Do not put the path, ID, or status code in the question line. It is a footnote, not a headline.
+
+
+## Forbidden wording checklist (禁止漏词表)
+
+Even when an internal term is technically correct, it must not be the headline of anything the user reads. Before sending any user-facing message, scan the draft against this table. If any row on the left appears as a primary expression, replace it with the matching phrase on the right before sending. Treat this as a hard rule, not a guideline; users have already complained that these terms leak in even after a long prior conversation.
+
+| 禁止 (do not say) | 应说 (say instead) |
+| --- | --- |
+| §2 / §3 / §N (short section refs) | 上一节 / 下一节 / 需求澄清 / 开发方案 / 范围确认 / 收尾 / 具体内容见……; or repeat the section title |
+| `WI` / `DEC` / `REQ` / `MS` / `ADR` (raw object short names) | 开发任务 / 技术决策 / 用户需求 / 阶段 / 技术选择 |
+| `WI-7` / `MS-2` / `fdd1b619` (object IDs) | omit; refer to the task by what it does (e.g. 这次要改的是……, 这一项任务……) |
+| `form_decisions` / `form_field_guide` / `api_execute_confirm` (module/tool short names) | full Chinese phrase: 表单-决策收集 / 表单字段说明 / 接口执行确认步骤 |
+| `in_progress` / `review` / `blocked` / `done` (raw state values) | 开发中 / 复核中 / 等待外部信息 / 已完成 |
+| `b7ca6850` / `fdd1b619` (git commit SHAs in user-facing copy) | omit, or a one-sentence Chinese summary of what the commit did (e.g. 把这项任务推进到开发中) |
+| `/Users/.../.../file.go` (absolute machine paths in headlines) | omit unless the user explicitly asked to audit; if needed, put it on a secondary line |
+| “3MS+7WI” / “skill 推荐” / “ADR-12 评分最高” (compact internal summaries) | full product sentence: 建议拆成三个阶段、共七项开发任务 / 跳过这一步直接继续, 因为…… |
+| `Goal` / `Plan` / `Milestone` / `Work Item` (English object types) | 这一版的目标 / 开发安排 / 阶段 / 开发任务 |
+| Workflow stage names (“开发方案” vs “交付” vs “复盘”) | use them, but always as a sentence subject (“现在卡在开发方案阶段”), not as a hash (“阶段: 开发方案”) |
+
+Three operational rules that go with the table:
+
+1. Hidden HTML comments and machine trace data are exempt. The rule is about what the user **reads**, not what is preserved in code or non-rendered comments for traceability. IDs and enum values may still exist in those places; they just must not be the primary text the user sees.
+2. When the user explicitly asks to audit or debug the workflow (“为什么这一步跳过了”, “把这次失败的文件路径贴出来”), surface the raw identifier on a clearly secondary line as a footnote, not in the question or the headline. See the example at the end of this document.
+3. If a term does not have a row above and you are unsure whether to translate it, default to translating. The cost of a slightly verbose sentence is much lower than the cost of a user saying “听不懂”.
+
+### Self-check before sending
+
+Before sending any non-trivial user-facing message, run this three-question check:
+
+- Does the message contain any of the strings in the left column of the table above as a primary expression? If yes, rewrite.
+- Does the message start with an internal term, ID, or section reference? If yes, rewrite the opening to lead with the outcome.
+- Could a teammate who has never used AI Flow understand every sentence in the message without learning any of our internal vocabulary? If no, rewrite.
+
+Treat any of these checks failing as a bug in the message, not a trade-off the user has to accept.
