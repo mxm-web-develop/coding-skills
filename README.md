@@ -416,6 +416,8 @@ cd coding-skills
 
 ## 当前版本
 
+`v0.4.1` 让"手动记录的验证证据"可以脱离开发执行独立存在：`evidence record` 新增 `--mode` 参数；当 `--source=agent-claim` 或 `--mode=external` 时不再要求传 `--run`，反之 `--source=external` 在默认 `mode=run` 下仍必须传 `--run`（向后兼容）。`--source=local` 仅在 `evidence run` 里合法，`evidence record` 不再接受。Schema 上 `run_id` 变为可空，独立 evidence 在校验时跳过"开发执行 ↔ 验证证据"反向链路；只有 `source=local` 没有 run 才报错。完整规则见 `docs/cli-reference.md` 中 `evidence record` 章节。
+
 `v0.4.0` 给每个未发布的版本都配了一份"人话版"的开发方案，方便 PM、团队成员和相关方在没有 AI Flow 背景的情况下也能看明白这一版要做什么、怎么拆、用了什么技术、有什么风险。`render-board` 现在除了原有的四份看板外，还会同步生成 `docs/board/PLANS.md`（所有未发布版本的方案索引）和 `docs/board/plans/v<版本>.md`（每份方案文档）；方案用面向/要解决的问题/完成后能提供/范围内/不在范围内/验收要点/阶段划分/开发任务清单/技术选型/风险与依赖这类自然语言小节组织，不再以原始 ID 或状态机值作为主语。同步在 `user-communication-contract.md` 增加"禁止漏词表"小节，明确禁止在面向用户的话术里出现 `§2`/`WI`/`DEC`/`form_decisions`/`in_progress`/commit SHA 这类内部词作为主语。
 
 `v0.3.1` 是 `v0.3.0` 的小幅修订：当实现、计划、评审或诊断过程中发现任务范围/需求范围/测试范围与原计划不一致时，禁止在面向用户的多选确认里暴露 "WI / WI scope / scope JSON / ADR / Evidence" 之类的内部标签或内部 ID。具体翻译规则和正反范例见 `skills/orchestrate-ai-delivery/references/user-communication-contract.md` 末尾的 "When you have to ask about scope, plan, or backlog changes" 章节。

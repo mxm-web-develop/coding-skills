@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.4.0 每版一份人话版开发方案 + 收紧对外表达
+状态：v0.4.1 手动验证证据可脱离开发执行独立记录
 
 更新日期：2026-08-18
 
@@ -134,6 +134,14 @@
 - 全面收紧对外表达：新增 `user-communication-contract.md` 末尾的"禁止漏词表"小节，把 `§2 / §N` 短链、`WI / DEC / REQ / MS / ADR` 简称、`WI-7 / fdd1b619` 内部 ID、`form_decisions / form_field_guide` 模块短名、`in_progress / review / blocked` 状态机值、commit SHA 在用户面话术里作为主语全部列入禁止项，并给出"应说"对照短语 + 三道自检关。
 - `sync-project-knowledge` SKILL.md 第 7 步和第 9 步同步更新：说明 `render-board` 现在会同时产出索引和每版方案；`board-contract.md` 新增 PLANS.md 和 per-version plan documents 两章，规定小节结构、语言规则、跳过条件和原子的批量写入。
 - 升级 `flowctl` 运行时版本号为 0.4.0，`spec/skill-pack.yaml` 同步。
+
+## 7.5 已完成的 v0.4.1：手动验证证据可脱离开发执行独立记录
+
+- `evidence record` 新增 `--mode` 参数（`run` 默认 / `external`）；`--source=agent-claim` 自动跳过 `--run` 校验，`--mode=external` 强制不绑 `--run`，其余组合的向后兼容行为不变（默认仍要求 `--run`）。
+- `--source=local` 在 `record` 子命令上被拒绝，保留为 `evidence run` 独占。
+- `Evidence.RunID` 改为 `*string`（带 `omitempty`），schema 上 `run_id` 从必填改为可空（`oneOf [null, runId ref]`）。
+- 持久化与校验适配：独立 evidence 只更新开发任务不更新开发执行；`source=local` 没有 run 在校验里被拒绝；其他独立 evidence 跳过"开发执行 ↔ 验证证据"反向链路检查。
+- 新增 6 个单元测试覆盖 `--mode` 与 `--source` 的组合矩阵 + 校验路径，新增 `evidence_test.go`。
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧
 
