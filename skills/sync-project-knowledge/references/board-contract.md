@@ -75,3 +75,4 @@ Each document uses this fixed section shape, in this order. Use a short natural-
 - Escape table delimiters and collapse multiline text inside cells.
 - Keep archived/superseded objects out of current tables.
 - Write all generated files atomically from validated `.ai-flow/` objects: the four boards, `PLANS.md`, and every per-version plan document under `docs/board/plans/`.
+- Generated boards must not show bare section or phase numbers as the primary text. If a board entry needs to point at a source document (e.g. a per-version plan document, an external spec, a chapter in a requirements doc), restate the section's content in plain language and attach a clickable Markdown link to the document location; do not write `§N`, `Phase N`, `Module N`, or `doc §N` in the rendered text. Raw IDs and section numbers may stay in the non-rendered HTML trace comments for machine linkage.

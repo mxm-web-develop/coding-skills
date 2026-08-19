@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.4.1 手动验证证据可脱离开发执行独立记录
+状态：v0.4.2 章节/阶段编号禁止作为主语 + 强制决定权
 
 更新日期：2026-08-18
 
@@ -142,6 +142,14 @@
 - `Evidence.RunID` 改为 `*string`（带 `omitempty`），schema 上 `run_id` 从必填改为可空（`oneOf [null, runId ref]`）。
 - 持久化与校验适配：独立 evidence 只更新开发任务不更新开发执行；`source=local` 没有 run 在校验里被拒绝；其他独立 evidence 跳过"开发执行 ↔ 验证证据"反向链路检查。
 - 新增 6 个单元测试覆盖 `--mode` 与 `--source` 的组合矩阵 + 校验路径，新增 `evidence_test.go`。
+
+## 7.6 已完成的 v0.4.2：禁止章节/阶段编号裸出现，强制决定权
+
+- `user-communication-contract.md` 的禁止漏词表里 `§N` 那条完全重写：禁止展示裸的 `§N` / `第 N 节` / `Phase N` / `Module N` / `Step N` / `doc §N`；应说侧给出两件事二选一——自然语言概括 + 可点击链接，或者直接复述这一节的内容。原"上一节 / 下一节"措辞作为悬空引用全部禁用（v0.4.0 那条 `§2 / §3 / §N → 上一节 / 下一节` 已被这次替换，之前的真实 session 就是从这种措辞漏出来的）。
+- 发送前自检关从三问扩成四问：新增"悬空引用关"专门拦 §N / Phase N / Module N / Step N；新增"决定权关"强制每个非琐碎消息给出至少一个有意义的决定项，让用户能真正参与方向选择而不是被动接收；保留原有的"缩写关"和"状态机值关"。
+- `board-contract.md` 同步加一条：生成的看板 / 每版方案文档在渲染时不能出现裸编号，原始 ID / 章节号仍可藏在 HTML 注释里。
+- `cmd/flowctl/board_render.go` 新增 `lintBoardFile` 工具函数 + 正则 `forbiddenSectionRefPattern`，扫描 `§N` / `第 N 节` / `Phase N` / `Module N` / `Step N`，HTML 注释豁免；`board_render_test.go` 新增两个测试覆盖 6 个反例 + 1 个端到端正例。
+- 升级 `flowctl` 运行时版本号为 0.4.2，`spec/skill-pack.yaml` 同步。
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧
 

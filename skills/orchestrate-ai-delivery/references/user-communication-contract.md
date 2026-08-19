@@ -226,9 +226,11 @@ Do not put the path, ID, or status code in the question line. It is a footnote, 
 
 Even when an internal term is technically correct, it must not be the headline of anything the user reads. Before sending any user-facing message, scan the draft against this table. If any row on the left appears as a primary expression, replace it with the matching phrase on the right before sending. Treat this as a hard rule, not a guideline; users have already complained that these terms leak in even after a long prior conversation.
 
+The \`§N\` row in particular was loosened in earlier drafts to allow phrases like "上一节 / 下一节". Real sessions showed that this phrasing only works when the user and the agent are looking at the same document; when the agent is referencing an external doc the user has never opened, "上一节" is meaningless and the bare \`§N\` leaks back in. v0.4.2 replaces that row with: do not show the number, either restate the section's content in natural language or drop a clickable link to the document.
+
 | 禁止 (do not say) | 应说 (say instead) |
 | --- | --- |
-| §2 / §3 / §N (short section refs) | 上一节 / 下一节 / 需求澄清 / 开发方案 / 范围确认 / 收尾 / 具体内容见……; or repeat the section title |
+| §N / 第 N 节 / Phase N / Module N / Step N / doc §N (decorative section refs, including ones pointing at documents the user has not read) | 不要展示编号。两件事二选一：① 用自然语言说出这一节讲什么（"Agent Core 目录结构"、"任务构造的状态字段"），并给出可点击的链接指向对应文档位置（本地用 \`./xxx\` 相对路径，外部用 Markdown 链接）；② 直接把这一节要说的内容复述出来。两种格式都不允许出现裸的 §N 或 第 N 节。 |
 | `WI` / `DEC` / `REQ` / `MS` / `ADR` (raw object short names) | 开发任务 / 技术决策 / 用户需求 / 阶段 / 技术选择 |
 | `WI-7` / `MS-2` / `fdd1b619` (object IDs) | omit; refer to the task by what it does (e.g. 这次要改的是……, 这一项任务……) |
 | `form_decisions` / `form_field_guide` / `api_execute_confirm` (module/tool short names) | full Chinese phrase: 表单-决策收集 / 表单字段说明 / 接口执行确认步骤 |
@@ -247,10 +249,11 @@ Three operational rules that go with the table:
 
 ### Self-check before sending
 
-Before sending any non-trivial user-facing message, run this three-question check:
+Before sending any non-trivial user-facing message, run this four-question check. Each question maps to a specific class of leaks that have already happened in real sessions.
 
-- Does the message contain any of the strings in the left column of the table above as a primary expression? If yes, rewrite.
-- Does the message start with an internal term, ID, or section reference? If yes, rewrite the opening to lead with the outcome.
-- Could a teammate who has never used AI Flow understand every sentence in the message without learning any of our internal vocabulary? If no, rewrite.
+1. **Dangling-reference gate** — Does the message contain any \`§N\` / \`第 N 节\` / \`Phase N\` / \`Step N\` / \`Module N\` / \`doc §N\` as a primary expression? Does it say "this doc" / "that file" / "上一节" / "the previous section" without first pinning down what that doc or section actually is? If yes, rewrite using the new §N rule above. The "上一节 / 下一节" phrasing from earlier drafts is now banned outright because it presumes a shared document the user may not have read.
+2. **Abbreviation gate** — Does the message use \`WI\` / \`DEC\` / \`REQ\` / \`MS\` / \`ADR\` / \`form_decisions\` / any other shorthand that has not been spelled out in this session? First use in a session must spell it out (\`开发任务（WI）\`); later uses may shorten. If a shorthand appears without prior expansion in this session, rewrite.
+3. **State-value gate** — Does the message lead with a raw state value (\`in_progress\` / \`review\` / \`blocked\` / \`done\` / \`completed\` / \`active\`)? If yes, translate to 开发中 / 复核中 / 等待外部信息 / 已完成.
+4. **Decision-rights gate** — Does the message give the user at least one meaningful decision they can make (other than "approve and continue")? If the whole message can only be nodded through, the message is broken — rewrite to surface the actual decision points.
 
 Treat any of these checks failing as a bug in the message, not a trade-off the user has to accept.

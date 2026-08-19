@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -920,4 +921,49 @@ func milestoneWorkBullets(data boardData, plan boardPlan, milestone boardMilesto
 		return ""
 	}
 	return strings.TrimRight(builder.String(), "\n")
+}
+
+
+// forbiddenSectionRefPattern matches the tokens that must never appear as the
+// primary text in a generated board document: bare §N / 第 N 节 / Phase N /
+// Module N / Step N references. Per the user-communication-contract
+// (禁止漏词表, v0.4.2), generated boards must restate the content in plain
+// language or attach a clickable link, never show the raw number.
+var forbiddenSectionRefPattern = regexp.MustCompile(`§\s*\d+|第\s*\d+\s*节|\bPhase\s*\d+|\bModule\s*\d+|\bStep\s*\d+`)
+
+// lintBoardFile returns the unique forbidden section-ref tokens found in
+// the given rendered Markdown body. HTML comments are stripped first so
+// machine IDs can still live there for traceability without tripping the
+// lint.
+func lintBoardFile(body string) []string {
+	stripped := stripHTMLCommentsForLint(body)
+	matches := forbiddenSectionRefPattern.FindAllString(stripped, -1)
+	seen := map[string]struct{}{}
+	violations := []string{}
+	for _, m := range matches {
+		if _, ok := seen[m]; ok {
+			continue
+		}
+		seen[m] = struct{}{}
+		violations = append(violations, m)
+	}
+	return violations
+}
+
+func stripHTMLCommentsForLint(body string) string {
+	var b strings.Builder
+	b.Grow(len(body))
+	for i := 0; i < len(body); {
+		if i+3 < len(body) && body[i] == '<' && body[i+1] == '!' && body[i+2] == '-' && body[i+3] == '-' {
+			end := strings.Index(body[i+4:], "-->")
+			if end == -1 {
+				break
+			}
+			i += 4 + end + 3
+			continue
+		}
+		b.WriteByte(body[i])
+		i++
+	}
+	return b.String()
 }
