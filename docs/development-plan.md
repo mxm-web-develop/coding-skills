@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.4.2 章节/阶段编号禁止作为主语 + 强制决定权
+状态：v0.4.3 安装脚本自带 SSH 回退和连通性诊断
 
 更新日期：2026-08-18
 
@@ -150,6 +150,14 @@
 - `board-contract.md` 同步加一条：生成的看板 / 每版方案文档在渲染时不能出现裸编号，原始 ID / 章节号仍可藏在 HTML 注释里。
 - `cmd/flowctl/board_render.go` 新增 `lintBoardFile` 工具函数 + 正则 `forbiddenSectionRefPattern`，扫描 `§N` / `第 N 节` / `Phase N` / `Module N` / `Step N`，HTML 注释豁免；`board_render_test.go` 新增两个测试覆盖 6 个反例 + 1 个端到端正例。
 - 升级 `flowctl` 运行时版本号为 0.4.2，`spec/skill-pack.yaml` 同步。
+## 7.7 已完成的 v0.4.3：安装脚本自带 SSH 回退和连通性诊断
+
+- 用户实测发现 `curl ... | sh install/bootstrap.sh` 在某些网络环境（终端 HTTPS 出口被代理重置，但浏览器和 SSH 仍可用）会一直卡在 `curl: (35) Recv failure: Connection reset by peer`。脚本本身没问题，是用户当前的网络路径问题，但用户没有任何线索知道还能怎么办。
+- `install/bootstrap.sh` 加入 `download_release` 函数，把下载拆成三档：先尝试 HTTPS 拉 release 压缩包；HTTPS 不可用时自动改走 `git clone --depth 1 --branch VERSION git@github.com:...`，把源码就地打包成同样的 `coding-skills.tar.gz`，本地算 checksum 写入 `checksums.txt`，跳过远端 checksum 比对；两个都不可用时打印三套明确的手动步骤（浏览器手抄 release 资产 / SSH 拉源码跳过 bootstrap 直接调 install.sh / 用诊断脚本先看哪条路通）。
+- 新增 `install/diagnose-update.sh`：纯只读诊断，跑一次就告诉你 HTTPS、codeload、git+SSH 三条路径在本机哪些通哪些不通，并直接给出该用哪条命令更新。脚本可以浏览器手抄下来跑，不依赖任何 HTTPS 链路。
+- 新增 `tests/e2e/bootstrap-fallback.sh`：用 fake curl（一直失败）+ fake git（克隆失败）覆盖 HTTPS + SSH 都不可用的场景，断言退出码非零 + 三套手动方式都被打印。
+- 升级 `flowctl` 运行时版本号为 0.4.3，`spec/skill-pack.yaml` 同步；README 加 v0.4.3 条目。
+
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧
 

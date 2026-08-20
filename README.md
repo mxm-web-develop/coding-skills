@@ -417,6 +417,8 @@ cd coding-skills
 ## 当前版本
 
 `v0.4.2` 彻底收紧章节和阶段编号的展示规则：禁止漏词表把原来的"`§2 / §3 / §N` 改说上一节 / 下一节"那条直接替换为"不要展示编号，要么用自然语言概括这一节讲什么 + 给可点击的链接，要么直接把内容复述出来"，原"上一节 / 下一节"作为悬空引用一律禁用。发送前自检关从三问扩成四问，新增"悬空引用关"和"决定权关"——前者拦 §N / Phase N / Module N / Step N 这类悬空引用，后者强制每个非琐碎消息都给出至少一个有意义的决定项，让用户能真正参与方向选择而不是被动接收。同步把 `cmd/flowctl` 的看板渲染加了一个 lint 函数，扫描生成的文档里是否漏出 §N / Phase N / Module N / Step N / 第 N 节（HTML 注释里的 ID 豁免），并配单元测试覆盖。
+`v0.4.3` 修真实用户场景里被卡死的一类情况：当 `curl | sh install/bootstrap.sh` 因为网络原因一直 `Connection reset by peer` 时，脚本以前只会报错退出，用户没有任何线索知道还能怎么办。现在 `bootstrap.sh` 自带三档下载回退：先试 HTTPS 拉 release 压缩包，挂了自动改走 `git clone --depth 1 --branch VERSION git@github.com:...` 把源码就地打包成同样的 `coding-skills.tar.gz`（跳过远端 checksum 比对），两个都不可用就打印三套明确的手动步骤（浏览器手抄 / SSH 拉源码跳过 bootstrap 直接调 install.sh / 用诊断脚本先看哪条路通）。同步新增 `install/diagnose-update.sh`，纯只读，跑一次就告诉你 HTTPS、codeload、git+SSH 三条路径在本机哪些通哪些不通，并直接给出该用的命令。完整端到端测试在 `tests/e2e/bootstrap-fallback.sh`。
+
 
 `v0.4.1` 让"手动记录的验证证据"可以脱离开发执行独立存在：`evidence record` 新增 `--mode` 参数；当 `--source=agent-claim` 或 `--mode=external` 时不再要求传 `--run`，反之 `--source=external` 在默认 `mode=run` 下仍必须传 `--run`（向后兼容）。`--source=local` 仅在 `evidence run` 里合法，`evidence record` 不再接受。Schema 上 `run_id` 变为可空，独立 evidence 在校验时跳过"开发执行 ↔ 验证证据"反向链路；只有 `source=local` 没有 run 才报错。完整规则见 `docs/cli-reference.md` 中 `evidence record` 章节。
 
