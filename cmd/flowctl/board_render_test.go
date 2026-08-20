@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -149,4 +150,36 @@ func filepathJoin(parts ...string) string {
 
 func mkdirAllForTest(path string) error {
 	return os.MkdirAll(path, 0o755)
+}
+
+func TestWriteBoardFileRejectsForbiddenContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "STATUS.md")
+	body := "今天聊一聊需求文档 §42 这一节。"
+	err := writeBoardFile(path, body)
+	if err == nil {
+		t.Fatalf("expected writeBoardFile to refuse content containing §42, got nil error")
+	}
+	if !strings.Contains(err.Error(), "§42") {
+		t.Fatalf("expected error to mention §42, got: %v", err)
+	}
+	if _, statErr := os.Stat(path); statErr == nil {
+		t.Fatalf("expected %s to NOT exist after refused write", path)
+	}
+}
+
+func TestWriteBoardFileAcceptsCleanContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	path := filepath.Join(tmpDir, "STATUS.md")
+	body := "今天聊一聊需求文档里关于目录结构那一段。"
+	if err := writeBoardFile(path, body); err != nil {
+		t.Fatalf("expected writeBoardFile to accept clean content, got %v", err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read back failed: %v", err)
+	}
+	if string(got) != body {
+		t.Fatalf("body mismatch: got %q want %q", string(got), body)
+	}
 }

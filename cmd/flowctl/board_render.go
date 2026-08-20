@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 )
@@ -541,6 +540,9 @@ func versionProgressTrace(data boardData, version string) string {
 }
 
 func writeBoardFile(path, content string) error {
+	if violations := lintBoardFile(content); len(violations) > 0 {
+		return fmt.Errorf("refusing to write %s: forbidden section refs detected: %v (per user-communication-contract 禁止漏词表, see skills/orchestrate-ai-delivery/references/user-communication-contract.md)", path, violations)
+	}
 	temp, err := os.CreateTemp(filepath.Dir(path), ".flowctl-board-*.tmp")
 	if err != nil {
 		return err
@@ -923,13 +925,6 @@ func milestoneWorkBullets(data boardData, plan boardPlan, milestone boardMilesto
 	return strings.TrimRight(builder.String(), "\n")
 }
 
-
-// forbiddenSectionRefPattern matches the tokens that must never appear as the
-// primary text in a generated board document: bare §N / 第 N 节 / Phase N /
-// Module N / Step N references. Per the user-communication-contract
-// (禁止漏词表, v0.4.2), generated boards must restate the content in plain
-// language or attach a clickable link, never show the raw number.
-var forbiddenSectionRefPattern = regexp.MustCompile(`§\s*\d+|第\s*\d+\s*节|\bPhase\s*\d+|\bModule\s*\d+|\bStep\s*\d+`)
 
 // lintBoardFile returns the unique forbidden section-ref tokens found in
 // the given rendered Markdown body. HTML comments are stripped first so

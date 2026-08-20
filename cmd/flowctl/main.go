@@ -39,6 +39,8 @@ func main() {
 		}
 	case "render-board":
 		err = runRenderBoard(os.Args[2:])
+	case "lint-message":
+		err = runLintMessage(os.Args[2:])
 	case "help", "--help", "-h":
 		usage()
 		return
@@ -65,5 +67,6 @@ Usage:
   flowctl evidence <run|record|list|show|verify>
   flowctl cleanup digest [--root PATH] --plan PATH
   flowctl validate [--root PATH] [--json]
-  flowctl render-board [--root PATH]`)
+  flowctl render-board [--root PATH]
+  flowctl lint-message [--file PATH]`)
 }

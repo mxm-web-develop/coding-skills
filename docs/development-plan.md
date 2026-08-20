@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.4.3 安装脚本自带 SSH 回退和连通性诊断
+状态：v0.4.4 lint 真正接进生产路径 + flowctl lint-message
 
 更新日期：2026-08-18
 
@@ -157,6 +157,14 @@
 - 新增 `install/diagnose-update.sh`：纯只读诊断，跑一次就告诉你 HTTPS、codeload、git+SSH 三条路径在本机哪些通哪些不通，并直接给出该用哪条命令更新。脚本可以浏览器手抄下来跑，不依赖任何 HTTPS 链路。
 - 新增 `tests/e2e/bootstrap-fallback.sh`：用 fake curl（一直失败）+ fake git（克隆失败）覆盖 HTTPS + SSH 都不可用的场景，断言退出码非零 + 三套手动方式都被打印。
 - 升级 `flowctl` 运行时版本号为 0.4.3，`spec/skill-pack.yaml` 同步；README 加 v0.4.3 条目。
+
+## 7.8 已完成的 v0.4.4：lint 真正接进生产路径 + flowctl lint-message
+
+- v0.4.2 加的禁止漏词表配的 `lintBoardFile` 在测试里被证明有效，但生产路径上 `writeBoardFile` 一直不调用它——等于是白搭。这次把 lint 接到生产路径：生成看板时如果模板里有 §N / 第 N 节 / Phase N / Module N / Step N，`writeBoardFile` 直接拒绝写盘并报错，错误信息列出具体违规位置，避免违规看板溜进 `docs/board/`。
+- 新增 `flowctl lint-message` 命令：把任意用户面文本（典型场景：粘一段 AI 刚生成的回复）灌进 stdin，它会扫 §N、WI/MS/DEC/ADR/REQ-XXXX、commit SHA、`: in_progress` 之类的状态值、内部模块短名（form_decisions / form_field_guide / api_execute_confirm）、绝对机器路径，每条命中都给出具体的"改说成什么"提示；干净文本退出码 0，有违规退出码 1。
+- 状态值正则做了 false-positive 控制：普通英文里的 review / done 不再误伤，只匹配下划线形态（`in_progress` / `not_started`）和冒号前缀形态（`状态: done`）。
+- 把 `lintBoardFile` 和 `forbiddenSectionRefPattern` 从 `board_render.go` 抽到独立的 `user_communication_lint.go`，让 board 渲染和 `lint-message` 命令共享同一份正则。
+- 升级 `flowctl` 运行时版本号为 0.4.4，`spec/skill-pack.yaml` 同步；README 加 v0.4.4 条目；新增 `user_communication_lint_test.go` 覆盖各类违规和 clean 文本。
 
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧

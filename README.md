@@ -417,6 +417,8 @@ cd coding-skills
 ## 当前版本
 
 `v0.4.2` 彻底收紧章节和阶段编号的展示规则：禁止漏词表把原来的"`§2 / §3 / §N` 改说上一节 / 下一节"那条直接替换为"不要展示编号，要么用自然语言概括这一节讲什么 + 给可点击的链接，要么直接把内容复述出来"，原"上一节 / 下一节"作为悬空引用一律禁用。发送前自检关从三问扩成四问，新增"悬空引用关"和"决定权关"——前者拦 §N / Phase N / Module N / Step N 这类悬空引用，后者强制每个非琐碎消息都给出至少一个有意义的决定项，让用户能真正参与方向选择而不是被动接收。同步把 `cmd/flowctl` 的看板渲染加了一个 lint 函数，扫描生成的文档里是否漏出 §N / Phase N / Module N / Step N / 第 N 节（HTML 注释里的 ID 豁免），并配单元测试覆盖。
+`v0.4.4` 把 v0.4.2 加的禁止漏词表真正接进生产路径：之前 `lintBoardFile` 只在测试里被调用，`writeBoardFile` 一直没接它——等于白搭。这次写盘前先过 lint，命中 §N / 第 N 节 / Phase N / Module N / Step N 直接拒绝并报错，避免违规文档溜进 `docs/board/`。同步新增 `flowctl lint-message` 命令：把任意用户面文本（典型用法：粘一段 AI 刚生成的回复）灌进 stdin，扫描 §N、WI/MS/DEC/ADR/REQ-XXXX、commit SHA、`: in_progress` 之类的状态值、内部模块短名（form_decisions / form_field_guide / api_execute_confirm）、绝对机器路径，每条命中都给出"改说成什么"的提示；干净文本退出码 0，有违规退出码 1。状态值正则做了 false-positive 控制：普通英文里的 review / done 不再误伤，只匹配下划线形态（`in_progress` / `not_started`）和冒号前缀形态（`状态: done`）。完整正则和测试在 `cmd/flowctl/user_communication_lint.go` 和 `cmd/flowctl/user_communication_lint_test.go`。
+
 `v0.4.3` 修真实用户场景里被卡死的一类情况：当 `curl | sh install/bootstrap.sh` 因为网络原因一直 `Connection reset by peer` 时，脚本以前只会报错退出，用户没有任何线索知道还能怎么办。现在 `bootstrap.sh` 自带三档下载回退：先试 HTTPS 拉 release 压缩包，挂了自动改走 `git clone --depth 1 --branch VERSION git@github.com:...` 把源码就地打包成同样的 `coding-skills.tar.gz`（跳过远端 checksum 比对），两个都不可用就打印三套明确的手动步骤（浏览器手抄 / SSH 拉源码跳过 bootstrap 直接调 install.sh / 用诊断脚本先看哪条路通）。同步新增 `install/diagnose-update.sh`，纯只读，跑一次就告诉你 HTTPS、codeload、git+SSH 三条路径在本机哪些通哪些不通，并直接给出该用的命令。完整端到端测试在 `tests/e2e/bootstrap-fallback.sh`。
 
 

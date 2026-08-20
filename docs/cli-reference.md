@@ -77,6 +77,28 @@ flowctl render-board --root .
 
 缺少事实时显示“未记录”“待确认”或“尚无证据”，不会猜测通过状态。
 
+生成时自动跑用户面语言 lint：模板或上下文里如果出现 §N / 第 N 节 / Phase N / Module N / Step N，写盘直接失败并报告具体违规位置。HTML 注释里的 ID 不算违规。
+
+### lint-message
+
+```bash
+echo "$AI_REPLY" | flowctl lint-message
+flowctl lint-message --file path/to/ai_output.txt
+```
+
+扫描用户面文本是否含禁止漏词表里的内容：
+
+- 悬空引用：§N / 第 N 节 / Phase N / Module N / Step N。
+- 内部对象 ID：WI-XXXX / MS-XXXX / DEC-XXXX / ADR-XXXX / REQ-XXXX。
+- 状态值原样贴：`in_progress` / `not_started` / 冒号前缀的 `done` / `blocked` / `review` / `approved` / `cancelled`。
+- 内部模块短名：`form_decisions` / `form_field_guide` / `api_execute_confirm`。
+- 完整 commit SHA（7-40 位 hex）。
+- 标题或主语位置贴的绝对机器路径（`/Users/...` / `/home/...` / `C:\...`）。
+
+普通英文里的 review / done 不会误伤。每条命中都给"改说成什么"的具体提示。HTML 注释豁免。
+
+退出码：干净文本 0，有违规 1，参数错 2。
+
 ## 项目初始化
 
 ```bash
