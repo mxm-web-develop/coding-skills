@@ -113,10 +113,28 @@ download_release() {
     printf '%s  coding-skills.tar.gz\n' "$bootstrap_actual_sum" > "$BOOTSTRAP_DIR/checksums.txt"
     status "已通过 git+SSH 拉取 ${VERSION} 源码并打包，跳过 checksum 比对"
     return 0
+  else
+    status "git+SSH 也不通（一般是国内到 GitHub 不稳或没配 SSH key）"
+  fi
+
+  if [ "${AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR:-0}" = "1" ]; then
+    status "镜像路径已跳过（AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1）"
+  elif command -v curl >/dev/null 2>&1; then
+    MIRROR_BASE="${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}"
+    status "HTTPS 和 SSH 都不通，尝试通过镜像 ${MIRROR_BASE} 拉取（仅在直接通道都失败时才走）"
+    if curl -fsSL --max-time 30 "${MIRROR_BASE}/${DOWNLOAD_BASE}/coding-skills.tar.gz" -o "$BOOTSTRAP_DIR/coding-skills.tar.gz" 2>/dev/null \
+       && curl -fsSL --max-time 30 "${MIRROR_BASE}/${DOWNLOAD_BASE}/checksums.txt" -o "$BOOTSTRAP_DIR/checksums.txt" 2>/dev/null; then
+      status "已通过镜像 ${MIRROR_BASE} 拉取 ${VERSION} 安装包"
+      return 0
+    else
+      status "镜像 ${MIRROR_BASE} 也拉不下来"
+    fi
+  else
+    status "本机没有 curl，无法走镜像回退"
   fi
 
   cat >&2 <<EOF
-无法自动下载 ${VERSION} 安装包（HTTPS 与 git+SSH 都不可用）。
+无法自动下载 ${VERSION} 安装包（HTTPS、git+SSH、镜像三档都不可用）。
 
 请选一种手动方式继续：
 
@@ -131,7 +149,14 @@ download_release() {
   cd /tmp/coding-skills && bash install/install.sh update \\
     --target "$TARGET_DIR" --source .
 
-方式 C — 先诊断哪条路通：
+方式 C — 走镜像（如果 GitHub 不通，常见于大陆网络）：
+  curl -fsSL -o /tmp/coding-skills.tar.gz \
+    ${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}/${DOWNLOAD_BASE}/coding-skills.tar.gz
+  curl -fsSL -o /tmp/checksums.txt \
+    ${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}/${DOWNLOAD_BASE}/checksums.txt
+  然后重新执行本脚本（脚本会复用 /tmp 下的包）
+
+方式 D — 先诊断哪条路通：
   bash <(curl -fsSL https://raw.githubusercontent.com/$REPOSITORY/main/install/diagnose-update.sh)
   （如果这条也连不上，就直接浏览器打开同 URL 把 diagnose-update.sh 内容存下来跑）
 EOF

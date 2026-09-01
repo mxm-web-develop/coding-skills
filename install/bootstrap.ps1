@@ -32,12 +32,31 @@ $targetPath = (Resolve-Path -LiteralPath $Target).Path
 $bootstrapDir = Join-Path ([System.IO.Path]::GetTempPath()) ("ai-flow-bootstrap-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $bootstrapDir | Out-Null
 
+$archive = Join-Path $bootstrapDir "coding-skills.zip"
+$checksums = Join-Path $bootstrapDir "checksums.txt"
+$mirrorBase = if ($env:AI_FLOW_DOWNLOAD_MIRROR) { $env:AI_FLOW_DOWNLOAD_MIRROR } else { "https://ghproxy.com" }
+$skipMirror = ($env:AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR -eq "1")
+
+function Invoke-AiFlowReleaseDownload {
+    param(
+        [Parameter(Mandatory = $true)] [string] $Base
+    )
+    Invoke-WebRequest -Uri "$Base/coding-skills.zip" -OutFile $archive
+    Invoke-WebRequest -Uri "$Base/checksums.txt" -OutFile $checksums
+}
+
 try {
-    $archive = Join-Path $bootstrapDir "coding-skills.zip"
-    $checksums = Join-Path $bootstrapDir "checksums.txt"
     Write-Host "ai-flow bootstrap: downloading AI Flow $Version release package"
-    Invoke-WebRequest -Uri "$downloadBase/coding-skills.zip" -OutFile $archive
-    Invoke-WebRequest -Uri "$downloadBase/checksums.txt" -OutFile $checksums
+    try {
+        Invoke-AiFlowReleaseDownload -Base $downloadBase
+    } catch {
+        if ($skipMirror) {
+            Write-Host "ai-flow bootstrap: mirror path skipped (AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1)"
+            throw
+        }
+        Write-Host "ai-flow bootstrap: HTTPS to github.com failed, retrying via mirror $mirrorBase (only used when direct channel fails)"
+        Invoke-AiFlowReleaseDownload -Base "$mirrorBase/$downloadBase"
+    }
 
     Write-Host "ai-flow bootstrap: verifying release checksum"
     $checksumLine = Get-Content -LiteralPath $checksums | Where-Object { $_ -match 'coding-skills\.zip$' } | Select-Object -First 1

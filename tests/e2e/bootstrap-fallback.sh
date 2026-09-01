@@ -55,8 +55,11 @@ fi
 
 grep -q "方式 A" "$TMPDIR/stderr.log" || { printf 'FAIL: missing 浏览器手抄 方式 A\n'; exit 1; }
 grep -q "方式 B" "$TMPDIR/stderr.log" || { printf 'FAIL: missing SSH 拉源码 方式 B\n'; exit 1; }
-grep -q "方式 C" "$TMPDIR/stderr.log" || { printf 'FAIL: missing 诊断 方式 C\n'; exit 1; }
+grep -q "方式 C" "$TMPDIR/stderr.log" || { printf 'FAIL: missing 镜像 方式 C\n'; exit 1; }
+grep -q "方式 D" "$TMPDIR/stderr.log" || { printf 'FAIL: missing 诊断 方式 D\n'; exit 1; }
 grep -q "git clone --depth 1 --branch v9.9.9" "$TMPDIR/stderr.log" || { printf 'FAIL: missing correct version in git clone command\n'; exit 1; }
 grep -q "releases/tag/v9.9.9" "$TMPDIR/stderr.log" || { printf 'FAIL: missing release URL with correct version\n'; exit 1; }
+grep -q "尝试通过镜像 https://ghproxy.com 拉取" "$TMPDIR/stderr.log" || { printf 'FAIL: mirror tier should be attempted after HTTPS+SSH fail\n'; exit 1; }
+grep -q "镜像 https://ghproxy.com 也拉不下来" "$TMPDIR/stderr.log" || { printf 'FAIL: mirror tier should report its own failure when unreachable\n'; exit 1; }
 
-printf '\nOK: bootstrap.sh prints recovery instructions when both HTTPS and SSH fail\n'
+printf '\nOK: bootstrap.sh falls through HTTPS -> SSH -> mirror before printing recovery instructions\n'

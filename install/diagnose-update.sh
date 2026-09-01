@@ -65,7 +65,28 @@ else
   printf '  [SKIP] git 或 ssh 未安装，跳过 SSH 探测\n'
 fi
 
+section '镜像路径'
+
+if [ "$have_curl" -eq 1 ]; then
+  mirror_base="${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}"
+  if printf '%s' "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+    probe "${mirror_base}/https://github.com/$REPOSITORY/releases/download/$VERSION/coding-skills.tar.gz" \
+      sh -c "curl -fsSL --max-time 8 -o /dev/null ${mirror_base}/https://github.com/$REPOSITORY/releases/download/$VERSION/coding-skills.tar.gz"
+  else
+    probe "${mirror_base}/https://github.com/$REPOSITORY/releases/latest/download/coding-skills.tar.gz" \
+      sh -c "curl -fsSL --max-time 8 -o /dev/null ${mirror_base}/https://github.com/$REPOSITORY/releases/latest/download/coding-skills.tar.gz"
+  fi
+else
+  printf '  [SKIP] curl 未安装，跳过镜像探测\n'
+fi
+
 section '结论'
+mirror_display="${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}"
+if [ "$https_paths_ok" -eq 0 ] && [ "$ssh_ok" -eq 0 ] && [ "${AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR:-0}" != "1" ] && [ "$have_curl" -eq 1 ]; then
+  printf '  HTTPS 和 SSH 都不可用 → 走 GitHub 镜像反代（bootstrap.sh / bootstrap.ps1 已内置，下载 release 时自动重试）：\n'
+  printf '    %s/https://github.com/%s/releases/latest/download/coding-skills.tar.gz\n' "$mirror_display" "$REPOSITORY"
+  printf '  想禁用镜像反代：AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1\n'
+fi
 if [ "$https_paths_ok" -gt 0 ]; then
   printf '  HTTPS 可用 → 正常用 curl | sh 即可：\n'
   printf '    curl -fsSL https://raw.githubusercontent.com/%s/main/install/bootstrap.sh | sh\n' "$REPOSITORY"

@@ -181,6 +181,68 @@ Remove-Item Env:AI_FLOW_COMMAND
 Remove-Item Env:AI_FLOW_PLATFORMS
 ```
 
+### 中国大陆 / 网络不稳
+
+`bootstrap.sh` 现在按下面顺序自动尝试，**只有前几档都失败时才会启用镜像**；非大陆用户感受不到任何变化（第一档直接命中），国内用户大概率自动落到镜像那一步。
+
+1. HTTPS 直连 `github.com` 拉 release
+2. `git+ssh://git@github.com/...` 拉源码就地打包
+3. 通过 `${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}` 反代 GitHub
+
+升级时直接试默认命令即可；脚本会在 stderr 明确告诉你正在跑哪一档：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_COMMAND=update sh -s -- --codex
+```
+
+如果脚本日志里出现 `HTTPS 和 SSH 都不通，尝试通过镜像 https://ghproxy.com 拉取`，说明环境在用第三档；若镜像那一步也失败，错误退出时会按 `方式 A/B/C/D` 列出浏览器手抄 / SSH 拉源码 / 镜像预先下包 / 跑诊断四套手动方案。
+
+#### 诊断
+
+`install/diagnose-update.sh` 现在顺带测「HTTPS / codeload / git+SSH / 镜像」四档每条通不通；直连 GitHub 不通就把脚本内容存成本地跑：
+
+```
+https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/diagnose-update.sh
+```
+
+#### 入口命令本身的回退
+
+入口那行 `curl -fsSL https://raw.githubusercontent.com/.../bootstrap.sh | sh` 是脚本管不到的；如果你担心 `raw.githubusercontent.com` 直连也不稳，把入口换成带自动回退的版本：
+
+macOS / Linux / WSL：
+
+```bash
+TMP=$(mktemp) && {
+  curl -fsSL --max-time 10 -o "$TMP" https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh ||
+    curl -fsSL --max-time 20 -o "$TMP" https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh
+} && AI_FLOW_COMMAND=update sh "$TMP" --codex; rm -f "$TMP"
+```
+
+Windows PowerShell（`bootstrap.ps1` 没有 SSH 回退，镜像回退更容易触发）：
+
+```powershell
+$tmp = Join-Path $env:TEMP ("ai-flow-bootstrap-" + [guid]::NewGuid() + ".ps1")
+try {
+  try {
+    irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
+  } catch {
+    $env:AI_FLOW_DOWNLOAD_MIRROR = "https://ghproxy.com"
+    irm https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
+  }
+  $env:AI_FLOW_COMMAND = "update"
+  & $tmp -Codex
+} finally {
+  Remove-Item Env:AI_FLOW_COMMAND -ErrorAction SilentlyContinue
+  Remove-Item $tmp -ErrorAction SilentlyContinue
+}
+```
+
+#### 环境变量
+
+- `AI_FLOW_DOWNLOAD_MIRROR`：默认 `https://ghproxy.com`，可换成其他 GitHub 反代。
+- `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1`：禁用镜像回退，只信 GitHub 原站。
+
 ### 本地更新
 
 ```bash
