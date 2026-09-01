@@ -4,28 +4,7 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 
 它不需要独立服务或数据库：机器事实保存在项目根目录 `.ai-flow/`，人读看板保存在 `docs/board/`，所有内容可以跟随 Git 由个人或团队共同维护。
 
-## 核心能力
-
-- 15 个同源 Agent Skills，并安装到三个 IDE 各自可发现的项目目录。
-- 基于仓库证据生成工程画像，按真实语言、框架、现有命令和已安装社区 Skill 选择开发与测试 Playbook。
-- 模块化代码门禁：按职责拆分多文件、核心逻辑优先纯函数、副作用显式隔离、注释解释意图和约束。
-- Web UI 同时要求功能 E2E、Playwright 截图回归和人工/AI 视觉设计审查。
-- 需求确认后以自然语言共同完成技术选型：后端展示候选方案、优缺点、项目影响和推荐依据；前端可先生成两到三个隔离的 HTML 体验方向，确认布局、风格、动画和交互后再写生产代码。
-- 空白项目和既有项目两种初始化方式。
-- 既有或文档密集型工作区可选择保持原样、只读盘点，或在逐路径批准后按版本总结归档散落历史文档。
-- 初始化只标记疑似废弃代码、目录和生成内容；用户后续明确要求清理时，独立 Skill 才按多语言/多子项目依赖图提出可恢复计划。
-- 对话、选择、进度、错误和看板使用自然的产品/项目语言；Skill、对象 ID、状态值、缩写、哈希和机器目录默认只保留在内部记录中。
-- 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
-- Work Item、Harness Run、Checkpoint、Evidence 状态机。
-- 对话中断可恢复：状态问题、需求补充、独立任务、取消替换、无关问答和 IDE 切换都从共享项目记录继续，不把“继续”或插话误认为批准。
-- 测试证据绑定真实命令、退出码、Git SHA、日志和 SHA-256。
-- 四份自然语言人读看板，按大版本/小版本展示任务、方案决策、测试状态、发布和下一步。
-- JSON Schema 与跨对象链接校验。
-- Cursor、Codex、Claude Code 三平台入口。
-- macOS、Linux、Windows 的 Release 二进制和一行式安装。
-- 安装、更新和卸载不会覆盖未被 AI Flow 管理的同名 Skill。
-
-## 一分钟开始
+## 安装
 
 ### macOS / Linux / WSL
 
@@ -66,7 +45,129 @@ Remove-Item Env:AI_FLOW_PLATFORMS
 
 用户机器不需要安装 Go。`main.go` 只是源码入口；远程安装默认下载当前系统和架构对应的预编译 `flowctl` 单文件二进制。只有 AI Flow 仓库开发者显式设置 `AI_FLOW_BUILD_SOURCE=1` 从源码验证时才需要 Go。
 
-## 初始化项目
+### 中国大陆 / 网络不稳
+默认的 `curl | sh` 是按"GitHub 直连能通"设计的。`bootstrap.sh` 已经按下面顺序自动尝试，**只有前几档都失败时才会启用镜像**：国内用户大概率自动落到镜像那一步，正常情况下不用手动改命令。
+
+1. HTTPS 直连 `github.com` 拉 release
+2. `git+ssh://git@github.com/...` 拉源码就地打包
+3. 通过 `${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}` 反代 GitHub
+
+非大陆用户感受不到任何变化——第一档就直接成功了，不会走到镜像。
+
+#### 先按默认命令跑
+
+先直接试默认命令，绝大多数情况能跑通：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_COMMAND=update sh -s -- --codex
+```
+
+如果报错退出，再走下面两步。
+
+#### 看脚本在跑哪一档
+
+`bootstrap.sh` 失败时会在 stderr 明确告诉你它尝试了哪几档、哪一档失败。常见两种结尾：
+
+- **HTTPS 成功** → 看不到任何镜像提示，说明你不在大陆（或镜像刚好没必要），直接完成。
+- **HTTPS 和 SSH 都失败，改走镜像** → 脚本日志里会写 `HTTPS 和 SSH 都不通，尝试通过镜像 https://ghproxy.com 拉取`；如果镜像那一步成功了，整个升级就完成；只有镜像也挂才会落到下面的兜底。
+
+#### 跑诊断看本机到底什么通
+
+`install/diagnose-update.sh` 现在会顺带测「HTTPS / codeload / git+SSH / 镜像」四档每条通不通；直连 GitHub 不通就浏览器打开下面这条 URL 把脚本内容存成本地跑：
+
+```
+https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/diagnose-update.sh
+```
+
+#### 入口命令本身的回退（可选）
+
+上面那行 `curl -fsSL https://raw.githubusercontent.com/.../bootstrap.sh | sh` 是脚本管不到的入口；如果你担心直连 `raw.githubusercontent.com` 也不稳，把入口换成下面这段带自动回退的多行命令：
+
+macOS / Linux / WSL：
+
+```bash
+TMP=$(mktemp) && {
+  curl -fsSL --max-time 10 -o "$TMP" https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh ||
+    curl -fsSL --max-time 20 -o "$TMP" https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh
+} && AI_FLOW_COMMAND=update sh "$TMP" --codex; rm -f "$TMP"
+```
+
+Windows PowerShell（`bootstrap.ps1` 没有 SSH 回退，镜像那一步更容易触发）：
+
+```powershell
+$tmp = Join-Path $env:TEMP ("ai-flow-bootstrap-" + [guid]::NewGuid() + ".ps1")
+try {
+  try {
+    irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
+  } catch {
+    $env:AI_FLOW_DOWNLOAD_MIRROR = "https://ghproxy.com"
+    irm https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
+  }
+  $env:AI_FLOW_COMMAND = "update"
+  & $tmp -Codex
+} finally {
+  Remove-Item Env:AI_FLOW_COMMAND -ErrorAction SilentlyContinue
+  Remove-Item $tmp -ErrorAction SilentlyContinue
+}
+```
+
+> 国内用户通常第一行 `irm ...raw.githubusercontent.com...` 会失败、自动落到镜像分支；非大陆用户直接走原始 URL。
+
+#### 强制 / 禁用镜像
+
+- 想强制走镜像：在命令前加 `AI_FLOW_DOWNLOAD_MIRROR=https://ghproxy.com`，脚本就会优先走镜像（绕过 HTTPS 直连那一档）。
+- 想禁用镜像回退（只信 GitHub 原站）：在命令前加 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1`，失败就直接报错并打印手动步骤。
+
+#### 三档全失败时的兜底
+
+脚本会自动按 HTTPS → SSH → 镜像的顺序尝试；只有在 GitHub 全挂 + 镜像也挂的极端情况才会报错退出，此时会按 `方式 A/B/C/D` 列出浏览器手抄 / SSH 拉源码 / 镜像预先下包 / 跑诊断四套手动方案。
+
+## 升级
+
+macOS / Linux / WSL：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_COMMAND=update sh
+```
+
+Windows PowerShell：
+
+```powershell
+$env:AI_FLOW_COMMAND="update"
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+Remove-Item Env:AI_FLOW_COMMAND
+```
+
+固定版本安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
+  | AI_FLOW_VERSION=v0.3.0 sh
+```
+
+> 网络环境不稳（如中国大陆常见的 GitHub 不通）时的入口命令回退参见 [安装](#安装) 章节的「中国大陆 / 网络不稳」小节。
+
+## 卸载
+
+需要使用本地安装脚本或下载发布包后执行：
+
+```bash
+./install/install.sh uninstall --target /path/to/project --source .
+```
+
+```powershell
+.\install\install.ps1 -Command uninstall -Target C:\path\to\project -Source .
+```
+
+卸载只移除 AI Flow 管理的二进制、Skills 和平台入口。项目产生的 `.ai-flow/` 状态、证据、历史以及 `docs/board/` 默认保留。
+
+## 全生命周期使用手册
+
+安装完以后，按下面的顺序使用即可。
+
+### 1. 初始化项目（安装完第一件事）
 
 安装和项目初始化是两个步骤。安装只放入工具，不猜测项目状态。
 
@@ -120,7 +221,7 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
 
 目录名必须是 `.agents/skills`（`agents` 为复数），不是 `.agent`。安装或更新完成后，需要 Reload IDE Window 并开始一个新的 Agent chat，让 IDE 重新发现 Skill 元数据。
 
-## 日常使用
+### 2. 日常使用（怎么跟 AI Flow 沟通）
 
 用户不需要记 Skill 名称或 CLI。正常表达意图即可。
 
@@ -152,7 +253,7 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
 
 准备在真实项目中完整试用时，可按 [v0.3.0 人工全流程验收](docs/manual-acceptance.md) 依次检查空白项目、已有项目、中途补充、跨 IDE 恢复和发布确认。
 
-## 标准交付流程
+### 3. 标准交付流程（从需求到发布）
 
 ```text
 目标对齐
@@ -169,6 +270,57 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
 ```
 
 小修改可以合并讨论和设计步骤，但不能跳过测试、证据、评审、Git 追踪和知识同步。
+
+### 4. 长任务 Harness（运行模型）
+
+每个长任务使用：
+
+- Work Item：需要交付的最小可验证任务。
+- Run：一次具体执行，包含 owner、预算、阶段和 Git SHA。
+- Lease：限制同一 Work Item 只有一个写入者。
+- Checkpoint：中断前保存已完成步骤、变更文件、下一动作和 Git SHA。
+- Evidence：执行真实命令并保存日志、退出码和哈希。
+
+即使切换 IDE、会话中断或上下文被压缩，也可以从 `.ai-flow/runs/` 恢复，而不是依赖聊天记忆。
+
+### 5. 查看项目状态（看板与 CLI）
+
+```bash
+.ai-flow/bin/flowctl status --root .
+.ai-flow/bin/flowctl status --root . --json
+.ai-flow/bin/flowctl doctor --root .
+.ai-flow/bin/flowctl validate --root .
+```
+
+人读看板位于：
+
+- `docs/board/STATUS.md`
+- `docs/board/ROADMAP.md`
+- `docs/board/CURRENT_STATE.md`
+- `docs/board/RELEASES.md`
+
+看板由机器状态生成，不应直接修改事实。
+
+## 核心能力
+
+- 15 个同源 Agent Skills，并安装到三个 IDE 各自可发现的项目目录。
+- 基于仓库证据生成工程画像，按真实语言、框架、现有命令和已安装社区 Skill 选择开发与测试 Playbook。
+- 模块化代码门禁：按职责拆分多文件、核心逻辑优先纯函数、副作用显式隔离、注释解释意图和约束。
+- Web UI 同时要求功能 E2E、Playwright 截图回归和人工/AI 视觉设计审查。
+- 需求确认后以自然语言共同完成技术选型：后端展示候选方案、优缺点、项目影响和推荐依据；前端可先生成两到三个隔离的 HTML 体验方向，确认布局、风格、动画和交互后再写生产代码。
+- 空白项目和既有项目两种初始化方式。
+- 既有或文档密集型工作区可选择保持原样、只读盘点，或在逐路径批准后按版本总结归档散落历史文档。
+- 初始化只标记疑似废弃代码、目录和生成内容；用户后续明确要求清理时，独立 Skill 才按多语言/多子项目依赖图提出可恢复计划。
+- 对话、选择、进度、错误和看板使用自然的产品/项目语言；Skill、对象 ID、状态值、缩写、哈希和机器目录默认只保留在内部记录中。
+- 自然语言自动路由：状态、需求、功能、Bug、测试、评审、Git、版本和文档请求都会进入相应流程。
+- Work Item、Harness Run、Checkpoint、Evidence 状态机。
+- 对话中断可恢复：状态问题、需求补充、独立任务、取消替换、无关问答和 IDE 切换都从共享项目记录继续，不把“继续”或插话误认为批准。
+- 测试证据绑定真实命令、退出码、Git SHA、日志和 SHA-256。
+- 四份自然语言人读看板，按大版本/小版本展示任务、方案决策、测试状态、发布和下一步。
+- JSON Schema 与跨对象链接校验。
+- Cursor、Codex、Claude Code 三平台入口。
+- macOS、Linux、Windows 的 Release 二进制和一行式安装。
+- 安装、更新和卸载不会覆盖未被 AI Flow 管理的同名 Skill。
 
 ## 整体工作机制
 
@@ -319,74 +471,6 @@ AI Flow 不会在执行过程中偷偷下载、安装或升级任何你本地没
 - **AI Flow 的实际走法**：先用真实命令汇总测试结果——哪个代码版本、跑了哪条命令、退出码是什么、日志哈希是多少，**不是它自己说"通过了"就算**。再逐项核对发布门禁：Schema 是否合法、追踪链是否完整、每个 Work Item 是否都有可信的测试证据、看板是否新鲜、有没有阻塞项。有一项不过就停下来告诉你还差什么；都过了会列出"接下来要做的事"（创建 tag、写 changelog 等），每一步等你点头。**默认不会自动 push / merge / tag / 发布 / 部署**——这些动作都明确分别需要授权。
 - **结束时**：版本记录落进 `.ai-flow/releases/`，看板上出现新版本行，旧的 Work Item 自动归档到对应小版本下。
 
-## 长任务 Harness
-
-每个长任务使用：
-
-- Work Item：需要交付的最小可验证任务。
-- Run：一次具体执行，包含 owner、预算、阶段和 Git SHA。
-- Lease：限制同一 Work Item 只有一个写入者。
-- Checkpoint：中断前保存已完成步骤、变更文件、下一动作和 Git SHA。
-- Evidence：执行真实命令并保存日志、退出码和哈希。
-
-即使切换 IDE、会话中断或上下文被压缩，也可以从 `.ai-flow/runs/` 恢复，而不是依赖聊天记忆。
-
-## 查看项目状态
-
-```bash
-.ai-flow/bin/flowctl status --root .
-.ai-flow/bin/flowctl status --root . --json
-.ai-flow/bin/flowctl doctor --root .
-.ai-flow/bin/flowctl validate --root .
-```
-
-人读看板位于：
-
-- `docs/board/STATUS.md`
-- `docs/board/ROADMAP.md`
-- `docs/board/CURRENT_STATE.md`
-- `docs/board/RELEASES.md`
-
-看板由机器状态生成，不应直接修改事实。
-
-## 更新
-
-macOS / Linux / WSL：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_COMMAND=update sh
-```
-
-Windows PowerShell：
-
-```powershell
-$env:AI_FLOW_COMMAND="update"
-irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
-Remove-Item Env:AI_FLOW_COMMAND
-```
-
-固定版本安装：
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.3.0 sh
-```
-
-## 卸载
-
-需要使用本地安装脚本或下载发布包后执行：
-
-```bash
-./install/install.sh uninstall --target /path/to/project --source .
-```
-
-```powershell
-.\install\install.ps1 -Command uninstall -Target C:\path\to\project -Source .
-```
-
-卸载只移除 AI Flow 管理的二进制、Skills 和平台入口。项目产生的 `.ai-flow/` 状态、证据、历史以及 `docs/board/` 默认保留。
-
 ## 本地开发安装
 
 ```bash
@@ -417,10 +501,11 @@ cd coding-skills
 ## 当前版本
 
 `v0.4.2` 彻底收紧章节和阶段编号的展示规则：禁止漏词表把原来的"`§2 / §3 / §N` 改说上一节 / 下一节"那条直接替换为"不要展示编号，要么用自然语言概括这一节讲什么 + 给可点击的链接，要么直接把内容复述出来"，原"上一节 / 下一节"作为悬空引用一律禁用。发送前自检关从三问扩成四问，新增"悬空引用关"和"决定权关"——前者拦 §N / Phase N / Module N / Step N 这类悬空引用，后者强制每个非琐碎消息都给出至少一个有意义的决定项，让用户能真正参与方向选择而不是被动接收。同步把 `cmd/flowctl` 的看板渲染加了一个 lint 函数，扫描生成的文档里是否漏出 §N / Phase N / Module N / Step N / 第 N 节（HTML 注释里的 ID 豁免），并配单元测试覆盖。
+`v0.4.5` 让升级的 GitHub 拉取按用户网络环境自动判断，不再让所有人无脑走镜像：默认的 `curl | sh` 命令不变，但 `bootstrap.sh` 现在按 HTTPS → `git+ssh://git@github.com/...` → GitHub 反代（默认 `https://ghproxy.com`，可被 `AI_FLOW_DOWNLOAD_MIRROR` 覆盖）三档自动回退，只有前两档都不通时才会启用镜像——非大陆用户感受不到任何变化，国内用户大概率自动落到镜像那一步。`bootstrap.ps1`（之前没有任何回退、Windows 端一旦 HTTPS 失败就直接挂）也补上了同样的镜像回退。新增 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1` 环境变量可以一键禁用镜像回退。`install/diagnose-update.sh` 多了一段「镜像路径」探测，会顺带告诉你反代在本机通不通。完整端到端测试在 `tests/e2e/bootstrap-fallback.sh`，断言脚本会按 HTTPS → SSH → 镜像的顺序逐档尝试、每档失败都有对应日志，并最终按 `方式 A/B/C/D` 列出四套手动方案。
+
 `v0.4.4` 把 v0.4.2 加的禁止漏词表真正接进生产路径：之前 `lintBoardFile` 只在测试里被调用，`writeBoardFile` 一直没接它——等于白搭。这次写盘前先过 lint，命中 §N / 第 N 节 / Phase N / Module N / Step N 直接拒绝并报错，避免违规文档溜进 `docs/board/`。同步新增 `flowctl lint-message` 命令：把任意用户面文本（典型用法：粘一段 AI 刚生成的回复）灌进 stdin，扫描 §N、WI/MS/DEC/ADR/REQ-XXXX、commit SHA、`: in_progress` 之类的状态值、内部模块短名（form_decisions / form_field_guide / api_execute_confirm）、绝对机器路径，每条命中都给出"改说成什么"的提示；干净文本退出码 0，有违规退出码 1。状态值正则做了 false-positive 控制：普通英文里的 review / done 不再误伤，只匹配下划线形态（`in_progress` / `not_started`）和冒号前缀形态（`状态: done`）。完整正则和测试在 `cmd/flowctl/user_communication_lint.go` 和 `cmd/flowctl/user_communication_lint_test.go`。
 
 `v0.4.3` 修真实用户场景里被卡死的一类情况：当 `curl | sh install/bootstrap.sh` 因为网络原因一直 `Connection reset by peer` 时，脚本以前只会报错退出，用户没有任何线索知道还能怎么办。现在 `bootstrap.sh` 自带三档下载回退：先试 HTTPS 拉 release 压缩包，挂了自动改走 `git clone --depth 1 --branch VERSION git@github.com:...` 把源码就地打包成同样的 `coding-skills.tar.gz`（跳过远端 checksum 比对），两个都不可用就打印三套明确的手动步骤（浏览器手抄 / SSH 拉源码跳过 bootstrap 直接调 install.sh / 用诊断脚本先看哪条路通）。同步新增 `install/diagnose-update.sh`，纯只读，跑一次就告诉你 HTTPS、codeload、git+SSH 三条路径在本机哪些通哪些不通，并直接给出该用的命令。完整端到端测试在 `tests/e2e/bootstrap-fallback.sh`。
-
 
 `v0.4.1` 让"手动记录的验证证据"可以脱离开发执行独立存在：`evidence record` 新增 `--mode` 参数；当 `--source=agent-claim` 或 `--mode=external` 时不再要求传 `--run`，反之 `--source=external` 在默认 `mode=run` 下仍必须传 `--run`（向后兼容）。`--source=local` 仅在 `evidence run` 里合法，`evidence record` 不再接受。Schema 上 `run_id` 变为可空，独立 evidence 在校验时跳过"开发执行 ↔ 验证证据"反向链路；只有 `source=local` 没有 run 才报错。完整规则见 `docs/cli-reference.md` 中 `evidence record` 章节。
 
@@ -429,3 +514,4 @@ cd coding-skills
 `v0.3.1` 是 `v0.3.0` 的小幅修订：当实现、计划、评审或诊断过程中发现任务范围/需求范围/测试范围与原计划不一致时，禁止在面向用户的多选确认里暴露 "WI / WI scope / scope JSON / ADR / Evidence" 之类的内部标签或内部 ID。具体翻译规则和正反范例见 `skills/orchestrate-ai-delivery/references/user-communication-contract.md` 末尾的 "When you have to ask about scope, plan, or backlog changes" 章节。
 
 `v0.3.0` 提供 15 个 Core Skills 和 17 个 JSON Schema。新版增加技术方案对比与前端 HTML 体验稿确认，固化对话中断、补充、恢复和跨 IDE 交接，并对需求、方案、任务、测试、证据与发布关系做完整校验。人读看板由工具统一生成并检查新鲜度，Cursor、Codex、Claude Code 继续共享唯一 `.ai-flow/` 与 `docs/board/`。
+
