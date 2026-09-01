@@ -6,22 +6,30 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 
 ## 安装
 
+
 ### macOS / Linux / WSL
 
-进入目标项目根目录后选择当前 IDE：
+进入目标项目根目录后选择当前 IDE。推荐用 `install/get.sh` 作智能入口：直连 `raw.githubusercontent.com` 成功就直接用，连接被重置或超时就自动改走镜像，对非大陆用户零延迟；只有直连和镜像都失败时才会报错并打印手动方案。
 
 ```bash
 # Cursor
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --cursor
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | sh -s -- --cursor
 
 # Codex
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --codex
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | sh -s -- --codex
 
 # Claude Code
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --claude
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | sh -s -- --claude
 ```
 
-可以组合 `--cursor --codex`。也可以先安装任意一个 IDE，之后用相同命令增加另一个；安装顺序不影响结果，已有平台会同步刷新到同一版本，`.ai-flow/` 状态和 `docs/board/` 都会保留。不传平台参数时默认安装全部，兼容旧命令。
+可以组合 `--cursor --codex`；不传平台参数时默认安装全部，兼容旧命令。也可以先安装任意一个 IDE，之后用相同命令增加另一个；安装顺序不影响结果，已有平台会同步刷新到同一版本，`.ai-flow/` 状态和 `docs/board/` 都会保留。
+
+如果你确定本机能直连 GitHub、想少一次中间跳转，也可以直接把入口指向 `bootstrap.sh`：
+
+```bash
+# 等价于上面，但只在直连成功时才工作
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh | sh -s -- --codex
+```
 
 ### Windows PowerShell
 
@@ -29,6 +37,14 @@ curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/
 
 ```powershell
 $env:AI_FLOW_PLATFORMS="cursor" # cursor、codex、claude 或逗号组合
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.ps1 | iex
+Remove-Item Env:AI_FLOW_PLATFORMS
+```
+
+逻辑与 macOS / Linux / WSL 一致：先直连，直连失败自动走镜像。如果你确定本机能直连 GitHub，也可以直接把入口指向 `bootstrap.ps1`：
+
+```powershell
+$env:AI_FLOW_PLATFORMS="cursor"
 irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
 Remove-Item Env:AI_FLOW_PLATFORMS
 ```
@@ -45,109 +61,56 @@ Remove-Item Env:AI_FLOW_PLATFORMS
 
 用户机器不需要安装 Go。`main.go` 只是源码入口；远程安装默认下载当前系统和架构对应的预编译 `flowctl` 单文件二进制。只有 AI Flow 仓库开发者显式设置 `AI_FLOW_BUILD_SOURCE=1` 从源码验证时才需要 Go。
 
-### 中国大陆 / 网络不稳
-默认的 `curl | sh` 是按"GitHub 直连能通"设计的。`bootstrap.sh` 已经按下面顺序自动尝试，**只有前几档都失败时才会启用镜像**：国内用户大概率自动落到镜像那一步，正常情况下不用手动改命令。
+### 网络环境差异
 
-1. HTTPS 直连 `github.com` 拉 release
-2. `git+ssh://git@github.com/...` 拉源码就地打包
-3. 通过 `${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}` 反代 GitHub
+智能入口 `install/get.sh`（PowerShell 版 `install/get.ps1`）已经按本机环境自动处理：直连 `raw.githubusercontent.com` 成功就直接用（对绝大多数非大陆用户零额外延迟）；连接被重置或超时就自动改走 `${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}` 镜像。镜像**只在直连失败时才被触及**，不会让所有人平白多一跳。
 
-非大陆用户感受不到任何变化——第一档就直接成功了，不会走到镜像。
+`get.sh` 拉到的 `bootstrap.sh` 内部还会再按 HTTPS → SSH → 镜像顺序兜底一次，然后查 SHA-256、再装。三档全失败才会报错退出，并按 A 浏览器手抄 / B SSH 拉源码 / C 镜像预先下包 / D 跑诊断四套方式提示手动恢复。
 
-#### 先按默认命令跑
-
-先直接试默认命令，绝大多数情况能跑通：
+跑诊断看本机哪条路通（只读、不会做任何改动）：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_COMMAND=update sh -s -- --codex
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/diagnose-update.sh | sh
+# 或下载到本地：浏览器打开 https://raw.githubusercontent.com/.../diagnose-update.sh 保存后跑 sh diagnose-update.sh
 ```
 
-如果报错退出，再走下面两步。
+强制 / 禁用镜像：
 
-#### 看脚本在跑哪一档
-
-`bootstrap.sh` 失败时会在 stderr 明确告诉你它尝试了哪几档、哪一档失败。常见两种结尾：
-
-- **HTTPS 成功** → 看不到任何镜像提示，说明你不在大陆（或镜像刚好没必要），直接完成。
-- **HTTPS 和 SSH 都失败，改走镜像** → 脚本日志里会写 `HTTPS 和 SSH 都不通，尝试通过镜像 https://ghproxy.com 拉取`；如果镜像那一步成功了，整个升级就完成；只有镜像也挂才会落到下面的兜底。
-
-#### 跑诊断看本机到底什么通
-
-`install/diagnose-update.sh` 现在会顺带测「HTTPS / codeload / git+SSH / 镜像」四档每条通不通；直连 GitHub 不通就浏览器打开下面这条 URL 把脚本内容存成本地跑：
-
-```
-https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/diagnose-update.sh
-```
-
-#### 入口命令本身的回退（可选）
-
-上面那行 `curl -fsSL https://raw.githubusercontent.com/.../bootstrap.sh | sh` 是脚本管不到的入口；如果你担心直连 `raw.githubusercontent.com` 也不稳，把入口换成下面这段带自动回退的多行命令：
-
-macOS / Linux / WSL：
-
-```bash
-TMP=$(mktemp) && {
-  curl -fsSL --max-time 10 -o "$TMP" https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh ||
-    curl -fsSL --max-time 20 -o "$TMP" https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh
-} && AI_FLOW_COMMAND=update sh "$TMP" --codex; rm -f "$TMP"
-```
-
-Windows PowerShell（`bootstrap.ps1` 没有 SSH 回退，镜像那一步更容易触发）：
-
-```powershell
-$tmp = Join-Path $env:TEMP ("ai-flow-bootstrap-" + [guid]::NewGuid() + ".ps1")
-try {
-  try {
-    irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
-  } catch {
-    $env:AI_FLOW_DOWNLOAD_MIRROR = "https://ghproxy.com"
-    irm https://ghproxy.com/https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 -OutFile $tmp
-  }
-  $env:AI_FLOW_COMMAND = "update"
-  & $tmp -Codex
-} finally {
-  Remove-Item Env:AI_FLOW_COMMAND -ErrorAction SilentlyContinue
-  Remove-Item $tmp -ErrorAction SilentlyContinue
-}
-```
-
-> 国内用户通常第一行 `irm ...raw.githubusercontent.com...` 会失败、自动落到镜像分支；非大陆用户直接走原始 URL。
-
-#### 强制 / 禁用镜像
-
-- 想强制走镜像：在命令前加 `AI_FLOW_DOWNLOAD_MIRROR=https://ghproxy.com`，脚本就会优先走镜像（绕过 HTTPS 直连那一档）。
-- 想禁用镜像回退（只信 GitHub 原站）：在命令前加 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1`，失败就直接报错并打印手动步骤。
+- 想强制走镜像：在命令前加 `AI_FLOW_DOWNLOAD_MIRROR=https://ghproxy.com`。
+- 想禁用镜像回退（只信 GitHub 原站）：加 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1`，失败就直接报错。
 
 #### 三档全失败时的兜底
 
-脚本会自动按 HTTPS → SSH → 镜像的顺序尝试；只有在 GitHub 全挂 + 镜像也挂的极端情况才会报错退出，此时会按 `方式 A/B/C/D` 列出浏览器手抄 / SSH 拉源码 / 镜像预先下包 / 跑诊断四套手动方案。
+只有在 GitHub 全挂 + 镜像也挂的极端情况 `get.sh` 才会报错退出；它会按 `方式 A/B/C/D` 列出浏览器手抄 / SSH 拉源码 / 镜像预先下包 / 跑诊断四套手动方案，按本机实际诊断结果选一条继续。
+
 
 ## 升级
+
+推荐继续用智能入口 `install/get.sh` / `get.ps1`，直连失败会自动改走镜像、不会让你在大陆网络下被卡住：
 
 macOS / Linux / WSL：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_COMMAND=update sh
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update sh
 ```
 
 Windows PowerShell：
 
 ```powershell
 $env:AI_FLOW_COMMAND="update"
-irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.ps1 | iex
+irm https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.ps1 | iex
 Remove-Item Env:AI_FLOW_COMMAND
 ```
 
-固定版本安装：
+如果你直连 GitHub 完全没问题、想少一次中间跳转，也可以直接把入口指向 `bootstrap.sh` / `bootstrap.ps1`，效果相同。完整联网策略详见上面的「网络环境差异」小节。
+
+固定版本升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/bootstrap.sh \
-  | AI_FLOW_VERSION=v0.3.0 sh
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update AI_FLOW_VERSION=v0.4.4 sh
 ```
 
-> 网络环境不稳（如中国大陆常见的 GitHub 不通）时的入口命令回退参见 [安装](#安装) 章节的「中国大陆 / 网络不稳」小节。
+安装 / 升级 / 卸载不会覆盖未被 AI Flow 管理的同名 Skill，平台支持采用"加入并同步"语义：例如在已装 Cursor 的项目上跑 `--codex` 会增加 Codex 支持，同时把已有 IDE 的受管 Skill 也刷新到当前版本。升级不会修改 `.ai-flow/` 项目对象和人读看板。
 
 ## 卸载
 
