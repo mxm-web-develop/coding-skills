@@ -107,7 +107,7 @@ Remove-Item Env:AI_FLOW_COMMAND
 固定版本升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update AI_FLOW_VERSION=v0.4.4 sh
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update AI_FLOW_VERSION=v0.4.5 sh
 ```
 
 安装 / 升级 / 卸载不会覆盖未被 AI Flow 管理的同名 Skill，平台支持采用"加入并同步"语义：例如在已装 Cursor 的项目上跑 `--codex` 会增加 Codex 支持，同时把已有 IDE 的受管 Skill 也刷新到当前版本。升级不会修改 `.ai-flow/` 项目对象和人读看板。
@@ -464,7 +464,7 @@ cd coding-skills
 ## 当前版本
 
 `v0.4.2` 彻底收紧章节和阶段编号的展示规则：禁止漏词表把原来的"`§2 / §3 / §N` 改说上一节 / 下一节"那条直接替换为"不要展示编号，要么用自然语言概括这一节讲什么 + 给可点击的链接，要么直接把内容复述出来"，原"上一节 / 下一节"作为悬空引用一律禁用。发送前自检关从三问扩成四问，新增"悬空引用关"和"决定权关"——前者拦 §N / Phase N / Module N / Step N 这类悬空引用，后者强制每个非琐碎消息都给出至少一个有意义的决定项，让用户能真正参与方向选择而不是被动接收。同步把 `cmd/flowctl` 的看板渲染加了一个 lint 函数，扫描生成的文档里是否漏出 §N / Phase N / Module N / Step N / 第 N 节（HTML 注释里的 ID 豁免），并配单元测试覆盖。
-`v0.4.5` 让升级的 GitHub 拉取按用户网络环境自动判断，不再让所有人无脑走镜像：默认的 `curl | sh` 命令不变，但 `bootstrap.sh` 现在按 HTTPS → `git+ssh://git@github.com/...` → GitHub 反代（默认 `https://ghproxy.com`，可被 `AI_FLOW_DOWNLOAD_MIRROR` 覆盖）三档自动回退，只有前两档都不通时才会启用镜像——非大陆用户感受不到任何变化，国内用户大概率自动落到镜像那一步。`bootstrap.ps1`（之前没有任何回退、Windows 端一旦 HTTPS 失败就直接挂）也补上了同样的镜像回退。新增 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1` 环境变量可以一键禁用镜像回退。`install/diagnose-update.sh` 多了一段「镜像路径」探测，会顺带告诉你反代在本机通不通。完整端到端测试在 `tests/e2e/bootstrap-fallback.sh`，断言脚本会按 HTTPS → SSH → 镜像的顺序逐档尝试、每档失败都有对应日志，并最终按 `方式 A/B/C/D` 列出四套手动方案。
+`v0.4.5` 把"按用户网络环境判断拉取策略"做到端到端：之前 `bootstrap.sh` 已经在内部按 HTTPS → SSH → 镜像做了三档回退，但**入口**那行 `curl -fsSL https://raw.githubusercontent.com/.../bootstrap.sh | sh` 还是要先直连 `raw.githubusercontent.com`——一旦被 RST 或 SSL 超时，脚本根本下不来，文档里多行回退又被埋成「可选」。这次新增 `install/get.sh`（PowerShell 版 `get.ps1`）做智能入口：先直连 12 秒超时，失败自动改走 `${AI_FLOW_DOWNLOAD_MIRROR:-https://ghproxy.com}`，再不通才打印浏览器手抄 URL。镜像**只在直连被重置或超时时**被触及，非大陆用户零额外延迟。`bootstrap.sh` / `bootstrap.ps1` 的镜像回退和 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1` 保留作第二层兜底。`install/diagnose-update.sh` 多一段镜像路径探测并修一个 `${AI_FLOW_DOWNLOAD_MIRROR:-...}` 没展开的 bug；失败时的手动方案从 3 套扩成 4 套（A 浏览器手抄 / B SSH 拉源码 / C 镜像预先下包 / D 跑诊断），每档失败都打印对应日志。README 同步把安装 / 升级 / 卸载 / 全生命周期使用手册四节提到开头，新增的「网络环境差异」小节说明智能入口的路由策略和强制 / 禁用镜像的环境变量；原来的多行入口回退替换成「直连没问题的话也可以直接把入口指向 `bootstrap.sh`」一句话。端到端覆盖新加 `tests/e2e/get-entry-fallback.sh`（fast / slow / all-fail 三档），`tests/e2e/bootstrap-fallback.sh` 继续全绿，`go test ./...` 全绿。
 
 `v0.4.4` 把 v0.4.2 加的禁止漏词表真正接进生产路径：之前 `lintBoardFile` 只在测试里被调用，`writeBoardFile` 一直没接它——等于白搭。这次写盘前先过 lint，命中 §N / 第 N 节 / Phase N / Module N / Step N 直接拒绝并报错，避免违规文档溜进 `docs/board/`。同步新增 `flowctl lint-message` 命令：把任意用户面文本（典型用法：粘一段 AI 刚生成的回复）灌进 stdin，扫描 §N、WI/MS/DEC/ADR/REQ-XXXX、commit SHA、`: in_progress` 之类的状态值、内部模块短名（form_decisions / form_field_guide / api_execute_confirm）、绝对机器路径，每条命中都给出"改说成什么"的提示；干净文本退出码 0，有违规退出码 1。状态值正则做了 false-positive 控制：普通英文里的 review / done 不再误伤，只匹配下划线形态（`in_progress` / `not_started`）和冒号前缀形态（`状态: done`）。完整正则和测试在 `cmd/flowctl/user_communication_lint.go` 和 `cmd/flowctl/user_communication_lint_test.go`。
 

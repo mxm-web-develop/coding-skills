@@ -1,6 +1,6 @@
 # AI Flow 开发计划
 
-状态：v0.4.4 lint 真正接进生产路径 + flowctl lint-message
+状态：v0.4.5 智能入口 get.sh / get.ps1 + 网络环境差异文档
 
 更新日期：2026-08-18
 
@@ -165,6 +165,16 @@
 - 状态值正则做了 false-positive 控制：普通英文里的 review / done 不再误伤，只匹配下划线形态（`in_progress` / `not_started`）和冒号前缀形态（`状态: done`）。
 - 把 `lintBoardFile` 和 `forbiddenSectionRefPattern` 从 `board_render.go` 抽到独立的 `user_communication_lint.go`，让 board 渲染和 `lint-message` 命令共享同一份正则。
 - 升级 `flowctl` 运行时版本号为 0.4.4，`spec/skill-pack.yaml` 同步；README 加 v0.4.4 条目；新增 `user_communication_lint_test.go` 覆盖各类违规和 clean 文本。
+
+
+## 7.9 已完成的 v0.4.5：智能入口 + 网络环境差异
+- 之前 `bootstrap.sh` 已经在内部按 HTTPS → SSH → 镜像三档回退，但入口命令 `curl -fsSL https://raw.githubusercontent.com/.../bootstrap.sh | sh` 自身依赖 `raw.githubusercontent.com` 可达，被 RST 或 SSL 超时时 `bootstrap.sh` 根本下不来。
+- 新增 `install/get.sh` 与 `install/get.ps1` 作为智能入口：先直连 12 秒超时，失败自动改走 `AI_FLOW_DOWNLOAD_MIRROR`（默认 `https://ghproxy.com`），再不通才打印浏览器手抄 URL。镜像**只在直连失败时被触及**，非大陆用户零额外延迟。
+- `bootstrap.sh` / `bootstrap.ps1` 的镜像回退和 `AI_FLOW_BOOTSTRAP_FORCE_SKIP_MIRROR=1` 保留作第二层兜底；`install/diagnose-update.sh` 多一段镜像路径探测，修一个 `${AI_FLOW_DOWNLOAD_MIRROR:-...}` 没展开的 bug。
+- 失败时的手动方案从 3 套扩成 4 套（A 浏览器手抄 / B SSH 拉源码 / C 镜像预先下包 / D 跑诊断），每档失败都打印对应日志。
+- README 同步把安装 / 升级 / 卸载 / 全生命周期使用手册四节提到开头，新增「网络环境差异」小节；原来的多行入口回退替换成一句话。
+- 端到端测试新增 `tests/e2e/get-entry-fallback.sh`（fast / slow / all-fail 三档），`tests/e2e/bootstrap-fallback.sh` 继续全绿。
+- 升级 `flowctl` 运行时版本号为 0.4.5，`spec/skill-pack.yaml` 同步。
 
 
 ## 8. 已完成的 v0.3.1：用户面语言收紧
