@@ -13,6 +13,8 @@ When the implementation reveals that the task's file scope, requirement scope, o
 
 ## Procedure
 
+For a task planned by another model or an existing execution contract, read [cross-model execution](../orchestrate-ai-delivery/references/cross-model-execution.md). Use `flowctl context --work <id> --for executor`; a missing, stale or oversized contract returns to planning. Start with a bounded pilot when that executor has no observed capability for this task class. Do not silently fall back to guessing from the human progress summary.
+
 1. Read the Work Item, Requirements, accepted decisions, test specification, current Checkpoint, and `.ai-flow/baseline/engineering-profile.json`. Invoke `profile-project-engineering` when the profile is absent or stale. Stop when a linked material technology or UX/UI choice still awaits user confirmation.
 2. Read [references/engineering-quality-baseline.md](references/engineering-quality-baseline.md), then select only the matching implementation playbook through [references/stack-router.md](references/stack-router.md).
 3. Read any installed community Skills selected in the engineering profile. Project conventions and accepted decisions take precedence.

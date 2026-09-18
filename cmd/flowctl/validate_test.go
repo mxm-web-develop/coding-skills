@@ -12,8 +12,12 @@ func TestCompileAllSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(compiled) != 16 {
-		t.Fatalf("compiled %d schemas, want 16 object schemas plus common definitions", len(compiled))
+	files, err := filepath.Glob(filepath.Join(schemaRoot, "*.schema.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(compiled) != len(files)-1 {
+		t.Fatalf("compiled %d object schemas, expected all %d except common definitions", len(compiled), len(files)-1)
 	}
 	for _, required := range []string{
 		"work-item.schema.json",

@@ -13,7 +13,7 @@ WORK_ID=$("$FLOWCTL" work create --root "$TEST_ROOT" --title "继续导出功能
 RUN_ID=$("$FLOWCTL" work start --root "$TEST_ROOT" --id "$WORK_ID" --owner original)
 "$FLOWCTL" checkpoint save --root "$TEST_ROOT" --run "$RUN_ID" --phase implementing --summary "CSV 已开始实现" --next "补齐转义测试" --question "下载交互尚未确认" >/dev/null
 # A supported old state without the new optional lifecycle fields.
-sed 's/pack_version: 1.0.0/pack_version: 0.4.5/' "$TEST_ROOT/.ai-flow/manifest.yaml" > "$TEST_ROOT/manifest.tmp"
+sed 's/pack_version: 1.1.0/pack_version: 0.4.5/' "$TEST_ROOT/.ai-flow/manifest.yaml" > "$TEST_ROOT/manifest.tmp"
 mv "$TEST_ROOT/manifest.tmp" "$TEST_ROOT/.ai-flow/manifest.yaml"
 jq 'del(.workflow_version)' "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json" > "$TEST_ROOT/work.tmp"
 mv "$TEST_ROOT/work.tmp" "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json"

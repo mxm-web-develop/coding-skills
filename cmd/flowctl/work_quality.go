@@ -98,6 +98,17 @@ func validateWorkEvidence(root string, item WorkItem) error {
 		if e.GitSHA != gitSHA(root) || e.ContentSHA256 == "" || e.ContentSHA256 != fingerprint {
 			return fmt.Errorf("verification for %s is stale; rerun on current code", e.TestID)
 		}
+		if item.Execution != nil {
+			for _, test := range item.Execution.Spec.Tests {
+				if test.ID == e.TestID {
+					a, _ := hashJSON(test.Command)
+					b, _ := hashJSON(e.Command)
+					if a != b {
+						return errors.New("verification used a different command from the execution contract")
+					}
+				}
+			}
+		}
 		if evidenceResult(e) != "passed" || e.ExitCode != 0 {
 			return fmt.Errorf("latest required check did not pass: %s", e.TestID)
 		}
@@ -127,6 +138,9 @@ func qualityMatches(root, sha, fingerprint string) bool {
 }
 
 func checkWorkStart(root string, item WorkItem) error {
+	if err := checkExecution(root, item, false); err != nil {
+		return err
+	}
 	if err := requireProjectCompatible(root); err != nil {
 		return err
 	}
@@ -186,6 +200,9 @@ func scopeOverlap(a, b string) bool {
 }
 
 func checkRunBudget(root string, item WorkItem, run HarnessRun) error {
+	if err := checkExecution(root, item, false); err != nil {
+		return err
+	}
 	if run.ID == "" {
 		return nil
 	}
@@ -243,6 +260,9 @@ func checkRetryBudget(root string, item WorkItem, run HarnessRun, testID string)
 		failures++
 	}
 	if failures > run.Budgets.MaxRetries {
+		if item.Execution != nil {
+			return errors.New("retry limit reached; save progress and use handoff escalate with failure evidence; only the planner may revise the budget")
+		}
 		return errors.New("test retry budget reached; diagnose and explicitly revise the budget before retrying")
 	}
 	return nil

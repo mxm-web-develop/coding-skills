@@ -87,12 +87,17 @@ func scanUpgradeEngineering(root string) error {
 		}
 	}
 	manifests := []string{}
+	excluded := []string{}
 	err := filepath.Walk(root, func(path string, info os.FileInfo, e error) error {
 		if e != nil {
 			return e
 		}
 		rel := relativeDisplay(root, path)
 		if info.IsDir() {
+			if rel != "." && contains([]string{"fixtures", "__fixtures__", "testdata", "examples", "samples"}, strings.ToLower(info.Name())) {
+				excluded = append(excluded, rel)
+				return filepath.SkipDir
+			}
 			if rel != "." && (shouldSkipWorkspacePath(rel) || contains([]string{"node_modules", "vendor", "dist", "package", ".venv", "target", "build"}, info.Name())) {
 				return filepath.SkipDir
 			}
@@ -184,17 +189,8 @@ func scanUpgradeEngineering(root string) error {
 			profile[key] = value
 		}
 	}
-	if old, ok := existing["commands"].(map[string]any); ok {
-		for kind, values := range old {
-			if list, ok := values.([]any); ok {
-				for _, value := range list {
-					if command, ok := value.(string); ok {
-						commands[kind] = uniqueAppend(commands[kind], command)
-					}
-				}
-			}
-		}
-	}
+	// Old commands stay in the confirmed profile. Do not merge unverified
+	// discoveries into it: stale fixture commands otherwise live forever.
 	if revision, ok := existing["revision"].(float64); ok {
 		profile["revision"] = int(revision) + 1
 	}
@@ -205,8 +201,9 @@ func scanUpgradeEngineering(root string) error {
 			}
 		}
 	}
-	if err := writeJSONAtomic(path, profile); err != nil {
+	candidate := filepath.Join(root, ".ai-flow/baseline/engineering-candidate.json")
+	if err := writeJSONAtomic(candidate, profile); err != nil {
 		return err
 	}
-	return writeJSONAtomic(filepath.Join(root, ".ai-flow/baseline/upgrade-scan.json"), map[string]any{"scanned_at": profile["detected_at"], "git_sha": gitSHA(root), "manifests": manifests, "unknowns": unknowns, "tests_executed": false})
+	return writeJSONAtomic(filepath.Join(root, ".ai-flow/baseline/upgrade-scan.json"), map[string]any{"scanned_at": profile["detected_at"], "git_sha": gitSHA(root), "manifests": manifests, "unknowns": unknowns, "tests_executed": false, "status": "candidate", "excluded_components": excluded, "confirmed_profile_unchanged": true})
 }

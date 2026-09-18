@@ -7,6 +7,7 @@
 | “添加个新功能 xxx”, clear feature | reuse current goal → smallest task/acceptance criteria → existing confirmed design or necessary discussion → tests → implementation |
 | New skill version, record mismatch, “升级后继续之前的计划” | `upgrade-ai-project`; preserve plan/task identities and pending choices |
 | User verified the delivered result, or reports acceptance failure | acceptance workflow in `completion-and-memory.md`; pass closes and archives, failure resumes same task |
+| “用强模型做计划，换模型执行”, “换个模型继续开发”, executor handoff | `cross-model-execution.md` → executable contract → bounded context → execution or evidence-backed escalation |
 | Missing AI Flow state | `initialize-ai-project` |
 | Existing code without baseline | `adopt-existing-project` |
 | Scattered, stale, duplicate, or conflicting pre-AI-Flow documents | `adopt-existing-project` for read-only inventory and approval → `sync-project-knowledge` for approved mappings |

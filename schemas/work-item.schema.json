@@ -246,6 +246,9 @@
         "content_sha256",
         "recorded_at"
       ]
+    },
+    "execution": {
+      "$ref": "execution-contract.schema.json"
     }
   }
 }

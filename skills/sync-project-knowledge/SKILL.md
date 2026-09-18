@@ -9,6 +9,8 @@ Keep one current machine truth and generate human views from it.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md) for both conversation and generated boards. Never make users learn AI Flow's object names, IDs, directories, state values, or abbreviations to understand project status.
 
+For durable engineering facts, follow [memory verification](../profile-project-engineering/references/memory-verification.md). Keep observed candidates, reviewed facts and historical decisions distinct; source changes make affected facts stale. Task execution contracts archive with the completed task, while current facts retain provenance and supersession history.
+
 ## Procedure
 
 1. Read current state, active objects, latest relevant evidence and archive index. Load historical events, inventories or reports only for the specific synchronization issue. Follow [completion and working memory](../orchestrate-ai-delivery/references/completion-and-memory.md).

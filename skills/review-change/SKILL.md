@@ -13,6 +13,8 @@ When the review identifies a scope, requirement, or test gap that needs a user d
 
 ## Procedure
 
+For contracted cross-model work, read [cross-model execution](../orchestrate-ai-delivery/references/cross-model-execution.md). Use the assigned independent reviewer identity; inspect the actual implementation against interfaces, invariants and edge cases, not only command exit codes. Record actual executor suitability and rework without inventing usage or cost measurements.
+
 1. Fix the review base and inspect the complete diff, untracked files, linked Work Item, Requirements, decisions, evidence, and current engineering profile.
 2. Check requirement compliance and missing acceptance behavior.
 3. Check correctness, error handling, compatibility, data integrity, concurrency, security, performance, and operations as applicable.

@@ -17,8 +17,9 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 4. Determine whether the profile is new, unchanged, or stale relative to the current Git revision, workspace component graph, and configuration evidence. A completed cleanup that moves component roots, manifests, generated roots, or commands makes the profile stale.
 5. Inventory only Skills already available to the active IDE/agent. Select relevant community Skills using [references/community-skill-routing.md](references/community-skill-routing.md) and the reviewed source catalog in [references/recommended-sources.md](references/recommended-sources.md); project rules and accepted decisions always take precedence.
 6. Select the smallest matching development and test playbooks. For browser UI, mark visual verification required unless the change is provably non-visual.
-7. Write or update `.ai-flow/baseline/engineering-profile.json` using [references/profile-contract.md](references/profile-contract.md), then run `flowctl validate`.
-8. Save a Checkpoint that records profile changes, unknowns, selected playbooks, and community Skill provenance.
+7. Treat automatic scans as candidates. `flowctl memory scan --work <id>` writes a candidate and inventory without replacing confirmed knowledge. Inspect excluded fixtures/examples and all real components; use [memory verification](references/memory-verification.md) before promoting a profile or reusing a fact.
+8. Write or update `.ai-flow/baseline/engineering-profile.json` using [references/profile-contract.md](references/profile-contract.md), then run `flowctl validate`.
+9. Save a Checkpoint that records profile changes, unknowns, selected playbooks, and community Skill provenance.
 
 ## Guardrails
 

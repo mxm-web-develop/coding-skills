@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mxm-web-develop/coding-skills/schemas/verified-facts.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "claim": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "work_id": {
+            "$ref": "common.schema.json#/$defs/workItemId"
+          },
+          "confirmed_by": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          },
+          "confirmed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                }
+              },
+              "required": [
+                "path",
+                "sha256"
+              ]
+            }
+          },
+          "supersedes": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "key",
+          "claim",
+          "work_id",
+          "confirmed_by",
+          "confirmed_at",
+          "sources"
+        ]
+      }
+    }
+  },
+  "required": [
+    "facts"
+  ]
+}

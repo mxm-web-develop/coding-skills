@@ -32,6 +32,8 @@ func classifyIntent(message string) intentRoute {
 		return intentRoute{"research-only", "research-and-design-solution", false, false}
 	case has("汇报", "进度", "查看计划", "当前开发计划", "status", "progress", "show plan"):
 		return intentRoute{"status", "orchestrate-ai-delivery", true, false}
+	case has("换模型", "换个模型", "切换模型", "强模型", "便宜模型", "交给执行", "switch model", "model handoff"):
+		return intentRoute{"model-handoff", "plan-product-delivery", false, false}
 	case has("添加", "新增", "新功能", "实现", "add feature", "implement"):
 		return intentRoute{"feature", "discover-product-goal", false, true}
 	case has("修复", "报错", "bug", "失败", "fix"):
@@ -56,6 +58,8 @@ func runContext(args []string) error {
 	fs := flag.NewFlagSet("context", flag.ContinueOnError)
 	rootArg := fs.String("root", "", "project root")
 	workID := fs.String("work", "", "include one task's acceptance instructions")
+	audience := fs.String("for", "human", "human or executor")
+	maxBytes := fs.Int("max-bytes", 65536, "complete executor context byte budget")
 	history := fs.Bool("history", false, "include recent completion summaries")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -63,6 +67,17 @@ func runContext(args []string) error {
 	root, err := resolveRoot(*rootArg, true)
 	if err != nil {
 		return err
+	}
+	if *audience == "executor" {
+		data, err := executionContext(root, *workID, *maxBytes)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(data))
+		return nil
+	}
+	if *audience != "human" {
+		return fmt.Errorf("unknown context audience: %s", *audience)
 	}
 	status, err := readStatus(root)
 	if err != nil {

@@ -246,6 +246,9 @@ func runWorkStart(args []string) error {
 	if item.Status != "ready" {
 		return fmt.Errorf("cannot start work from status %s", item.Status)
 	}
+	if err := executionOwner(item, *owner); err != nil {
+		return err
+	}
 	if err := checkWorkStart(root, item); err != nil {
 		return err
 	}

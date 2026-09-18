@@ -26,6 +26,14 @@ func runWorkReview(args []string) error {
 	if strings.TrimSpace(*reviewer) == "" || strings.TrimSpace(*summary) == "" || !contains([]string{"approved", "changes_required"}, *decision) {
 		return errors.New("reviewer, summary and review decision are required")
 	}
+	if item.Execution != nil {
+		if *reviewer != item.Execution.Reviewer || *reviewer == item.Execution.Executor {
+			return errors.New("review must be performed by the assigned independent reviewer")
+		}
+		if err := checkExecution(root, item, true); err != nil {
+			return err
+		}
+	}
 	if *decision == "approved" {
 		if err := validateWorkEvidence(root, item); err != nil {
 			return err

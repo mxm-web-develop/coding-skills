@@ -27,6 +27,7 @@ func runWorkReopen(args []string) error {
 
 func runWorkBudget(args []string) error {
 	fs, rootArg, id, expected := workMutationFlags("work budget")
+	by := fs.String("by", "", "recorded planner for a contracted task")
 	elapsed := fs.Int("max-elapsed-minutes", 0, "total elapsed minutes since run start")
 	retries := fs.Int("max-retries", -1, "retries per failing test")
 	files := fs.Int("max-changed-files", 0, "maximum changed files")
@@ -37,6 +38,9 @@ func runWorkBudget(args []string) error {
 	root, item, err := loadWorkMutation(*rootArg, *id, *expected)
 	if err != nil {
 		return err
+	}
+	if item.Execution != nil && *by != item.Execution.Planner {
+		return errors.New("only the recorded planner can revise execution budgets")
 	}
 	if item.RunID == nil || contains([]string{"done", "cancelled", "closing"}, item.Status) || strings.TrimSpace(*reason) == "" {
 		return errors.New("an active run and budget revision reason are required")

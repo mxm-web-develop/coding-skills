@@ -1,0 +1,23 @@
+{
+  "assessment": "untested",
+  "provider": null,
+  "model": null,
+  "role": "executor",
+  "task_id": null,
+  "contract_revision": null,
+  "code_revision": null,
+  "tools_available": [],
+  "evidence_ids": [],
+  "independent_reviewer": null,
+  "review_outcome": null,
+  "scope_followed": null,
+  "stop_conditions_followed": null,
+  "planning_escalations": null,
+  "rework_attempts": null,
+  "usage_source": null,
+  "planning_cost": null,
+  "execution_cost_including_retries": null,
+  "review_cost": null,
+  "currency": null,
+  "limitations": ["Template only; no model execution or cost has been measured"]
+}

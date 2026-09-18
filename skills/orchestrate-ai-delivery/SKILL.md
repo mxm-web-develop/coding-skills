@@ -1,6 +1,6 @@
 ---
 name: orchestrate-ai-delivery
-description: Route and coordinate AI Flow work for an initialized project. Use for “汇报下当前开发计划”, “调研下 xxx 方案，看看是否适合我们项目”, “添加个新功能 xxx”, skill upgrades, acceptance feedback, project status, versions, plans, feature work, bug fixes, refactors, workspace cleanup, tests, reviews, releases, documentation updates, long-running tasks, or any software change in a repository containing `.ai-flow/manifest.yaml`.
+description: Route and coordinate AI Flow work for an initialized project. Use for “汇报下当前开发计划”, “调研下 xxx 方案，看看是否适合我们项目”, “添加个新功能 xxx”, cross-model planning and execution handoffs, skill upgrades, acceptance feedback, project status, versions, plans, feature work, bug fixes, refactors, workspace cleanup, tests, reviews, releases, documentation updates, long-running tasks, or any software change in a repository containing `.ai-flow/manifest.yaml`.
 ---
 
 # Orchestrate AI Delivery
@@ -25,6 +25,8 @@ Read and follow [references/conversation-continuity.md](references/conversation-
 10. Stop at an approval gate rather than assuming permission to push, merge, tag, deploy, delete, or publish.
 
 ## Coordination rules
+
+- When planning for another model, switching executors, or resuming a delegated implementation, read [cross-model execution](references/cross-model-execution.md). Prepare a complete execution contract, compile task context, and preserve role boundaries across IDEs.
 
 - Answer read-only status/plan questions from current context and the current plan: goal, completed outcomes, current work, blockers, next step, and any decision actually needed. Do not rewrite records, generate a new plan or ask approval merely to report progress.
 - Read [references/completion-and-memory.md](references/completion-and-memory.md) before verification handoff, acceptance feedback, completion or resuming a long-running task. Default context is current state, active plan and task, latest saved progress and pending choices; do not load entire histories.

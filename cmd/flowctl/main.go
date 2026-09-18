@@ -19,6 +19,10 @@ func main() {
 		return
 	case "route":
 		err = runRoute(os.Args[2:])
+	case "handoff":
+		err = runHandoff(os.Args[2:])
+	case "memory":
+		err = runMemory(os.Args[2:])
 	case "context":
 		err = runContext(os.Args[2:])
 	case "doctor":
@@ -71,7 +75,9 @@ Usage:
   flowctl project init [--root PATH] --mode greenfield|existing --name NAME
   flowctl project upgrade --mode check|prepare|apply|finish|restore [--root PATH]
   flowctl route --message TEXT
-  flowctl context [--root PATH] [--work ID] [--history]
+  flowctl context [--root PATH] [--work ID] [--history] [--for executor --max-bytes 65536]
+  flowctl handoff prepare|check|escalate|resolve --work ID
+  flowctl memory record|check|scan [--root PATH]
   flowctl status [--root PATH] [--json]
   flowctl work <create|list|show|ready|start|block|review-ready|review|acceptance|accept|reopen|budget|complete|cancel>
   flowctl checkpoint <save|list|show|latest|resume>

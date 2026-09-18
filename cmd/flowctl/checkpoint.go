@@ -251,6 +251,9 @@ func runCheckpointResume(args []string) error {
 	if !contains([]string{"in_progress", "blocked"}, item.Status) {
 		return errors.New("task cannot resume development in its current state; reopen reviewed work explicitly")
 	}
+	if err := executionOwner(item, *owner); err != nil {
+		return err
+	}
 	if err := checkWorkStart(root, item); err != nil {
 		return err
 	}

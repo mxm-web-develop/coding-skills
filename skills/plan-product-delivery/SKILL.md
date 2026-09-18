@@ -1,6 +1,6 @@
 ---
 name: plan-product-delivery
-description: Turn a confirmed product goal into understandable development stages and independently checkable tasks. Use after goal alignment, when arranging delivery, showing a roadmap, breaking down work that is too large for one change, or establishing dependencies and safe parallel boundaries.
+description: Turn a confirmed product goal into understandable development stages and independently checkable tasks. Use after goal alignment, when arranging delivery, showing a roadmap, breaking down work that is too large for one change, establishing dependencies and safe parallel boundaries, or planning with a stronger model for another model to implement.
 ---
 
 # Plan Product Delivery
@@ -18,10 +18,11 @@ When presenting a plan split, milestone list, or task breakdown to the user, do 
 3. Define milestone outcomes rather than activity lists.
 4. Split milestones into small vertical Work Items containing behavior, tests, implementation, and documentation where applicable.
 5. Assign each Work Item a scope, inputs, outputs, acceptance criteria, dependencies, risk, and likely change areas.
-6. Identify items safe to run in parallel and declare non-overlapping file or component boundaries.
-7. Put research spikes and user-facing option exploration before decisions they unblock; do not disguise uncertain research or HTML UX prototypes as production implementation.
-8. Validate that every Requirement maps to at least one Work Item and planned test.
-9. Present the arrangement as numbered stages and plain-language development tasks. Explain what the user will be able to see or verify after each stage, why the order matters, and which work can happen together. Ask whether to proceed with that arrangement, then persist the internal plan and task objects.
+6. When a different model will implement the plan, read [cross-model execution](../orchestrate-ai-delivery/references/cross-model-execution.md) and produce executable contracts for the next ready tasks. Resolve interface choices, entry points, edge cases, tests and stop conditions before handoff; do not require the executor to redesign.
+7. Identify items safe to run in parallel and declare non-overlapping file or component boundaries.
+8. Put research spikes and user-facing option exploration before decisions they unblock; do not disguise uncertain research or HTML UX prototypes as production implementation.
+9. Validate that every Requirement maps to at least one Work Item and planned test.
+10. Present the arrangement as numbered stages and plain-language development tasks. Explain what the user will be able to see or verify after each stage, why the order matters, and which work can happen together. Ask whether to proceed with that arrangement, then persist the internal plan and task objects.
 
 ## Guardrails
 

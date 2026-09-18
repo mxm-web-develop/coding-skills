@@ -380,3 +380,37 @@ Work Item 状态转换、Checkpoint 保存和恢复支持 `--expect-revision N`�
 - `0`：命令成功；Evidence 测试命令通过。
 - `1`：校验失败、状态转换不允许、revision 冲突、lease 冲突、Evidence 命令失败或文件错误。
 - `2`：主命令或参数用法错误。
+
+## 跨模型交接（v1.1）
+
+以下命令由 Agent 在真实任务上执行。`<id>` 等位置替换成实际记录。
+
+```sh
+# 扫描只生成候选；核实后提升为当前画像
+flowctl memory scan --root . --work <id>
+flowctl memory confirm-profile --root . --work <id> --by planner \
+  --file .ai-flow/baseline/engineering-candidate.json --source go.mod
+
+# 完整 JSON 示例见下方协议链接
+flowctl handoff prepare --root . --work <id> --file <execution-input.json> \
+  --by planner --executor implementer --reviewer reviewer --model '<actual-model>'
+flowctl handoff check --root . --work <id>
+flowctl context --root . --work <id> --for executor --max-bytes 65536
+
+# 观察到设计冲突后保存进度，带真实文件或测试证据交回
+flowctl handoff escalate --root . --work <id> --by implementer \
+  --reason '<observed conflict>' --evidence <file-or-task-evidence-id>
+flowctl handoff resolve --root . --work <id> --by planner \
+  --reason '<decision, rationale and next action>'
+# 若需求/方案也发生变化，规划者随后重做 prepare，追加 --reason
+
+# 记录已实际核实的知识；扫描观察不等于确认
+flowctl memory record --root . --work <id> --key <fact-key> \
+  --claim '<verified claim and applicability>' --by planner --source <file>
+flowctl memory check --root . --key <fact-key>
+# 修改旧事实需追加 --supersedes <previous-version-sha256>，保留旧版
+```
+
+[执行协议及 JSON 示例](../skills/orchestrate-ai-delivery/references/cross-model-execution.md)包含命令语义、完整性约束及角色边界。上下文预算以字节计，不是模型 token 数；超限不输出残缺交接。当前版本保留原有任务格式，只有建立了交接契约的任务才启用相应命令门禁；技能要求跨模型交接前先建立契约。
+
+角色是声明身份，不能冒充身份认证。`memory confirm-profile` 验证格式与来源身份；是否真正读懂来源、测试是否覆盖业务行为，仍需规划与评审模型核实。运行时不会调用第三方模型，也不会把声明的模型名称标为能力已验证。

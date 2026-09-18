@@ -59,6 +59,17 @@ func runEvidenceCommand(args []string) error {
 	if err := requireProjectCompatible(root); err != nil {
 		return err
 	}
+	if item.Execution != nil {
+		for _, test := range item.Execution.Spec.Tests {
+			if test.ID == *testID {
+				a, _ := hashJSON(test.Command)
+				b, _ := hashJSON(commandArgs)
+				if a != b {
+					return errors.New("required test command differs from the planned command; ask the planner to revise it")
+				}
+			}
+		}
+	}
 	if contains([]string{"done", "cancelled", "closing"}, item.Status) {
 		return errors.New("cannot execute checks for closed work")
 	}

@@ -7,6 +7,8 @@ description: Reconcile an installed AI Flow project after a tool upgrade while p
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Explain what remains valid, what needs reconciliation, and exactly where development resumes. A tool upgrade is not a new project, new plan, approval, release or completion.
 
+For v1.1, scans produce a separate engineering candidate. Review its component inventory and confirm the profile using [memory verification](../profile-project-engineering/references/memory-verification.md). Preserve old task identities; add an [execution contract](../orchestrate-ai-delivery/references/cross-model-execution.md) when handing remaining work to another model. Never promote old assumptions or a model label into verified capability.
+
 ## Recover the current project
 
 1. Read `flowctl project upgrade --mode check`, Git status, the current task and latest checkpoint. If a migration exists, resume it instead of preparing another. Preserve uncommitted code and unresolved user choices.
