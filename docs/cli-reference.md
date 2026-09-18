@@ -19,7 +19,7 @@ flowctl doctor --root .
 flowctl doctor --root . --json
 ```
 
-分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 15 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
+分别检查 Codex `.agents/skills/`、Cursor `.cursor/skills/`、Claude Code `.claude/skills/` 中的 16 个 Skills，以及三平台入口、JSON Schema 和初始化状态。
 
 ### status
 
@@ -192,16 +192,37 @@ flowctl work block \
 flowctl work review-ready --root . --id WI-20260817-ab12cd34
 ```
 
-### complete
+### review、acceptance、accept、complete
 
 ```bash
-flowctl work complete \
-  --root . \
-  --id WI-20260817-ab12cd34 \
-  --evidence EV-20260817-a1b2c3d4
+flowctl work review --root . --id WI-20260817-ab12cd34 --reviewer reviewer --decision approved --summary "需求与回归检查通过"
+flowctl work acceptance --root . --id WI-20260817-ab12cd34 --instructions "打开导出页面" --step "点击下载" --expected "文件字段顺序正确"
+# 仅在用户实际验证并给出反馈后记录；不能由 AI 自行代验收。
+flowctl work accept --root . --id WI-20260817-ab12cd34 --by user --feedback "已下载并核对字段，验证通过" --result passed
+flowctl work complete --root . --id WI-20260817-ab12cd34 --summary "支持按页面顺序导出；大文件暂不支持"
 ```
 
-Evidence 必须属于该 Work Item，结果为 `passed`，并且 trust 不能是 `unverified`。
+完成必须有当前代码对应的全部必需检查、评审和用户验收。`--evidence` 仅兼容旧调用，不能挑选一次历史通过绕过其他检查。完成后过程记录归档，`work show` 与关联校验仍能按原编号读取。
+
+`work accept --result failed` 保持同一任务并回到开发。验收后代码改变时，先 `work reopen --reason "新增字段要求"`，再测试、评审并重新提供验证步骤。
+
+### context、route 与升级
+
+```bash
+flowctl context --root .
+flowctl context --root . --work WI-20260817-ab12cd34
+flowctl context --root . --history
+flowctl route --message "汇报下当前开发计划"
+flowctl project upgrade --root . --mode check
+```
+
+`context` 是简短只读视图；`route` 是明确常用表达的分流辅助，复杂或混合意图仍由会话结合上下文判断。升级的 prepare/apply/finish/restore 用法见[升级与恢复](upgrade.md)。
+
+### 依赖与执行边界
+
+创建任务支持可重复的 `--depends-on`、`--protect`、`--required-test`、`--risk` 和 `--milestone`。开始或恢复任务时检查依赖和重叠写入；执行测试时检查耗时、重试次数和改动文件数。
+
+预算到达后先保存进度并诊断，然后用 `work budget --id <id> --reason <原因> --max-elapsed-minutes <总分钟数> --max-retries <次数> --max-changed-files <数量>` 显式调整。耗时按原执行开始时间累计，工具不会在后台强制终止编辑器。
 
 ### cancel
 

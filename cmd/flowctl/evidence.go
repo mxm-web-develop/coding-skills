@@ -56,6 +56,12 @@ func runEvidenceCommand(args []string) error {
 		return err
 	}
 
+	if err := requireProjectCompatible(root); err != nil {
+		return err
+	}
+	if contains([]string{"done", "cancelled", "closing"}, item.Status) {
+		return errors.New("cannot execute checks for closed work")
+	}
 	evidenceID, err := newObjectID("EV")
 	if err != nil {
 		return err
@@ -70,6 +76,19 @@ func runEvidenceCommand(args []string) error {
 		return err
 	}
 
+	if err := checkRetryBudget(root, item, run, *testID); err != nil {
+		logFile.Close()
+		return err
+	}
+	before, err := verificationFingerprint(root)
+	if err != nil {
+		logFile.Close()
+		return err
+	}
+	if err := checkRunBudget(root, item, run); err != nil {
+		logFile.Close()
+		return err
+	}
 	command := exec.Command(commandArgs[0], commandArgs[1:]...)
 	command.Dir = root
 	var output io.Writer = logFile
@@ -83,6 +102,13 @@ func runEvidenceCommand(args []string) error {
 	ended := time.Now().UTC()
 	if closeErr := logFile.Close(); closeErr != nil && runErr == nil {
 		runErr = closeErr
+	}
+	after, fingerprintErr := verificationFingerprint(root)
+	if fingerprintErr != nil {
+		return fingerprintErr
+	}
+	if before != after && runErr == nil {
+		runErr = errors.New("project content changed while verification ran; rerun against stable content")
 	}
 	exitCode := 0
 	result := "passed"
@@ -111,16 +137,17 @@ func runEvidenceCommand(args []string) error {
 		Command:       commandArgs,
 		ExitCode:      exitCode,
 		GitSHA:        gitSHA(root),
+		ContentSHA256: before,
 		Environment: map[string]string{
 			"os":   runtime.GOOS,
 			"arch": runtime.GOARCH,
 		},
-		StartedAt:   started.Format(time.RFC3339),
-		EndedAt:     ended.Format(time.RFC3339),
+		StartedAt:   started.Format(time.RFC3339Nano),
+		EndedAt:     ended.Format(time.RFC3339Nano),
 		LogPath:     filepath.ToSlash(relLog),
 		LogSHA256:   digest,
 		ExternalURI: nil,
-		CreatedAt:   ended.Format(time.RFC3339),
+		CreatedAt:   ended.Format(time.RFC3339Nano),
 	}
 	if err := persistEvidence(root, &item, &run, &evidence); err != nil {
 		return err
@@ -297,7 +324,7 @@ func runEvidenceVerify(args []string) error {
 	if err != nil {
 		return err
 	}
-	logPath := filepath.Join(root, filepath.FromSlash(evidence.LogPath))
+	logPath := resolveRecordPath(root, filepath.Join(root, filepath.FromSlash(evidence.LogPath)))
 	digest, err := sha256File(logPath)
 	if err != nil {
 		return err
@@ -307,7 +334,8 @@ func runEvidenceVerify(args []string) error {
 	}
 	currentSHA := gitSHA(root)
 	gitCurrent := currentSHA == evidence.GitSHA
-	if *requireCurrent && !gitCurrent {
+	contentCurrent := qualityMatches(root, evidence.GitSHA, evidence.ContentSHA256)
+	if *requireCurrent && (!gitCurrent || !contentCurrent) {
 		return fmt.Errorf("evidence Git SHA is stale: evidence=%s current=%s", evidence.GitSHA, currentSHA)
 	}
 	return printJSON(map[string]any{
@@ -316,6 +344,7 @@ func runEvidenceVerify(args []string) error {
 		"trust":            evidence.Trust,
 		"result":           evidence.Result,
 		"git_sha_current":  gitCurrent,
+		"content_current":  contentCurrent,
 		"evidence_git_sha": evidence.GitSHA,
 		"current_git_sha":  currentSHA,
 	})
@@ -329,6 +358,9 @@ func loadEvidenceContext(rootArg, workID, runID string) (string, WorkItem, Harne
 	item, err := readWorkItem(root, workID)
 	if err != nil {
 		return "", item, HarnessRun{}, err
+	}
+	if contains([]string{"done", "cancelled", "closing"}, item.Status) {
+		return "", item, HarnessRun{}, errors.New("cannot add verification to closed work")
 	}
 	if strings.TrimSpace(runID) == "" {
 		// Standalone evidence (agent-claim or --mode=external): no harness run.
@@ -348,6 +380,37 @@ func loadEvidenceContext(rootArg, workID, runID string) (string, WorkItem, Harne
 }
 
 func persistEvidence(root string, item *WorkItem, run *HarnessRun, evidence *Evidence) error {
+	// Checks can finish after another check has updated this task. Merge into
+	// freshly loaded records under the state lock, never the pre-command copy.
+	var unlock func()
+	var err error
+	for attempt := 0; attempt < 50; attempt++ {
+		unlock, err = projectMutationLock(root)
+		if err == nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	fresh, err := readWorkItem(root, item.ID)
+	if err != nil {
+		return err
+	}
+	if contains([]string{"done", "cancelled", "closing"}, fresh.Status) {
+		return errors.New("task closed while verification was running")
+	}
+	*item = fresh
+	if run != nil && run.ID != "" {
+		latest, err := readRun(root, run.ID)
+		if err != nil {
+			return err
+		}
+		*run = latest
+	}
+
 	if err := writeJSONAtomic(evidencePath(root, evidence.ID), evidence); err != nil {
 		return err
 	}
@@ -373,13 +436,47 @@ func persistEvidence(root string, item *WorkItem, run *HarnessRun, evidence *Evi
 		}
 		eventTarget = run.ID
 	}
+	testPath := filepath.Join(root, ".ai-flow/tests", evidence.TestID+".json")
+	if requireObjectID(evidence.TestID, "TEST") == nil {
+		var test map[string]any
+		if err := readSemanticJSON(testPath, &test); err == nil {
+			if test["work_item_id"] != item.ID {
+				return errors.New("test specification belongs to another task")
+			}
+			ids := []string{}
+			if existing, ok := test["evidence_ids"].([]any); ok {
+				for _, id := range existing {
+					if s, ok := id.(string); ok {
+						ids = append(ids, s)
+					}
+				}
+			}
+			test["evidence_ids"] = uniqueAppend(ids, evidence.ID)
+			test["updated_at"] = now
+			if revision, ok := test["revision"].(float64); ok {
+				test["revision"] = revision + 1
+			}
+			if test["status"] != "retired" {
+				test["status"] = "blocked"
+				if evidenceResult(*evidence) == "passed" {
+					test["status"] = "green"
+				} else if evidence.Result == "failed" {
+					test["status"] = "red"
+				}
+			}
+			if err := writeJSONAtomic(testPath, test); err != nil {
+				return err
+			}
+		} else if !os.IsNotExist(err) {
+			return err
+		}
+	}
 	eventExtras := map[string]any{"result": evidence.Result, "trust": evidence.Trust, "work_item_id": item.ID}
 	if run == nil || run.ID == "" {
 		eventExtras["standalone"] = true
 	}
 	return appendEvent(root, "evidence.recorded", "evidence", evidence.ID, eventTarget, 1, eventExtras)
 }
-
 
 // evidenceRunID returns a pointer to the harness run's ID for evidence.RunID,
 // or nil when the run is empty (standalone evidence: agent-claim or

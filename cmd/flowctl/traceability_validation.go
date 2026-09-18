@@ -30,6 +30,7 @@ type tracePlan struct {
 }
 
 type traceMilestone struct {
+	ID             string   `json:"id"`
 	RequirementIDs []string `json:"requirement_ids"`
 }
 
@@ -262,7 +263,7 @@ func validateTraceability(root string) []validationIssue {
 		}
 		if err := validateEvidenceLogPath(root, object.Value.LogPath); err != nil {
 			add(object.Path, "verification log is unavailable or unsafe: "+err.Error())
-		} else if digest, digestErr := sha256File(filepath.Join(root, filepath.FromSlash(object.Value.LogPath))); digestErr != nil {
+		} else if digest, digestErr := sha256File(resolveRecordPath(root, filepath.Join(root, filepath.FromSlash(object.Value.LogPath)))); digestErr != nil {
 			add(object.Path, "verification log cannot be hashed: "+digestErr.Error())
 		} else if digest != object.Value.LogSHA256 {
 			add(object.Path, "verification log hash does not match its recorded digest")
@@ -291,12 +292,12 @@ func validateTraceStorage(root string) []validationIssue {
 		} else {
 			seen[id] = displayPath
 		}
-		if filepath.Clean(path) != filepath.Clean(expected) {
+		if filepath.Clean(path) != filepath.Clean(resolveRecordPath(root, expected)) {
 			issues = append(issues, validationIssue{Path: displayPath, Schema: "semantic-links", Message: "object is not stored at its canonical path for id: " + id})
 		}
 	}
 	for _, directory := range []string{"goals", "requirements", "plans", "decisions", "work-items", "tests", "evidence", "releases"} {
-		files, _ := listJSONFiles(filepath.Join(root, ".ai-flow", directory))
+		files, _ := recordFiles(root, directory, true)
 		for _, path := range files {
 			var identity struct {
 				ID string `json:"id"`
@@ -309,6 +310,9 @@ func validateTraceStorage(root string) []validationIssue {
 	archiveFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "archive", "**", "*.json"))
 	_ = archiveFiles // filepath.Glob does not recurse; Walk below records archived IDs without imposing an active canonical path.
 	_ = filepath.Walk(filepath.Join(root, ".ai-flow", "archive"), func(path string, info os.FileInfo, walkErr error) error {
+		if info != nil && info.IsDir() && skipArchiveSnapshot(root, path) {
+			return filepath.SkipDir
+		}
 		if walkErr != nil || info == nil || info.IsDir() || !strings.HasSuffix(strings.ToLower(path), ".json") {
 			return nil
 		}
@@ -326,7 +330,7 @@ func validateTraceStorage(root string) []validationIssue {
 		}
 		return nil
 	})
-	runFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
+	runFiles, _ := globWithHistory(root, ".ai-flow/runs/RUN-*/run.json")
 	for _, path := range runFiles {
 		var identity struct {
 			ID string `json:"id"`
@@ -335,7 +339,7 @@ func validateTraceStorage(root string) []validationIssue {
 			check(path, identity.ID, runPath(root, identity.ID))
 		}
 	}
-	checkpointFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "checkpoints", "CP-*.json"))
+	checkpointFiles, _ := globWithHistory(root, ".ai-flow/runs/RUN-*/checkpoints/CP-*.json")
 	for _, path := range checkpointFiles {
 		var identity struct {
 			ID    string `json:"id"`
@@ -534,7 +538,7 @@ func validateEvidenceLogPath(root, logPath string) error {
 	if err := ensurePathInsideRepository(root, normalized); err != nil {
 		return err
 	}
-	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(normalized)))
+	info, err := os.Stat(resolveRecordPath(root, filepath.Join(root, filepath.FromSlash(normalized))))
 	if err != nil {
 		return err
 	}
@@ -562,14 +566,14 @@ func loadTraceGraph(root string) traceGraph {
 	loadTraceDirectory(root, "evidence", graph.evidence)
 	loadTraceDirectory(root, "releases", graph.releases)
 	loadArchivedTraceObjects(root, &graph)
-	runFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
+	runFiles, _ := globWithHistory(root, ".ai-flow/runs/RUN-*/run.json")
 	for _, path := range runFiles {
 		var value HarnessRun
 		if readSemanticJSON(path, &value) == nil {
 			graph.runs[value.ID] = traceObject[HarnessRun]{Path: path, Value: value}
 		}
 	}
-	checkpointFiles, _ := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "checkpoints", "CP-*.json"))
+	checkpointFiles, _ := globWithHistory(root, ".ai-flow/runs/RUN-*/checkpoints/CP-*.json")
 	for _, path := range checkpointFiles {
 		var value Checkpoint
 		if readSemanticJSON(path, &value) == nil {
@@ -581,6 +585,9 @@ func loadTraceGraph(root string) traceGraph {
 
 func loadArchivedTraceObjects(root string, graph *traceGraph) {
 	_ = filepath.Walk(filepath.Join(root, ".ai-flow", "archive"), func(path string, info os.FileInfo, walkErr error) error {
+		if info != nil && info.IsDir() && skipArchiveSnapshot(root, path) {
+			return filepath.SkipDir
+		}
 		if walkErr != nil || info == nil || info.IsDir() || !strings.HasSuffix(strings.ToLower(path), ".json") {
 			return nil
 		}
@@ -612,7 +619,7 @@ func loadArchivedTraceObjects(root string, graph *traceGraph) {
 }
 
 func loadTraceDirectory[T any](root, directory string, target map[string]traceObject[T]) {
-	files, _ := listJSONFiles(filepath.Join(root, ".ai-flow", directory))
+	files, _ := recordFiles(root, directory, true)
 	for _, path := range files {
 		var value T
 		if readSemanticJSON(path, &value) != nil {

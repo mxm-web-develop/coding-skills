@@ -15,6 +15,10 @@ states:
   - implementing
   - verifying
   - reviewing
+  - awaiting_acceptance
+  - accepted
+  - closing
+  - upgrading
   - integrating
   - releasing
   - syncing
@@ -27,8 +31,20 @@ entry_routes:
   status_query:
     sequence:
       - orchestrate-ai-delivery
-      - flowctl_status
+      - flowctl_context
     mutates_project: false
+  research_only:
+    sequence:
+      - orchestrate-ai-delivery
+      - profile-project-engineering
+      - research-and-design-solution
+    stops_at: research_report
+    production_mutation: false
+  skill_upgrade:
+    sequence:
+      - upgrade-ai-project
+      - sync-project-knowledge
+    preserves: [goal, plan, task, run, pending_choices]
   greenfield_goal:
     sequence:
       - initialize-ai-project
@@ -56,8 +72,8 @@ entry_routes:
       - specify-tests
       - diagnose-and-verify
       - review-change
-      - integrate-git-change
-      - manage-release
+      - user_acceptance
+      - archive_completed_work
       - sync-project-knowledge
   feature_delivery:
     sequence:
@@ -70,8 +86,8 @@ entry_routes:
       - implement-work-item
       - diagnose-and-verify
       - review-change
-      - integrate-git-change
-      - manage-release
+      - user_acceptance
+      - archive_completed_work
       - sync-project-knowledge
 
 solution_confirmation:
@@ -176,3 +192,13 @@ conversation_continuity:
   continue_message_is_approval: false
   invalidate_only_affected_downstream_records: true
   regenerate_board_after_state_change: true
+
+optional_authorized_actions:
+  git_integration: integrate-git-change
+  publication: manage-release
+completion_gates:
+  - current_content_tests_pass
+  - current_content_review_approved
+  - actual_user_acceptance_passed
+  - durable_capabilities_synchronized
+  - process_records_archived_and_traceable

@@ -1,6 +1,6 @@
 ---
 name: research-and-design-solution
-description: Research, compare, and confirm a technical or UX/UI solution for an accepted requirement or work item. Use when implementation choices are uncertain, backend technologies or architecture need comparison, external APIs or current technical facts must be verified, frontend style or interaction direction should be explored with HTML prototypes, or a decision and rollback strategy are required before coding.
+description: Research, compare, and confirm a technical or UX/UI solution for an accepted requirement or work item. Use for “调研下 xxx 方案，看看是否适合我们项目”, standalone suitability research, or when implementation choices are uncertain, backend technologies or architecture need comparison, external APIs or current technical facts must be verified, frontend style or interaction direction should be explored with HTML prototypes, or a decision and rollback strategy are required before coding.
 ---
 
 # Research and Design Solution
@@ -8,6 +8,10 @@ description: Research, compare, and confirm a technical or UX/UI solution for an
 Ground design decisions in current project constraints and reproducible evidence.
 
 Follow the [user communication contract](../orchestrate-ai-delivery/references/user-communication-contract.md). Compare options by user-relevant outcome, cost, risk, compatibility, and rollback; keep decision-object IDs, research routing, and internal record names out of the main explanation. Read [references/interactive-exploration.md](references/interactive-exploration.md) whenever the choice changes architecture, technology, dependencies, data/API shape, visual direction, motion, or user interaction.
+
+## Research-only boundary
+
+Determine whether the user requested investigation or adoption. A standalone suitability question reuses the current project goal and creates only a bounded research task when records will change. Read the project constraints, inspect relevant code and cite primary sources. Deliver a short conclusion (suitable, suitable with conditions, or unsuitable), comparison, integration cost and risks, uncertainties and a recommended next step. Store detail beneath `.ai-flow/reports/<work-id>/`. Stop after the report; do not install dependencies, change production code, approve a decision or schedule implementation merely because you recommended it. Step 10 below applies only to an implementation request or later explicit adoption. Research acceptance means the user confirms the report addresses the question, then follows the same closeout contract.
 
 ## Procedure
 

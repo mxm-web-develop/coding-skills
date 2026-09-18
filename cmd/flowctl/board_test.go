@@ -196,13 +196,13 @@ func TestRenderBoardWritesPerVersionPlanDocumentsAndIndex(t *testing.T) {
 
 	writeBoardJSONFixture(t, root, ".ai-flow/goals/GOAL-20260817-a1b2c3d4.json", map[string]any{
 		"id": "GOAL-20260817-a1b2c3d4", "status": "accepted", "title": "卖家画像与风险评分",
-		"problem":      "平台缺少卖家风险判断",
-		"outcome":      "运营可以查看可解释的卖家评分",
-		"target_release": "v1.1.0",
-		"in_scope":     []string{"评分模型", "运营页面"},
-		"non_goals":    []string{"自动封禁卖家"},
+		"problem":             "平台缺少卖家风险判断",
+		"outcome":             "运营可以查看可解释的卖家评分",
+		"target_release":      "v1.1.0",
+		"in_scope":            []string{"评分模型", "运营页面"},
+		"non_goals":           []string{"自动封禁卖家"},
 		"acceptance_criteria": []string{"评分可解释", "运营页面可查看"},
-		"risks":        []string{"历史数据不足"},
+		"risks":               []string{"历史数据不足"},
 	})
 	writeBoardJSONFixture(t, root, ".ai-flow/requirements/REQ-20260817-b2c3d4e5.json", map[string]any{
 		"id": "REQ-20260817-b2c3d4e5", "goal_id": "GOAL-20260817-a1b2c3d4", "status": "accepted",
@@ -223,12 +223,12 @@ func TestRenderBoardWritesPerVersionPlanDocumentsAndIndex(t *testing.T) {
 	})
 	writeBoardJSONFixture(t, root, ".ai-flow/decisions/DEC-20260817-aaaa.json", map[string]any{
 		"id": "DEC-20260817-aaaa", "status": "proposed", "title": "评分内核架构",
-		"decision": "纯函数评分内核，I/O 放在适配器",
-		"recommended_option": "纯函数 + 适配器",
+		"decision":              "纯函数评分内核，I/O 放在适配器",
+		"recommended_option":    "纯函数 + 适配器",
 		"recommendation_reason": "易测试，依赖显式，可独立版本化",
-		"requirement_ids": []string{"REQ-20260817-b2c3d4e5"},
-		"work_item_ids":    []string{"WI-20260817-d4e5f6a7"},
-		"confirmation":     map[string]any{"status": "confirmed", "selected_option": "纯函数 + 适配器", "feedback": "OK"},
+		"requirement_ids":       []string{"REQ-20260817-b2c3d4e5"},
+		"work_item_ids":         []string{"WI-20260817-d4e5f6a7"},
+		"confirmation":          map[string]any{"status": "confirmed", "selected_option": "纯函数 + 适配器", "feedback": "OK"},
 	})
 	// A plan that has already been released should be skipped from per-version docs.
 	writeBoardJSONFixture(t, root, ".ai-flow/plans/PLAN-20260701-oldone.json", map[string]any{
@@ -237,7 +237,7 @@ func TestRenderBoardWritesPerVersionPlanDocumentsAndIndex(t *testing.T) {
 		"milestones":    []map[string]any{{"id": "MS-old", "title": "old", "outcome": "old", "target_release": "v0.9.0"}},
 	})
 	writeBoardJSONFixture(t, root, ".ai-flow/releases/REL-20260817-old.json", map[string]any{
-		"id": "REL-20260817-old", "status": "published", "version": "v0.9.0", "summary": "old release",
+		"id": "REL-20260817-old", "status": "released", "version": "v0.9.0", "summary": "old release",
 		"work_item_ids": []string{}, "evidence_ids": []string{}, "known_issues": []string{}, "updated_at": "2026-07-01T00:00:00Z",
 	})
 
@@ -257,11 +257,8 @@ func TestRenderBoardWritesPerVersionPlanDocumentsAndIndex(t *testing.T) {
 	if !strings.Contains(index, "v1.1.0") {
 		t.Errorf("PLANS.md should list v1.1.0, got:\n%s", index)
 	}
-	if !strings.Contains(index, "v0.9.0") {
-		t.Errorf("PLANS.md should still list released v0.9.0 (historical record), got:\n%s", index)
-	}
-	if !strings.Contains(index, "已发布") {
-		t.Errorf("PLANS.md should mark v0.9.0 as released, got:\n%s", index)
+	if strings.Contains(index, "v0.9.0") {
+		t.Errorf("released plan leaked into current plan index: %s", index)
 	}
 
 	// plans/v1.1.0.md must exist with natural-language content.

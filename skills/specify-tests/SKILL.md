@@ -16,7 +16,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 3. List observable acceptance criteria, failure modes, changed boundaries, and regression risks.
 4. Select the smallest effective mix of pure unit, component, integration, contract, end-to-end, migration, performance, security, accessibility, and visual tests. Reuse the project's existing runners.
 5. For a bug, create or identify a reproduction that fails for the reported reason.
-6. Define fixtures, deterministic environment, commands, expected results, and evidence. Map every test to Requirement and Work Item IDs.
+6. Register the required checks in linked test specifications or task `required_tests`; include a human verification card with actions, expected outcomes and limitations. Define fixtures, deterministic environment, commands, expected results, and evidence. Map every test to Requirement and Work Item IDs.
 7. Write tests before production behavior when safe and practical; otherwise document why and create an executable test specification.
 8. Run pre-implementation tests and record actual results. A red test is valid only when its failure proves the missing behavior or defect.
 9. Hand off to `implement-work-item` for features or `diagnose-and-verify` for defects.

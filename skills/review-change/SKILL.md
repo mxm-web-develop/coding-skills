@@ -20,8 +20,8 @@ When the review identifies a scope, requirement, or test gap that needs a user d
 5. Check stack-appropriate test quality, regression coverage, selected community Skill provenance, and evidence revision freshness. Require functional and visual evidence for applicable UI changes.
 6. Run focused independent checks when needed and safe.
 7. Report findings by severity with precise file/line evidence and a concrete failure scenario.
-8. Mark the review `approved`, `approved_with_nonblocking_findings`, or `changes_required`.
-9. Route blocking findings back to the appropriate Skill. On approval, use `flowctl work review-ready` and route to `integrate-git-change`.
+8. Persist the review with `flowctl work review --id <id> --reviewer <identity> --decision approved|changes_required --summary <conclusion>`; document nonblocking findings in the summary.
+9. Route blocking findings back to diagnosis. On approval, follow [completion and acceptance](../orchestrate-ai-delivery/references/completion-and-memory.md) to present the manual verification card. Git integration is separately authorized; review approval never means user acceptance.
 
 ## Guardrails
 

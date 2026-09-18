@@ -39,29 +39,11 @@ func renderBoard(root string) error {
 	if err != nil {
 		return err
 	}
-	boardDir := filepath.Join(root, "docs", "board")
-	if err := os.MkdirAll(boardDir, 0o755); err != nil {
-		return err
-	}
 	files := expectedBoardFiles(data)
-	for name, content := range files {
-		if err := writeBoardFile(filepath.Join(boardDir, name), content); err != nil {
-			return err
-		}
+	for name, content := range expectedPlanFiles(data) {
+		files[name] = content
 	}
-	planFiles := expectedPlanFiles(data)
-	if len(planFiles) > 0 {
-		plansDir := filepath.Join(boardDir, "plans")
-		if err := os.MkdirAll(plansDir, 0o755); err != nil {
-			return err
-		}
-		for name, content := range planFiles {
-			if err := writeBoardFile(filepath.Join(boardDir, name), content); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return reconcileBoardFiles(root, files)
 }
 
 func expectedBoardFiles(data boardData) map[string]string {
@@ -83,19 +65,8 @@ func expectedBoardFiles(data boardData) map[string]string {
 // because the published release artifacts already cover them.
 func expectedPlanFiles(data boardData) map[string]string {
 	files := map[string]string{}
-	released := map[string]bool{}
-	for _, release := range data.Releases {
-		if release.Version != "" {
-			released[release.Version] = true
-		}
-	}
-	seen := map[string]bool{}
-	for _, plan := range data.Plans {
+	for _, plan := range currentVersionPlans(data) {
 		version := planVersionLabel(plan, data)
-		if version == "" || released[version] || seen[version] {
-			continue
-		}
-		seen[version] = true
 		files["plans/"+version+".md"] = renderPlanDoc(data, plan)
 	}
 	return files
@@ -133,7 +104,7 @@ func renderStatusBoard(data boardData) string {
 	versions := versionProgressRows(data)
 	displayedVersions := 0
 	for _, row := range versions {
-		if !sameMajorVersion(row.Version, data.Status.CurrentVersion) && row.InProgress+row.Review+row.Blocked+row.Pending == 0 {
+		if row.Version != data.Status.CurrentVersion && row.InProgress+row.Review+row.Blocked+row.Pending == 0 {
 			continue
 		}
 		fmt.Fprintf(&builder, "| %s | %s%s | %d / %d | %d | %d | %d | 通过 %d / 失败 %d / 待确认 %d |\n",
@@ -153,7 +124,10 @@ func renderStatusBoard(data boardData) string {
 		if work.Status == "cancelled" {
 			continue
 		}
-		if work.Status == "done" && !sameMajorVersion(versionForWork(data, work), data.Status.CurrentVersion) {
+		if work.Status == "done" {
+			continue
+		}
+		if visibleWork >= 12 {
 			continue
 		}
 		owner := "未分配"
@@ -167,7 +141,7 @@ func renderStatusBoard(data boardData) string {
 		visibleWork++
 	}
 	if visibleWork == 0 {
-		builder.WriteString("| — | 尚未创建开发任务 | — | — | — | — | — |\n")
+		builder.WriteString("| — | 当前没有未完成的开发任务 | — | — | — | — | — |\n")
 	}
 
 	builder.WriteString("\n## 测试与验收\n\n")
@@ -175,9 +149,12 @@ func renderStatusBoard(data boardData) string {
 	builder.WriteString("|---|---|---|---|---|\n")
 	visibleTests := 0
 	for _, test := range data.Tests {
+		if visibleTests >= 12 || test.Status == "retired" {
+			continue
+		}
 		workTitle := "未找到对应任务"
 		if work := boardWorkByID(data, test.WorkItemID); work != nil {
-			if work.Status == "done" && !sameMajorVersion(versionForWork(data, *work), data.Status.CurrentVersion) {
+			if work.Status == "done" || work.Status == "cancelled" {
 				continue
 			}
 			workTitle = work.Title
@@ -231,7 +208,7 @@ func renderRoadmapBoard(data boardData) string {
 	builder.WriteString("|---|---|---|---:|---|---|\n")
 	milestoneCount := 0
 	activeGoal := activeBoardGoal(data)
-	for _, plan := range data.Plans {
+	for _, plan := range currentPlansIncludingReleased(data) {
 		if plan.Status == "archived" || plan.Status == "rejected" || plan.Status == "superseded" {
 			continue
 		}
@@ -301,7 +278,7 @@ func renderCurrentStateBoard(data boardData) string {
 	builder.WriteString("|---|---|---|---|---|\n")
 	decisionCount := 0
 	for _, decision := range data.Decisions {
-		if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
+		if !currentDecision(data, decision) {
 			continue
 		}
 		trace := hiddenTrace("decision="+decision.ID, traceList("requirement", decision.RequirementIDs), traceList("work", decision.WorkItemIDs))
@@ -316,7 +293,7 @@ func renderCurrentStateBoard(data boardData) string {
 
 	prototypeCount := 0
 	for _, decision := range data.Decisions {
-		if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
+		if !currentDecision(data, decision) {
 			continue
 		}
 		for _, option := range decision.Options {
@@ -331,7 +308,7 @@ func renderCurrentStateBoard(data boardData) string {
 		builder.WriteString("| 体验方向 | 主要感受和验证重点 | 预览 | 当前选择 |\n")
 		builder.WriteString("|---|---|---|---|\n")
 		for _, decision := range data.Decisions {
-			if decision.Status == "archived" || decision.Status == "superseded" || decision.Status == "rejected" {
+			if !currentDecision(data, decision) {
 				continue
 			}
 			for _, option := range decision.Options {
@@ -477,7 +454,7 @@ func milestoneWorkIDs(data boardData, plan boardPlan, milestone boardMilestone) 
 	ids := []string{}
 	for _, workID := range plan.WorkItemIDs {
 		work := boardWorkByID(data, workID)
-		if work != nil && intersects(work.RequirementIDs, milestone.RequirementIDs) && work.Status != "cancelled" {
+		if work != nil && (work.MilestoneID == milestone.ID || work.MilestoneID == "" && intersects(work.RequirementIDs, milestone.RequirementIDs)) && work.Status != "cancelled" {
 			ids = append(ids, workID)
 		}
 	}
@@ -486,7 +463,7 @@ func milestoneWorkIDs(data boardData, plan boardPlan, milestone boardMilestone) 
 
 func planIDsForWork(data boardData, workID string) []string {
 	ids := []string{}
-	for _, plan := range data.Plans {
+	for _, plan := range currentPlansIncludingReleased(data) {
 		for _, candidate := range plan.WorkItemIDs {
 			if candidate == workID {
 				ids = append(ids, plan.ID)
@@ -508,7 +485,7 @@ func versionProgressTrace(data boardData, version string) string {
 			goalIDs = append(goalIDs, goal.ID)
 		}
 	}
-	for _, plan := range data.Plans {
+	for _, plan := range currentPlansIncludingReleased(data) {
 		matched := false
 		if goal := boardGoalByID(data, plan.GoalID); goal != nil && goal.TargetRelease == version {
 			matched = true
@@ -540,7 +517,7 @@ func versionProgressTrace(data boardData, version string) string {
 }
 
 func writeBoardFile(path, content string) error {
-	if violations := lintBoardFile(content); len(violations) > 0 {
+	if violations := lintMessage(stripHTMLCommentsForLint(content)); len(violations) > 0 {
 		return fmt.Errorf("refusing to write %s: forbidden section refs detected: %v (per user-communication-contract 禁止漏词表, see skills/orchestrate-ai-delivery/references/user-communication-contract.md)", path, violations)
 	}
 	temp, err := os.CreateTemp(filepath.Dir(path), ".flowctl-board-*.tmp")
@@ -567,17 +544,11 @@ func writeBoardFile(path, content string) error {
 	return os.Rename(tempName, path)
 }
 
-
 // renderPlanIndex produces docs/board/PLANS.md, an index of every per-version
 // plan document. Returns "" when there are no plans to index, so the caller
 // can omit the file entirely instead of writing an empty index.
 func renderPlanIndex(data boardData) string {
-	plans := make([]boardPlan, 0, len(data.Plans))
-	for _, plan := range data.Plans {
-		if planVersionLabel(plan, data) != "" {
-			plans = append(plans, plan)
-		}
-	}
+	plans := currentVersionPlans(data)
 	if len(plans) == 0 {
 		return ""
 	}
@@ -591,14 +562,14 @@ func renderPlanIndex(data boardData) string {
 	})
 	released := map[string]bool{}
 	for _, release := range data.Releases {
-		if release.Version != "" {
-			released[release.Version] = true
+		if release.Version != "" && release.Status == "released" {
+			released[normalizeVersionLabel(release.Version)] = true
 		}
 	}
 	var builder strings.Builder
 	builder.WriteString("# 开发计划索引\n\n")
 	builder.WriteString("本目录按目标版本号组织每一版的开发计划、阶段划分、技术选型与风险依赖。详细任务以自然语言写成，")
-	builder.WriteString("与 `docs/board/STATUS.md` 中的实时进度、`docs/board/RELEASES.md` 中的发布历史保持一致。\n\n")
+	builder.WriteString("与[当前进度](./STATUS.md)、[发布历史](./RELEASES.md)保持一致。\n\n")
 	builder.WriteString("## 当前计划\n\n")
 	builder.WriteString("| 版本 | 目标 | 阶段数 | 任务数 | 状态 | 计划文件 |\n")
 	builder.WriteString("|---|---|---:|---:|---|---|\n")
@@ -628,14 +599,14 @@ func renderPlanIndex(data boardData) string {
 	if activeCount == 0 {
 		builder.WriteString("> 当前没有进行中的开发计划。下一个版本的需求与方案讨论完成后会自动出现新条目。\n")
 	} else {
-		builder.WriteString("点击对应版本查看该版的完整计划。同一版本如有多份计划（例如调整后的二次拆分），以最新一份为准。\n")
+		builder.WriteString("点击对应版本查看该版的完整计划。已替代、已取消和已发布的计划保存在历史记录中。\n")
 	}
 	return builder.String()
 }
 
 func humanPlanState(status string) string {
 	switch status {
-	case "active":
+	case "active", "accepted":
 		return "进行中"
 	case "draft":
 		return "草稿"
@@ -647,7 +618,7 @@ func humanPlanState(status string) string {
 	if status == "" {
 		return "未记录"
 	}
-	return status
+	return humanStatus(status)
 }
 
 // normalizeVersionLabel ensures the per-version file name always carries a
@@ -776,7 +747,7 @@ func renderPlanDoc(data boardData, plan boardPlan) string {
 				mdCell(ownerOrUnassigned(owner)), mdCell(humanStatus(work.Status)), mdCell(testSummary))
 		}
 		builder.WriteString("\n")
-		builder.WriteString("完整任务记录在 `.ai-flow/work-items/`；当前进度同步在 `docs/board/STATUS.md`。\n\n")
+		builder.WriteString("[查看当前进度](../STATUS.md)，需要时可按任务查询历史。\n\n")
 	}
 
 	chosen := decisionsForPlan(data, plan)
@@ -801,9 +772,13 @@ func renderPlanDoc(data boardData, plan boardPlan) string {
 		}
 	}
 
-	if goal != nil && len(goal.Risks) > 0 {
+	risks := append([]string(nil), plan.Risks...)
+	if goal != nil {
+		risks = append(risks, goal.Risks...)
+	}
+	if len(risks) > 0 {
 		builder.WriteString("## 风险与依赖\n\n")
-		for _, risk := range goal.Risks {
+		for _, risk := range risks {
 			builder.WriteString("- " + risk + "\n")
 		}
 		builder.WriteString("\n")
@@ -811,11 +786,11 @@ func renderPlanDoc(data boardData, plan boardPlan) string {
 
 	builder.WriteString("---\n\n")
 	builder.WriteString("**相关材料**\n\n")
-	builder.WriteString("- 当前进度：`docs/board/STATUS.md`\n")
-	builder.WriteString("- 路线图：`docs/board/ROADMAP.md`\n")
-	builder.WriteString("- 技术与体验决策明细：`docs/board/CURRENT_STATE.md`\n")
-	builder.WriteString("- 已发布版本：`docs/board/RELEASES.md`\n")
-	builder.WriteString("- 全部计划索引：`docs/board/PLANS.md`\n")
+	builder.WriteString("- [当前进度](../STATUS.md)\n")
+	builder.WriteString("- [路线图](../ROADMAP.md)\n")
+	builder.WriteString("- [技术与体验决策明细](../CURRENT_STATE.md)\n")
+	builder.WriteString("- [已发布版本](../RELEASES.md)\n")
+	builder.WriteString("- [全部计划索引](../PLANS.md)\n")
 	return builder.String()
 }
 
@@ -863,7 +838,7 @@ func decisionConfirmationState(decision boardDecision) string {
 func decisionsForPlan(data boardData, plan boardPlan) []boardDecision {
 	out := make([]boardDecision, 0, len(data.Decisions))
 	for _, decision := range data.Decisions {
-		if decision.Status == "superseded" || decision.Status == "cancelled" {
+		if !currentObjectStatus(decision.Status) {
 			continue
 		}
 		if intersectsAny(decision.RequirementIDs, planGoalRequirementIDs(data, plan)) {
@@ -924,7 +899,6 @@ func milestoneWorkBullets(data boardData, plan boardPlan, milestone boardMilesto
 	}
 	return strings.TrimRight(builder.String(), "\n")
 }
-
 
 // lintBoardFile returns the unique forbidden section-ref tokens found in
 // the given rendered Markdown body. HTML comments are stripped first so

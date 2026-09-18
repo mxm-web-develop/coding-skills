@@ -32,15 +32,20 @@ type boardMilestone struct {
 }
 
 type boardPlan struct {
-	ID          string           `json:"id"`
-	GoalID      string           `json:"goal_id"`
-	Status      string           `json:"status"`
-	Title       string           `json:"title"`
-	Milestones  []boardMilestone `json:"milestones"`
-	WorkItemIDs []string         `json:"work_item_ids"`
+	Revision     int              `json:"revision"`
+	UpdatedAt    string           `json:"updated_at"`
+	SupersededBy *string          `json:"superseded_by"`
+	Risks        []string         `json:"risks"`
+	ID           string           `json:"id"`
+	GoalID       string           `json:"goal_id"`
+	Status       string           `json:"status"`
+	Title        string           `json:"title"`
+	Milestones   []boardMilestone `json:"milestones"`
+	WorkItemIDs  []string         `json:"work_item_ids"`
 }
 
 type boardDecision struct {
+	GoalID               *string                    `json:"goal_id"`
 	ID                   string                     `json:"id"`
 	Status               string                     `json:"status"`
 	Title                string                     `json:"title"`

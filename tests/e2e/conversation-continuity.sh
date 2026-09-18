@@ -48,7 +48,10 @@ jq -e '.owner == "cursor-agent" and .run_id == $run' --arg run "$RUN_ID" "$WORK_
 jq -e '.owner == "cursor-agent" and .run_id == $run' --arg run "$RUN_ID" "$TEST_ROOT/.ai-flow/locks/$WORK_ID.json" >/dev/null
 EVIDENCE_ID=$("$FLOWCTL" evidence run --root "$TEST_ROOT" --work "$WORK_ID" --run "$RUN_ID" --test "refund-continuity-smoke" --quiet -- sh -c "printf refund-ready")
 "$FLOWCTL" work review-ready --root "$TEST_ROOT" --id "$WORK_ID" >/dev/null
-"$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --evidence "$EVIDENCE_ID" >/dev/null
+"$FLOWCTL" work review --root "$TEST_ROOT" --id "$WORK_ID" --reviewer "e2e-reviewer" --decision approved --summary "Expected proof and lifecycle verified" >/dev/null
+"$FLOWCTL" work acceptance --root "$TEST_ROOT" --id "$WORK_ID" --instructions "Inspect the proof output" --step "Read proof" --expected "Expected proof text is present" >/dev/null
+"$FLOWCTL" work accept --root "$TEST_ROOT" --id "$WORK_ID" --by "e2e-simulated-user" --feedback "Fixture verification passed" --result passed >/dev/null
+"$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --summary "Verified delivery loop" >/dev/null
 "$FLOWCTL" validate --root "$TEST_ROOT" --machine-only >/dev/null
 "$FLOWCTL" render-board --root "$TEST_ROOT" >/dev/null
 "$FLOWCTL" validate --root "$TEST_ROOT" >/dev/null
@@ -56,6 +59,6 @@ EVIDENCE_ID=$("$FLOWCTL" evidence run --root "$TEST_ROOT" --work "$WORK_ID" --ru
 STATUS_JSON=$("$FLOWCTL" status --root "$TEST_ROOT" --json)
 printf '%s\n' "$STATUS_JSON" | grep -q '"work_done": 1'
 printf '%s\n' "$STATUS_JSON" | grep -q '"evidence_passed": 1'
-grep -q 'Add refund status' "$TEST_ROOT/docs/board/STATUS.md"
+"$FLOWCTL" context --root "$TEST_ROOT" --history | grep -q 'Add refund status'
 
 printf 'AI Flow conversation continuity E2E passed: %s %s %s %s\n' "$WORK_ID" "$RUN_ID" "$CHECKPOINT_ID" "$EVIDENCE_ID"

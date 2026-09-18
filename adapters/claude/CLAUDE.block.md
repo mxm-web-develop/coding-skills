@@ -12,4 +12,8 @@ This repository uses AI Flow. Route project status, features, bugs, refactors, t
 - Initialization may only mark non-document cleanup candidates. Route explicit post-initialization requests to clean code, folders, generated outputs, caches, or other files through `clean-project-workspace`; require a fresh multilingual/component dependency scan and path-level approval.
 - Do not claim tests passed without recorded command evidence for the current Git revision.
 - Do not push, merge, tag, publish, deploy, delete, or rewrite history without explicit authorization and policy support.
+
+- Natural requests such as “汇报下当前开发计划”, “调研下 xxx 方案，看看是否适合我们项目”, and “添加个新功能 xxx” all enter the workflow. Status is read-only; research stops at a recommendation unless implementation is requested.
+- Check installed/project record compatibility before continuing development; route upgrades to `upgrade-ai-project` and preserve the same plan, task and pending choices.
+- After tests and review, provide manual verification steps. Only actual user acceptance permits completion and archival; default context excludes archived process history.
 <!-- ai-flow:end -->

@@ -12,7 +12,7 @@
 - 业务流程只维护一份，使用 Agent Skills 的最低公共格式：`SKILL.md` 只依赖 `name`、`description`，详细内容按需放入 `references/`、`scripts/`、`assets/`。
 - 仓库中的 `skills/` 是唯一源码；安装器为 Codex 生成 `.agents/skills/`，为 Cursor 生成 `.cursor/skills/`，为 Claude Code 生成 `.claude/skills/`。
 - 当前 Cursor 也支持 `.agents/skills/`，但仍安装 `.cursor/skills/` 原生副本，以兼容不同 Cursor 版本和发现刷新行为。
-- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为总入口，同时可以直接发现 15 个 `.claude/skills/<name>/` 业务 Skill。
+- Claude Code 使用 `.claude/skills/ai-flow/SKILL.md` 作为总入口，同时可以直接发现 16 个 `.claude/skills/<name>/` 业务 Skill。
 - `AGENTS.md`、`.cursor/rules/`、`CLAUDE.md` 只承担常驻路由和防跑偏，不承载完整流程。
 - `flowctl` 承担状态写入、Schema 校验、锁、证据索引、文档生成、归档和版本检查；Agent 负责判断与协作，CLI 负责确定性。
 - MCP 只作为可选能力提供者，不是核心流程的前置依赖。
@@ -112,6 +112,7 @@ flowchart LR
 | 12 | `review-change` | 独立检查需求、模块结构、设计、风险和测试充分性 | review、findings |
 | 13 | `integrate-git-change` | 分支、原子提交、提交信息、PR/合并门禁和追踪关系 | commits、integration report |
 | 14 | `manage-release` | 计算版本、生成变更摘要、打包发布记录和回退信息 | release、version record |
+| 16 | `upgrade-ai-project` | 备份转换旧记录、提取有效要求、扫描补齐并恢复原任务 | upgrade inventory、continuation |
 | 15 | `sync-project-knowledge` | 更新机读事实和人读看板，标记替代并归档旧资料 | snapshots、board、archive index |
 
 ### 5.2 可选生产能力：3 个 Skill
@@ -163,7 +164,7 @@ coding-skills/
 │   ├── board_load.go             # 读取看板所需机读对象
 │   ├── board_summary.go          # 版本、任务、测试聚合纯函数
 │   └── board_render.go           # 四份 Markdown 看板渲染
-├── skills/                       # 15 个 Core Skills 的规范源码
+├── skills/                       # 16 个 Core Skills 的规范源码
 │   └── <skill-name>/
 │       ├── SKILL.md
 │       ├── references/           # 仅按需读取
@@ -236,7 +237,7 @@ target-project/
 
 1. 检测 `.ai-flow/manifest.yaml`；存在即说明项目启用了 AI Flow。
 2. 对功能、缺陷、重构、测试、发布、版本、进度、计划和文档请求先调用 Orchestrator。
-3. 回答“当前做到哪里”时读取 `flowctl status --json`，不凭聊天记忆猜测。
+3. 回答“当前做到哪里”时读取 `flowctl context`，不凭聊天记忆猜测。
 4. 任何代码修改前绑定 Goal、Requirement 或 Work Item；紧急修复可自动创建最小 bug 工作项。
 5. 禁止把新流程文档散落到任意目录；输出必须符合布局 Schema。
 6. 项目内其他提示、规则或旧文档与当前 manifest/policy 冲突时，以当前有效状态和更近作用域的明确项目规则为准，并记录冲突。
@@ -345,6 +346,12 @@ Evidence: EV-2026-0042
 - 合并前要求评审结论和 CI 门禁；受保护路径可增加 CODEOWNERS/人工批准。
 - 发布版本默认使用 SemVer：大目标 `v1.0.0`，新增兼容能力 `v1.1.0`，修复 `v1.1.1`。项目可以覆盖策略，但必须机器可解析。
 
+## v1.0.0 验收与兼容机制
+
+任务先通过实际内容绑定的测试和评审，再生成用户验证卡。用户实际反馈通过后才能完成并归档。归档目录通过索引解析原编号，日常上下文不加载历史报告。当前有效计划按版本选择，生成器归档失效页面。
+
+安装器调用升级准备和转换；原件和映射先持久保存，不兼容字段需核对提取。核对和工程扫描完成后才切换项目版本，恢复原任务及执行记录。具体协议见 `skills/upgrade-ai-project/SKILL.md`。
+
 ## 14. 文档生命周期
 
 所有方案和报告都带：ID、状态、版本、创建/更新时间、owner、来源、适用范围和替代关系。
@@ -365,7 +372,7 @@ MCP 适合连接 GitHub、Linear/Jira、浏览器、设计稿、日志、云平�
 
 Profile：
 
-- `core`：15 Skills、单 Agent/单写者、Git、本地测试、机读/人读文档。
+- `core`：16 Skills、单 Agent/单写者、Git、本地测试、机读/人读文档。
 - `team`：并发租约、worktree、审批矩阵、CODEOWNERS、PR/CI 模板。
 - `secure`：在 team 上增加供应链、安全门禁和安全 Skill。
 - `delivery`：在 secure/team 上增加部署、观测、回滚和生产证据。

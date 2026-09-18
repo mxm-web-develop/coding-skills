@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-PACK_VERSION="0.3.0"
+PACK_VERSION=""
 COMMAND="install"
 TARGET_DIR=""
 SOURCE_DIR="${AI_FLOW_SOURCE:-}"
@@ -11,7 +11,7 @@ SELECT_CODEX=0
 SELECT_CLAUDE=0
 PLATFORM_SELECTION_SEEN=0
 
-CORE_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project clean-project-workspace discover-product-goal plan-product-delivery profile-project-engineering research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
+CORE_SKILLS="initialize-ai-project upgrade-ai-project orchestrate-ai-delivery adopt-existing-project clean-project-workspace discover-product-goal plan-product-delivery profile-project-engineering research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
 LEGACY_CODEX_SKILLS="initialize-ai-project orchestrate-ai-delivery adopt-existing-project discover-product-goal plan-product-delivery research-and-design-solution specify-tests implement-work-item diagnose-and-verify review-change integrate-git-change manage-release sync-project-knowledge"
 
 usage() {
@@ -112,6 +112,9 @@ if [ -z "$SOURCE_DIR" ]; then
 fi
 [ -d "$SOURCE_DIR" ] || fail "source is not a directory: $SOURCE_DIR"
 SOURCE_DIR=$(cd "$SOURCE_DIR" && pwd -P)
+PACK_VERSION=$(awk '/^  version:/ {print $2; exit}' "$SOURCE_DIR/spec/skill-pack.yaml")
+[ -n "$PACK_VERSION" ] || fail "source package version is missing"
+
 
 remove_block() {
   managed_file="$1"
@@ -318,6 +321,13 @@ else
   fail "no compatible flowctl binary found and Go is unavailable"
 fi
 
+# Prepare with the NEW runtime while the old project records and tool copies
+# are still present. Preparation is read-only for business code.
+runtime_version=$("$RUNTIME_SOURCE" version)
+[ "$runtime_version" = "flowctl $PACK_VERSION" ] || fail "runtime and package versions differ"
+if [ -f "$TARGET_DIR/.ai-flow/manifest.yaml" ]; then
+  "$RUNTIME_SOURCE" project upgrade --root "$TARGET_DIR" --mode prepare --schemas "$SOURCE_DIR/schemas"
+fi
 mkdir -p "$TARGET_DIR/.ai-flow/bin" "$TARGET_DIR/.ai-flow/install" "$TARGET_DIR/.ai-flow/runtime"
 [ "$SELECT_CODEX" -eq 0 ] || mkdir -p "$TARGET_DIR/.agents/skills"
 [ "$SELECT_CURSOR" -eq 0 ] || mkdir -p "$TARGET_DIR/.cursor/skills" "$TARGET_DIR/.cursor/rules"
@@ -383,9 +393,16 @@ platform_file="$TARGET_DIR/.ai-flow/install/platforms"
 [ "$ACTIVE_CLAUDE" -eq 0 ] || printf '%s\n' claude >> "$platform_file"
 printf 'schema_version: 1\nprofile: %s\nplatforms:\n  cursor: %s\n  codex: %s\n  claude_code: %s\n' "$PROFILE" "$ACTIVE_CURSOR" "$ACTIVE_CODEX" "$ACTIVE_CLAUDE" > "$TARGET_DIR/.ai-flow/capabilities.yaml"
 
+if [ -f "$TARGET_DIR/.ai-flow/state/upgrade.json" ]; then
+  "$TARGET_DIR/.ai-flow/bin/flowctl" project upgrade --root "$TARGET_DIR" --mode apply
+fi
 info "running installation health check"
 "$TARGET_DIR/.ai-flow/bin/flowctl" doctor --root "$TARGET_DIR"
 active_platform_display=$(tr '\n' ',' < "$platform_file" | sed 's/,$//')
 printf 'Active IDE platforms: %s\n' "$active_platform_display"
 printf 'AI Flow %s %s completed at %s\n' "$PACK_VERSION" "$COMMAND" "$TARGET_DIR"
-printf '%s\n' "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."
+if [ -f "$TARGET_DIR/.ai-flow/manifest.yaml" ]; then
+  printf '%s\n' "Next: reload the IDE and say: 升级后继续之前的计划。旧资料核对完成前不会开始新的开发。"
+else
+  printf '%s\n' "Next: reload the IDE and ask to initialize this project."
+fi

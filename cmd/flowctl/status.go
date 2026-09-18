@@ -58,8 +58,7 @@ func runStatus(args []string) error {
 		fmt.Printf("AI Flow is installed but project state is not initialized at %s\n", root)
 		return nil
 	}
-	fmt.Printf("Project: %s\nVersion: %s\nPhase: %s\nStatus: %s\nActive goal: %s\nTests: %s\nWork: ready=%d in_progress=%d review=%d blocked=%d done=%d\nEvidence: passed=%d failed=%d unverified=%d\nNext: %s\n", status.ProjectName, status.CurrentVersion, status.Phase, status.Status, status.ActiveGoal, status.Tests, status.WorkReady, status.WorkInProgress, status.WorkReview, status.WorkBlocked, status.WorkDone, status.EvidencePassed, status.EvidenceFailed, status.EvidenceOther, status.NextAction)
-	return nil
+	return runContext([]string{"--root", root})
 }
 
 func readStatus(root string) (projectStatus, error) {
@@ -97,15 +96,17 @@ func readStatus(root string) (projectStatus, error) {
 }
 
 func addObjectCounts(root string, status *projectStatus) error {
-	workFiles, err := listJSONFiles(filepath.Join(root, ".ai-flow", "work-items"))
+	workFiles, err := recordFiles(root, "work-items", true)
 	if err != nil {
 		return err
 	}
+	activeCurrent := map[string]bool{}
 	for _, path := range workFiles {
 		var item WorkItem
 		if err := readJSON(path, &item); err != nil {
 			return err
 		}
+		activeCurrent[item.ID] = item.WorkflowVersion >= 1 && item.Status != "done"
 		switch item.Status {
 		case "draft":
 			status.WorkDraft++
@@ -113,7 +114,7 @@ func addObjectCounts(root string, status *projectStatus) error {
 			status.WorkReady++
 		case "in_progress":
 			status.WorkInProgress++
-		case "ready_for_review":
+		case "ready_for_review", "awaiting_acceptance", "accepted", "closing":
 			status.WorkReview++
 		case "blocked":
 			status.WorkBlocked++
@@ -123,16 +124,26 @@ func addObjectCounts(root string, status *projectStatus) error {
 			status.WorkCancelled++
 		}
 	}
-	evidenceFiles, err := listJSONFiles(filepath.Join(root, ".ai-flow", "evidence"))
+	evidenceFiles, err := recordFiles(root, "evidence", true)
 	if err != nil {
 		return err
 	}
+	allEvidence := []Evidence{}
+	fingerprint, fingerprintErr := verificationFingerprint(root)
+	currentSHA := gitSHA(root)
 	for _, path := range evidenceFiles {
 		var evidence Evidence
 		if err := readJSON(path, &evidence); err != nil {
 			return err
 		}
-		switch evidence.Result {
+		if activeCurrent[evidence.WorkItemID] && (fingerprintErr != nil || evidence.GitSHA != currentSHA || evidence.ContentSHA256 == "" || evidence.ContentSHA256 != fingerprint) {
+			evidence.Trust = "unverified"
+			evidence.Result = "unverified"
+		}
+		allEvidence = append(allEvidence, evidence)
+	}
+	for _, evidence := range latestEvidence(allEvidence) {
+		switch evidenceResult(evidence) {
 		case "passed":
 			status.EvidencePassed++
 		case "failed":

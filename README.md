@@ -4,6 +4,22 @@ AI Flow 是一套运行在 Cursor、Codex 和 Claude Code 内部的 AI 开发流
 
 它不需要独立服务或数据库：机器事实保存在项目根目录 `.ai-flow/`，人读看板保存在 `docs/board/`，所有内容可以跟随 Git 由个人或团队共同维护。
 
+## v1.0.0 使用方式
+
+日常直接说：
+
+| 你说的话 | 会发生什么 |
+| --- | --- |
+| 汇报下当前开发计划 | 简短说明当前目标、已完成内容、正在做什么、阻碍和下一步；不重新规划 |
+| 调研下 xxx 方案，看看是否适合我们项目 | 结合现有代码给出适用性、成本、风险和依据；调研结束后等你决定是否采用 |
+| 添加个新功能，xxx | 补齐必要需求，沿用已有方案，开发和测试后提供人工验证步骤 |
+| 验证通过了 / 这里验证不通过 | 通过后整理完成记录并归档；不通过则继续修复同一个任务 |
+| 升级后继续之前的计划 | 核对旧资料、恢复有效要求、重新扫描项目，再从原进度继续 |
+
+自动测试通过与开发完成分开记录。你能看到明确的验证操作和预期结果；你确认通过后，过程记录进入可追溯的历史区，日常上下文只保留当前计划和有效结论。提交、发布仍按你的明确安排执行。
+
+升级已有项目时，先备份旧记录和转换清单，安装新版本后保留原计划、任务、待确认事项和未提交代码。AI 会提取旧资料中仍然有效的要求，补齐新规范、修复引用，并把不合规的过程文档保存在历史区；核对完成前不能继续技术操作。重复执行可以恢复中断的升级。详见[升级与恢复](docs/upgrade.md)和[人工验收](docs/v1-acceptance.md)。
+
 ## 安装
 
 
@@ -54,7 +70,7 @@ Remove-Item Env:AI_FLOW_PLATFORMS
 1. 下载最新 GitHub Release。
 2. 校验发布包 SHA-256。
 3. 安装适合当前操作系统和架构的 `flowctl`。
-4. 将 15 个 Skill 安装到所选 IDE 的原生目录。
+4. 将 16 个 Skill 安装到所选 IDE 的原生目录。
 5. 只创建所选 IDE 的常驻路由入口。
 6. 保留已有 `AGENTS.md`、`CLAUDE.md` 和其他 IDE 规则。
 7. 运行健康检查。
@@ -107,10 +123,10 @@ Remove-Item Env:AI_FLOW_COMMAND
 固定版本升级：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update AI_FLOW_VERSION=v0.4.5 sh
+curl -fsSL https://raw.githubusercontent.com/mxm-web-develop/coding-skills/main/install/get.sh | AI_FLOW_COMMAND=update AI_FLOW_VERSION=v1.0.0 sh
 ```
 
-安装 / 升级 / 卸载不会覆盖未被 AI Flow 管理的同名 Skill，平台支持采用"加入并同步"语义：例如在已装 Cursor 的项目上跑 `--codex` 会增加 Codex 支持，同时把已有 IDE 的受管 Skill 也刷新到当前版本。升级不会修改 `.ai-flow/` 项目对象和人读看板。
+安装 / 升级 / 卸载不会覆盖未被 AI Flow 管理的同名 Skill，平台支持采用"加入并同步"语义：例如在已装 Cursor 的项目上跑 `--codex` 会增加 Codex 支持，同时把已有 IDE 的受管 Skill 也刷新到当前版本。同版本添加编辑器保留项目状态；跨版本升级会先备份，再转换受管记录并核对有效要求，完成后重建看板。
 
 ## 卸载
 
@@ -214,7 +230,7 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
 
 项目助手会读取仓库状态并选择合适流程。状态查询不会启动开发任务；任何代码修改都会关联到具体开发任务和实际测试结果。
 
-准备在真实项目中完整试用时，可按 [v0.3.0 人工全流程验收](docs/manual-acceptance.md) 依次检查空白项目、已有项目、中途补充、跨 IDE 恢复和发布确认。
+准备在真实项目中完整试用时，可按 [v1.0.0 人工验收](docs/v1-acceptance.md) 依次检查空白项目、已有项目、中途补充、跨 IDE 恢复和发布确认。
 
 ### 3. 标准交付流程（从需求到发布）
 
@@ -227,9 +243,9 @@ CLAUDE.md                  # Claude Code 常驻路由，仅 --claude
   → Work Item 实现
   → 诊断与真实验证
   → 独立评审
-  → Git 集成
-  → 版本与发布
-  → 机器状态、看板和归档同步
+  → 人工验证步骤与用户验收
+  → 当前能力、计划更新与过程归档
+  → 按用户安排提交和发布
 ```
 
 小修改可以合并讨论和设计步骤，但不能跳过测试、证据、评审、Git 追踪和知识同步。

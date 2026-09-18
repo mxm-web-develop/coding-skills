@@ -1,23 +1,57 @@
 package main
 
 type WorkItem struct {
-	SchemaVersion      int      `json:"schema_version"`
-	ID                 string   `json:"id"`
-	Revision           int      `json:"revision"`
-	Kind               string   `json:"kind"`
-	Title              string   `json:"title"`
-	Status             string   `json:"status"`
-	Priority           string   `json:"priority"`
-	GoalID             *string  `json:"goal_id"`
-	RequirementIDs     []string `json:"requirement_ids"`
-	AcceptanceCriteria []string `json:"acceptance_criteria"`
-	Scope              []string `json:"scope"`
-	Owner              *string  `json:"owner"`
-	RunID              *string  `json:"run_id"`
-	EvidenceIDs        []string `json:"evidence_ids"`
-	BlockedReason      *string  `json:"blocked_reason"`
-	CreatedAt          string   `json:"created_at"`
-	UpdatedAt          string   `json:"updated_at"`
+	WorkflowVersion      int             `json:"workflow_version,omitempty"`
+	SchemaVersion        int             `json:"schema_version"`
+	ID                   string          `json:"id"`
+	Revision             int             `json:"revision"`
+	Kind                 string          `json:"kind"`
+	Title                string          `json:"title"`
+	Status               string          `json:"status"`
+	Priority             string          `json:"priority"`
+	GoalID               *string         `json:"goal_id"`
+	RequirementIDs       []string        `json:"requirement_ids"`
+	AcceptanceCriteria   []string        `json:"acceptance_criteria"`
+	Scope                []string        `json:"scope"`
+	Owner                *string         `json:"owner"`
+	RunID                *string         `json:"run_id"`
+	EvidenceIDs          []string        `json:"evidence_ids"`
+	BlockedReason        *string         `json:"blocked_reason"`
+	CreatedAt            string          `json:"created_at"`
+	UpdatedAt            string          `json:"updated_at"`
+	Dependencies         []string        `json:"dependencies,omitempty"`
+	ProtectedPaths       []string        `json:"protected_paths,omitempty"`
+	Risks                []string        `json:"risks,omitempty"`
+	RequiredTests        []string        `json:"required_tests,omitempty"`
+	MilestoneID          string          `json:"milestone_id,omitempty"`
+	ApprovalRequirements []string        `json:"approval_requirements,omitempty"`
+	SerializationReason  string          `json:"serialization_reason,omitempty"`
+	Review               *WorkReview     `json:"review,omitempty"`
+	Acceptance           *WorkAcceptance `json:"acceptance,omitempty"`
+	CompletionSummary    string          `json:"completion_summary,omitempty"`
+	ArchivePath          string          `json:"archive_path,omitempty"`
+}
+
+type WorkReview struct {
+	Reviewer      string `json:"reviewer"`
+	Decision      string `json:"decision"`
+	Summary       string `json:"summary"`
+	GitSHA        string `json:"git_sha"`
+	ContentSHA256 string `json:"content_sha256"`
+	RecordedAt    string `json:"recorded_at"`
+}
+
+type WorkAcceptance struct {
+	Status           string   `json:"status"`
+	Instructions     string   `json:"instructions"`
+	Steps            []string `json:"steps"`
+	Expected         []string `json:"expected"`
+	KnownLimitations []string `json:"known_limitations,omitempty"`
+	GitSHA           string   `json:"git_sha"`
+	ContentSHA256    string   `json:"content_sha256"`
+	VerifiedBy       string   `json:"verified_by,omitempty"`
+	Feedback         string   `json:"feedback,omitempty"`
+	RecordedAt       string   `json:"recorded_at"`
 }
 
 type HarnessRun struct {
@@ -71,9 +105,9 @@ type PendingApproval struct {
 }
 
 type Evidence struct {
-	SchemaVersion int               `json:"schema_version"`
-	ID            string            `json:"id"`
-	WorkItemID    string            `json:"work_item_id"`
+	SchemaVersion int    `json:"schema_version"`
+	ID            string `json:"id"`
+	WorkItemID    string `json:"work_item_id"`
 	// RunID is optional. It is required when Source = "local" (the command
 	// executed by flowctl evidence run) and otherwise carries the harness run
 	// that produced this record. For Source = "agent-claim" or when mode =
@@ -87,6 +121,7 @@ type Evidence struct {
 	Command       []string          `json:"command"`
 	ExitCode      int               `json:"exit_code"`
 	GitSHA        string            `json:"git_sha"`
+	ContentSHA256 string            `json:"content_sha256,omitempty"`
 	Environment   map[string]string `json:"environment"`
 	StartedAt     string            `json:"started_at"`
 	EndedAt       string            `json:"ended_at"`

@@ -50,12 +50,12 @@ func boardEvidenceByID(data boardData, id string) *Evidence {
 }
 
 func versionForWork(data boardData, work WorkItem) string {
-	for _, plan := range data.Plans {
+	for _, plan := range currentVersionPlans(data) {
 		if !contains(plan.WorkItemIDs, work.ID) {
 			continue
 		}
 		for _, milestone := range plan.Milestones {
-			if milestone.TargetRelease != "" && intersects(milestone.RequirementIDs, work.RequirementIDs) {
+			if milestone.TargetRelease != "" && (work.MilestoneID == milestone.ID || work.MilestoneID == "" && intersects(milestone.RequirementIDs, work.RequirementIDs)) {
 				return milestone.TargetRelease
 			}
 		}
@@ -104,7 +104,7 @@ func versionProgressRows(data boardData) []versionProgress {
 			row.Done++
 		case "in_progress":
 			row.InProgress++
-		case "ready_for_review":
+		case "ready_for_review", "awaiting_acceptance", "accepted", "closing":
 			row.Review++
 		case "blocked":
 			row.Blocked++
@@ -127,11 +127,11 @@ func versionProgressRows(data boardData) []versionProgress {
 }
 
 func evidenceCountsForWork(data boardData, workID string) (passed, failed, other int) {
-	for _, evidence := range data.Evidence {
+	for _, evidence := range latestEvidence(data.Evidence) {
 		if evidence.WorkItemID != workID {
 			continue
 		}
-		switch evidence.Result {
+		switch evidenceResult(evidence) {
 		case "passed":
 			passed++
 		case "failed":
@@ -155,7 +155,7 @@ func boardTestHasEvidence(data boardData, test boardTestSpec) bool {
 			return true
 		}
 	}
-	for _, evidence := range data.Evidence {
+	for _, evidence := range latestEvidence(data.Evidence) {
 		if evidence.TestID == test.ID {
 			return true
 		}
@@ -170,7 +170,7 @@ func evidenceCountsForIDs(data boardData, ids []string) (passed, failed, other i
 			other++
 			continue
 		}
-		switch evidence.Result {
+		switch evidenceResult(*evidence) {
 		case "passed":
 			passed++
 		case "failed":
@@ -185,11 +185,11 @@ func evidenceCountsForIDs(data boardData, ids []string) (passed, failed, other i
 func testEvidenceSummary(data boardData, test boardTestSpec) string {
 	passed, failed, other := evidenceCountsForIDs(data, test.EvidenceIDs)
 	if len(test.EvidenceIDs) == 0 {
-		for _, evidence := range data.Evidence {
+		for _, evidence := range latestEvidence(data.Evidence) {
 			if evidence.TestID != test.ID {
 				continue
 			}
-			switch evidence.Result {
+			switch evidenceResult(evidence) {
 			case "passed":
 				passed++
 			case "failed":
@@ -314,7 +314,8 @@ func sameMajorVersion(left, right string) bool {
 
 func humanStatus(status string) string {
 	labels := map[string]string{
-		"draft": "草稿", "active": "进行中", "accepted": "已确认", "superseded": "已替代",
+		"draft": "草稿", "active": "进行中", "superseded": "已替代",
+		"awaiting_acceptance": "待你验收", "accepted": "已确认", "closing": "验收通过，正在归档",
 		"archived": "已归档", "rejected": "已拒绝", "cancelled": "已取消", "ready": "待开始",
 		"in_progress": "开发中", "blocked": "阻塞", "ready_for_review": "等待检查", "done": "已完成",
 		"planned": "已规划", "released": "已发布", "withdrawn": "已撤回", "red": "未通过",
@@ -414,6 +415,9 @@ func humanAction(action string) string {
 	}
 	if label := labels[action]; label != "" {
 		return label
+	}
+	if strings.TrimSpace(action) != "" && len(lintMessage(action)) == 0 {
+		return action
 	}
 	return "查看项目记录并确认下一步"
 }

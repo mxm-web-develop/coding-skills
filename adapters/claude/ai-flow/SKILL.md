@@ -1,6 +1,6 @@
 ---
 name: ai-flow
-description: Route software project status, planning, feature, bug, test, review, Git, release, documentation, and long-running development requests through the repository's shared AI Flow Skills.
+description: Route software project status, planning, standalone research, skill upgrades, manual acceptance, feature, bug, test, review, Git, release, documentation, and long-running development requests through the repository's shared AI Flow Skills.
 ---
 
 # AI Flow Claude Entry

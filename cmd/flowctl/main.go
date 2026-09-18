@@ -17,6 +17,10 @@ func main() {
 	case "version", "--version", "-v":
 		fmt.Printf("flowctl %s\n", packVersion)
 		return
+	case "route":
+		err = runRoute(os.Args[2:])
+	case "context":
+		err = runContext(os.Args[2:])
 	case "doctor":
 		err = runDoctor(os.Args[2:])
 	case "status":
@@ -32,6 +36,10 @@ func main() {
 	case "validate":
 		err = runValidate(os.Args[2:])
 	case "project":
+		if len(os.Args) >= 3 && os.Args[2] == "upgrade" {
+			err = runProjectUpgrade(os.Args[3:])
+			break
+		}
 		if len(os.Args) < 3 || os.Args[2] != "init" {
 			err = errors.New("usage: flowctl project init [--root PATH] --mode greenfield|existing --name NAME")
 		} else {
@@ -61,8 +69,11 @@ Usage:
   flowctl version
   flowctl doctor [--root PATH] [--json]
   flowctl project init [--root PATH] --mode greenfield|existing --name NAME
+  flowctl project upgrade --mode check|prepare|apply|finish|restore [--root PATH]
+  flowctl route --message TEXT
+  flowctl context [--root PATH] [--work ID] [--history]
   flowctl status [--root PATH] [--json]
-  flowctl work <create|list|show|ready|start|block|review-ready|complete|cancel>
+  flowctl work <create|list|show|ready|start|block|review-ready|review|acceptance|accept|reopen|budget|complete|cancel>
   flowctl checkpoint <save|list|show|latest|resume>
   flowctl evidence <run|record|list|show|verify>
   flowctl cleanup digest [--root PATH] --plan PATH

@@ -21,7 +21,7 @@ When diagnosis shows the fix needs to touch code outside the originally agreed s
 6. Return to `research-and-design-solution` when the accepted design is invalid; otherwise implement the smallest root-cause fix.
 7. Run the focused reproduction, affected suite, and required regressions. For browser UI changes, include declared functional, accessibility, screenshot-regression, and visual-review evidence.
 8. Execute required checks through `flowctl evidence run --work <id> --run <id> --test <id> -- <command>` so command, exit code, timestamp, Git SHA, environment, log, and SHA-256 are captured.
-9. Write the diagnosis and evidence, then hand off to `review-change`.
+9. Write the diagnosis and evidence beneath `.ai-flow/reports/<work-id>/`, then hand off to `review-change` and the [manual acceptance and closeout workflow](../orchestrate-ai-delivery/references/completion-and-memory.md). Automated success leaves the task awaiting user verification, not done.
 
 ## Guardrails
 

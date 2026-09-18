@@ -13,9 +13,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$PackVersion = "0.3.0"
+$PackVersion = ""
 $CoreSkills = @(
     "initialize-ai-project",
+    "upgrade-ai-project",
     "orchestrate-ai-delivery",
     "adopt-existing-project",
     "clean-project-workspace",
@@ -153,6 +154,10 @@ if ([string]::IsNullOrWhiteSpace($Source)) {
     $Source = Split-Path -Parent $PSScriptRoot
 }
 $SourcePath = (Resolve-Path -LiteralPath $Source).Path
+$versionLine = Get-Content -LiteralPath (Join-Path $SourcePath "spec/skill-pack.yaml") | Where-Object { $_ -match '^  version:' } | Select-Object -First 1
+if (-not $versionLine) { throw "Source package version is missing" }
+$PackVersion = ($versionLine -replace '^  version:\s*', '').Trim()
+
 
 function Remove-ManagedFiles {
     foreach ($skillName in $CoreSkills) {
@@ -292,9 +297,16 @@ if ($buildFromSource -or -not (Test-Path -LiteralPath $runtimePath -PathType Lea
     New-Item -ItemType Directory -Path $buildDir | Out-Null
     $runtimePath = Join-Path $buildDir "flowctl.exe"
     Push-Location $SourcePath
-    try { & go build -o $runtimePath ./cmd/flowctl } finally { Pop-Location }
+    try { & go build -o $runtimePath ./cmd/flowctl; if ($LASTEXITCODE -ne 0) { throw "Runtime build failed" } } finally { Pop-Location }
 } else {
     Write-Host "ai-flow installer: using packaged flowctl for windows/$architecture"
+}
+
+$runtimeVersion = & $runtimePath version
+if ($LASTEXITCODE -ne 0 -or $runtimeVersion -ne "flowctl $PackVersion") { throw "Runtime and package versions differ" }
+if (Test-Path -LiteralPath (Join-Path $TargetPath ".ai-flow/manifest.yaml")) {
+    & $runtimePath project upgrade --root $TargetPath --mode prepare --schemas (Join-Path $SourcePath "schemas")
+    if ($LASTEXITCODE -ne 0) { throw "Upgrade preparation failed; original project records retained" }
 }
 
 $directories = @(".ai-flow/bin", ".ai-flow/install", ".ai-flow/runtime")
@@ -365,8 +377,15 @@ Set-Content -LiteralPath (Join-Path $TargetPath ".ai-flow/capabilities.yaml") -V
     "  claude_code: $claudeState"
 ) -Encoding utf8
 
+if (Test-Path -LiteralPath (Join-Path $TargetPath ".ai-flow/state/upgrade.json")) {
+    & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") project upgrade --root $TargetPath --mode apply
+    if ($LASTEXITCODE -ne 0) { throw "Upgrade application needs recovery; use preserved originals" }
+}
 Write-Host "ai-flow installer: running installation health check"
 & (Join-Path $TargetPath ".ai-flow/bin/flowctl.exe") doctor --root $TargetPath
+if ($LASTEXITCODE -ne 0) { throw "Installation health check failed" }
 Write-Host "Active IDE platforms: $($activePlatformLines -join ',')"
 Write-Host "AI Flow $PackVersion $Command completed at $TargetPath"
-Write-Host "Next: reload the IDE window, start a new Agent chat, then ask to initialize the project or invoke initialize-ai-project directly."
+if (Test-Path -LiteralPath (Join-Path $TargetPath ".ai-flow/manifest.yaml")) {
+    Write-Host "Next: reload the IDE and ask to continue the previous plan after upgrading."
+} else { Write-Host "Next: reload the IDE and ask to initialize this project." }

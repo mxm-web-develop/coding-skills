@@ -2,10 +2,11 @@ package main
 
 const packName = "mxm-ai-flow"
 
-var packVersion = "0.4.5"
+var packVersion = "1.0.0"
 
 var coreSkills = []string{
 	"initialize-ai-project",
+	"upgrade-ai-project",
 	"orchestrate-ai-delivery",
 	"adopt-existing-project",
 	"clean-project-workspace",

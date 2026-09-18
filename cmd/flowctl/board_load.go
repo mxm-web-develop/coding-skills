@@ -45,11 +45,21 @@ func loadBoardData(root string, status projectStatus) (boardData, error) {
 	} else if !os.IsNotExist(err) {
 		return data, err
 	}
+	fingerprint, fingerprintErr := verificationFingerprint(root)
+	currentSHA := gitSHA(root)
+	for i := range data.Evidence {
+		e := &data.Evidence[i]
+		w := boardWorkByID(data, e.WorkItemID)
+		if w != nil && w.WorkflowVersion >= 1 && w.Status != "done" && (fingerprintErr != nil || e.GitSHA != currentSHA || e.ContentSHA256 == "" || e.ContentSHA256 != fingerprint) {
+			e.Result = "unverified"
+			e.Trust = "unverified"
+		}
+	}
 	return data, nil
 }
 
 func loadBoardObjects[T any](root, directory string) ([]T, error) {
-	files, err := listJSONFiles(filepath.Join(root, ".ai-flow", directory))
+	files, err := recordFiles(root, directory, true)
 	if err != nil {
 		return nil, err
 	}

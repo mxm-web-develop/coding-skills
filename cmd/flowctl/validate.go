@@ -201,7 +201,7 @@ func collectValidationTargets(root string) ([]validationTarget, error) {
 		"releases":     "release.schema.json",
 	}
 	for dir, schema := range flat {
-		files, err := listJSONFiles(filepath.Join(root, ".ai-flow", dir))
+		files, err := recordFiles(root, dir, true)
 		if err != nil {
 			return nil, err
 		}
@@ -209,14 +209,14 @@ func collectValidationTargets(root string) ([]validationTarget, error) {
 			targets = append(targets, validationTarget{Path: path, Schema: schema})
 		}
 	}
-	runFiles, err := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "run.json"))
+	runFiles, err := globWithHistory(root, ".ai-flow/runs/RUN-*/run.json")
 	if err != nil {
 		return nil, err
 	}
 	for _, path := range runFiles {
 		targets = append(targets, validationTarget{Path: path, Schema: "run.schema.json"})
 	}
-	checkpointFiles, err := filepath.Glob(filepath.Join(root, ".ai-flow", "runs", "RUN-*", "checkpoints", "CP-*.json"))
+	checkpointFiles, err := globWithHistory(root, ".ai-flow/runs/RUN-*/checkpoints/CP-*.json")
 	if err != nil {
 		return nil, err
 	}
@@ -274,6 +274,7 @@ func readValidationValues(target validationTarget) ([]any, error) {
 
 func validateSemanticLinks(root string) []validationIssue {
 	issues := validateTraceability(root)
+	issues = append(issues, validateWorkLifecycle(root)...)
 	issues = append(issues, validateWorkspaceStructureInventory(root)...)
 	issues = append(issues, validateWorkspaceCleanupPlans(root)...)
 	issues = append(issues, validateSolutionDecisions(root)...)

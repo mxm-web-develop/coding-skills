@@ -237,7 +237,7 @@ func hashWorkspaceTree(hash interface{ Write([]byte) (int, error) }, root string
 }
 
 func shouldSkipWorkspacePath(relSlash string) bool {
-	ignoredRoots := []string{".ai-flow", ".git", ".cursor", ".claude", ".codex", "CLAUDE.md", "AGENTS.md"}
+	ignoredRoots := []string{".ai-flow", ".git", ".cursor", ".claude", ".codex", ".agents", "docs/board", "CLAUDE.md", "AGENTS.md"}
 	for _, ignored := range ignoredRoots {
 		if relSlash == ignored || strings.HasPrefix(relSlash, ignored+"/") {
 			return true
@@ -299,7 +299,7 @@ func readWorkItem(root, id string) (WorkItem, error) {
 	if err := requireObjectID(id, "WI"); err != nil {
 		return item, err
 	}
-	if err := readJSON(workItemPath(root, id), &item); err != nil {
+	if err := readJSON(resolveRecordPath(root, workItemPath(root, id)), &item); err != nil {
 		return item, err
 	}
 	return item, nil
@@ -310,7 +310,7 @@ func readRun(root, id string) (HarnessRun, error) {
 	if err := requireObjectID(id, "RUN"); err != nil {
 		return run, err
 	}
-	if err := readJSON(runPath(root, id), &run); err != nil {
+	if err := readJSON(resolveRecordPath(root, runPath(root, id)), &run); err != nil {
 		return run, err
 	}
 	return run, nil
@@ -321,7 +321,7 @@ func readEvidence(root, id string) (Evidence, error) {
 	if err := requireObjectID(id, "EV"); err != nil {
 		return evidence, err
 	}
-	if err := readJSON(evidencePath(root, id), &evidence); err != nil {
+	if err := readJSON(resolveRecordPath(root, evidencePath(root, id)), &evidence); err != nil {
 		return evidence, err
 	}
 	return evidence, nil

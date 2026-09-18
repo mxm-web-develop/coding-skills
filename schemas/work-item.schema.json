@@ -4,24 +4,248 @@
   "title": "AI Flow Work Item",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "id", "revision", "kind", "title", "status", "priority", "requirement_ids", "acceptance_criteria", "scope", "evidence_ids", "created_at", "updated_at"],
+  "required": [
+    "schema_version",
+    "id",
+    "revision",
+    "kind",
+    "title",
+    "status",
+    "priority",
+    "requirement_ids",
+    "acceptance_criteria",
+    "scope",
+    "evidence_ids",
+    "created_at",
+    "updated_at"
+  ],
   "properties": {
-    "schema_version": { "$ref": "common.schema.json#/$defs/schemaVersion" },
-    "id": { "$ref": "common.schema.json#/$defs/workItemId" },
-    "revision": { "$ref": "common.schema.json#/$defs/revision" },
-    "kind": { "type": "string", "enum": ["feature", "bug", "refactor", "test", "docs", "research", "chore"] },
-    "title": { "$ref": "common.schema.json#/$defs/nonEmpty" },
-    "status": { "type": "string", "enum": ["draft", "ready", "in_progress", "blocked", "ready_for_review", "done", "cancelled"] },
-    "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
-    "goal_id": { "type": ["string", "null"], "pattern": "^GOAL-[0-9]{8}-[a-f0-9]{8}$" },
-    "requirement_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/requirementId" }, "uniqueItems": true },
-    "acceptance_criteria": { "$ref": "common.schema.json#/$defs/stringList" },
-    "scope": { "$ref": "common.schema.json#/$defs/stringList" },
-    "owner": { "type": ["string", "null"] },
-    "run_id": { "type": ["string", "null"], "pattern": "^RUN-[0-9]{8}-[a-f0-9]{8}$" },
-    "evidence_ids": { "type": "array", "items": { "$ref": "common.schema.json#/$defs/evidenceId" }, "uniqueItems": true },
-    "blocked_reason": { "type": ["string", "null"] },
-    "created_at": { "$ref": "common.schema.json#/$defs/timestamp" },
-    "updated_at": { "$ref": "common.schema.json#/$defs/timestamp" }
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schemaVersion"
+    },
+    "id": {
+      "$ref": "common.schema.json#/$defs/workItemId"
+    },
+    "revision": {
+      "$ref": "common.schema.json#/$defs/revision"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "feature",
+        "bug",
+        "refactor",
+        "test",
+        "docs",
+        "research",
+        "chore"
+      ]
+    },
+    "title": {
+      "$ref": "common.schema.json#/$defs/nonEmpty"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ready",
+        "in_progress",
+        "blocked",
+        "ready_for_review",
+        "done",
+        "cancelled",
+        "awaiting_acceptance",
+        "accepted",
+        "closing"
+      ]
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ]
+    },
+    "goal_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^GOAL-[0-9]{8}-[a-f0-9]{8}$"
+    },
+    "requirement_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/requirementId"
+      },
+      "uniqueItems": true
+    },
+    "acceptance_criteria": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "scope": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "owner": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "run_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^RUN-[0-9]{8}-[a-f0-9]{8}$"
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/evidenceId"
+      },
+      "uniqueItems": true
+    },
+    "blocked_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "created_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "updated_at": {
+      "$ref": "common.schema.json#/$defs/timestamp"
+    },
+    "workflow_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "dependencies": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "protected_paths": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "risks": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "required_tests": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "approval_requirements": {
+      "$ref": "common.schema.json#/$defs/stringList"
+    },
+    "milestone_id": {
+      "type": "string"
+    },
+    "serialization_reason": {
+      "type": "string"
+    },
+    "completion_summary": {
+      "type": "string"
+    },
+    "archive_path": {
+      "type": "string"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reviewer": {
+          "type": "string"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "approved",
+            "changes_required"
+          ]
+        },
+        "summary": {
+          "type": "string"
+        },
+        "git_sha": {
+          "type": "string"
+        },
+        "content_sha256": {
+          "type": "string"
+        },
+        "recorded_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reviewer",
+        "decision",
+        "summary",
+        "git_sha",
+        "content_sha256",
+        "recorded_at"
+      ]
+    },
+    "acceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "passed",
+            "failed"
+          ]
+        },
+        "instructions": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expected": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "known_limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "git_sha": {
+          "type": "string"
+        },
+        "content_sha256": {
+          "type": "string"
+        },
+        "verified_by": {
+          "type": "string"
+        },
+        "feedback": {
+          "type": "string"
+        },
+        "recorded_at": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "instructions",
+        "steps",
+        "expected",
+        "git_sha",
+        "content_sha256",
+        "recorded_at"
+      ]
+    }
   }
 }

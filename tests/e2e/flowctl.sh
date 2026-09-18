@@ -43,14 +43,18 @@ if "$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --evidence "$EVI
 fi
 mv "$EVIDENCE_LOG.original" "$EVIDENCE_LOG"
 
-"$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --evidence "$EVIDENCE_ID" >/dev/null
+"$FLOWCTL" work review --root "$TEST_ROOT" --id "$WORK_ID" --reviewer "e2e-reviewer" --decision approved --summary "Expected proof and lifecycle verified" >/dev/null
+"$FLOWCTL" work acceptance --root "$TEST_ROOT" --id "$WORK_ID" --instructions "Inspect the proof output" --step "Read proof" --expected "Expected proof text is present" >/dev/null
+"$FLOWCTL" work accept --root "$TEST_ROOT" --id "$WORK_ID" --by "e2e-simulated-user" --feedback "Fixture verification passed" --result passed >/dev/null
+"$FLOWCTL" work complete --root "$TEST_ROOT" --id "$WORK_ID" --summary "Verified delivery loop" >/dev/null
 "$FLOWCTL" validate --root "$TEST_ROOT" --machine-only >/dev/null
 "$FLOWCTL" render-board --root "$TEST_ROOT" >/dev/null
 "$FLOWCTL" validate --root "$TEST_ROOT" >/dev/null
 
-[ -f "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json" ]
-[ -f "$TEST_ROOT/.ai-flow/runs/$RUN_ID/checkpoints/$CHECKPOINT_ID.json" ]
-[ -f "$TEST_ROOT/.ai-flow/evidence/$EVIDENCE_ID.json" ]
+[ ! -f "$TEST_ROOT/.ai-flow/work-items/$WORK_ID.json" ]
+[ -f "$TEST_ROOT/.ai-flow/archive/completed/$WORK_ID/records/work-items/$WORK_ID.json" ]
+[ -f "$TEST_ROOT/.ai-flow/archive/completed/$WORK_ID/records/runs/$RUN_ID/checkpoints/$CHECKPOINT_ID.json" ]
+[ -f "$TEST_ROOT/.ai-flow/archive/completed/$WORK_ID/records/evidence/$EVIDENCE_ID.json" ]
 grep -q '# 项目状态' "$TEST_ROOT/docs/board/STATUS.md"
 grep -q '1 个已完成' "$TEST_ROOT/docs/board/STATUS.md"
 grep -q '通过 1 / 失败 0 / 待确认 0' "$TEST_ROOT/docs/board/STATUS.md"

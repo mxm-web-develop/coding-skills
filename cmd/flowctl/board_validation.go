@@ -16,7 +16,11 @@ func validateBoardFreshness(root string) []validationIssue {
 		return nil // Object validation reports the underlying problem.
 	}
 	issues := []validationIssue{}
-	for name, expected := range expectedBoardFiles(data) {
+	expectedFiles := expectedBoardFiles(data)
+	for name, content := range expectedPlanFiles(data) {
+		expectedFiles[name] = content
+	}
+	for name, expected := range expectedFiles {
 		path := filepath.Join(root, "docs", "board", name)
 		actual, readErr := os.ReadFile(path)
 		if readErr != nil {
@@ -25,6 +29,14 @@ func validateBoardFreshness(root string) []validationIssue {
 		}
 		if !bytes.Equal(actual, []byte(expected)) {
 			issues = append(issues, validationIssue{Path: relativeDisplay(root, path), Schema: "human-board", Message: "human board is stale or manually edited; run flowctl render-board"})
+		}
+	}
+	var managed []string
+	if readJSON(filepath.Join(root, ".ai-flow", "state", "generated-board-files.json"), &managed) == nil {
+		for _, name := range managed {
+			if _, ok := expectedFiles[name]; !ok {
+				issues = append(issues, validationIssue{Path: "docs/board/" + name, Schema: "human-board", Message: "inactive generated page remains in current index; render board"})
+			}
 		}
 	}
 	return issues

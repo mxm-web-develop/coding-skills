@@ -205,6 +205,17 @@ func runCheckpointResume(args []string) error {
 	if err != nil {
 		return err
 	}
+	unlock, err := projectMutationLock(root)
+	if err != nil {
+		return err
+	}
+	defer unlock()
+	if err := requireProjectCompatible(root); err != nil {
+		return err
+	}
+	if *ttl <= 0 {
+		return errors.New("lease duration must be positive")
+	}
 	run, err := readRun(root, *runID)
 	if err != nil {
 		return err
@@ -235,6 +246,15 @@ func runCheckpointResume(args []string) error {
 	}
 	item, err := readWorkItem(root, run.WorkItemID)
 	if err != nil {
+		return err
+	}
+	if !contains([]string{"in_progress", "blocked"}, item.Status) {
+		return errors.New("task cannot resume development in its current state; reopen reviewed work explicitly")
+	}
+	if err := checkWorkStart(root, item); err != nil {
+		return err
+	}
+	if err := checkRunBudget(root, item, run); err != nil {
 		return err
 	}
 	if item.RunID == nil || *item.RunID != run.ID {
@@ -335,7 +355,7 @@ func listCheckpoints(root, runID string) ([]Checkpoint, error) {
 	if err := requireObjectID(runID, "RUN"); err != nil {
 		return nil, err
 	}
-	files, err := listJSONFiles(filepath.Join(root, ".ai-flow", "runs", runID, "checkpoints"))
+	files, err := globWithHistory(root, ".ai-flow/runs/"+runID+"/checkpoints/*.json")
 	if err != nil {
 		return nil, err
 	}

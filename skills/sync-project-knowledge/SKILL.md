@@ -11,7 +11,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 
 ## Procedure
 
-1. Read current machine state, events, active objects, releases, evidence, workspace document inventory, workspace structure inventory, workspace cleanup plans, and archive index.
+1. Read current state, active objects, latest relevant evidence and archive index. Load historical events, inventories or reports only for the specific synchronization issue. Follow [completion and working memory](../orchestrate-ai-delivery/references/completion-and-memory.md).
 2. Validate IDs, revisions, links, statuses, and `supersedes` relationships.
 3. Mark replaced objects `superseded` and add reciprocal replacement links.
 4. Move superseded AI Flow snapshots to `.ai-flow/archive/<type>/<version>/` and remove them from active indexes. For pre-AI-Flow documents, apply only mappings already approved in `workspace-document-inventory.json` and follow the [legacy document cleanup contract](../adopt-existing-project/references/document-cleanup-contract.md).
@@ -30,7 +30,7 @@ Follow the [user communication contract](../orchestrate-ai-delivery/references/u
 - Do not delete historical decisions or evidence.
 - Do not discover and archive arbitrary workspace documents during synchronization; require the separately reviewed adoption inventory.
 - Do not execute, expand, or approve workspace cleanup during synchronization; require the explicit `clean-project-workspace` workflow.
-- Do not archive an object without a replacement link or explicit rejected/cancelled reason.
+- Archive completed tasks only through `work complete` after user acceptance; preserve canonical requirements and accepted decisions. For superseded objects require replacement links; rejected/cancelled objects require reasons.
 - Keep the status board concise; link to IDs instead of copying full reports.
 - Never expose raw status codes as the primary user explanation when a plain-language label is available.
 

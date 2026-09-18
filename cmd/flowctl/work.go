@@ -13,7 +13,7 @@ import (
 
 func runWork(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: flowctl work <create|list|show|ready|start|block|review-ready|complete|cancel>")
+		return errors.New("usage: flowctl work <create|list|show|ready|start|block|review-ready|review|acceptance|accept|reopen|budget|complete|cancel>")
 	}
 	switch args[0] {
 	case "create":
@@ -30,6 +30,16 @@ func runWork(args []string) error {
 		return runWorkBlock(args[1:])
 	case "review-ready":
 		return runWorkReviewReady(args[1:])
+	case "reopen":
+		return runWorkReopen(args[1:])
+	case "budget":
+		return runWorkBudget(args[1:])
+	case "review":
+		return runWorkReview(args[1:])
+	case "acceptance":
+		return runWorkAcceptance(args[1:])
+	case "accept":
+		return runWorkAccept(args[1:])
 	case "complete":
 		return runWorkComplete(args[1:])
 	case "cancel":
@@ -49,7 +59,12 @@ func runWorkCreate(args []string) error {
 	status := fs.String("status", "ready", "draft or ready")
 	var requirements stringListFlag
 	var acceptance stringListFlag
-	var scope stringListFlag
+	var scope, dependencies, protected, requiredTests, risks stringListFlag
+	milestone := fs.String("milestone", "", "linked milestone ID")
+	fs.Var(&dependencies, "depends-on", "prerequisite Work Item ID; repeatable")
+	fs.Var(&protected, "protect", "protected path; repeatable")
+	fs.Var(&requiredTests, "required-test", "required test ID; repeatable")
+	fs.Var(&risks, "risk", "known risk; repeatable")
 	fs.Var(&requirements, "requirement", "linked Requirement ID; repeatable")
 	fs.Var(&acceptance, "acceptance", "acceptance criterion; repeatable")
 	fs.Var(&scope, "scope", "allowed path or component; repeatable")
@@ -97,6 +112,8 @@ func runWorkCreate(args []string) error {
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	item := WorkItem{
+		Dependencies: nonNil(dependencies), ProtectedPaths: nonNil(protected), RequiredTests: nonNil(requiredTests), Risks: nonNil(risks), MilestoneID: *milestone,
+		WorkflowVersion:    1,
 		SchemaVersion:      1,
 		ID:                 id,
 		Revision:           1,
@@ -211,6 +228,9 @@ func runWorkStart(args []string) error {
 	if strings.TrimSpace(*owner) == "" {
 		return errors.New("--owner is required")
 	}
+	if *maxElapsed <= 0 || *maxRetries < 0 || *maxFiles <= 0 {
+		return errors.New("budgets must be positive (retries may be zero)")
+	}
 	if *ttl <= 0 {
 		return errors.New("--ttl must be positive")
 	}
@@ -218,8 +238,16 @@ func runWorkStart(args []string) error {
 	if err != nil {
 		return err
 	}
+	unlock, err := projectMutationLock(root)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	if item.Status != "ready" {
 		return fmt.Errorf("cannot start work from status %s", item.Status)
+	}
+	if err := checkWorkStart(root, item); err != nil {
+		return err
 	}
 	if err := ensureLeaseAvailable(root, item.ID); err != nil {
 		return err
@@ -338,69 +366,6 @@ func runWorkReviewReady(args []string) error {
 		}
 	}
 	return saveWorkMutation(root, &item, "work.review_ready", map[string]any{"status": item.Status})
-}
-
-func runWorkComplete(args []string) error {
-	fs, rootArg, id, expected := workMutationFlags("work complete")
-	var evidenceIDs stringListFlag
-	fs.Var(&evidenceIDs, "evidence", "verified Evidence ID; repeatable")
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
-	root, item, err := loadWorkMutation(*rootArg, *id, *expected)
-	if err != nil {
-		return err
-	}
-	if item.Status != "in_progress" && item.Status != "ready_for_review" {
-		return fmt.Errorf("cannot complete work from status %s", item.Status)
-	}
-	if len(evidenceIDs) == 0 {
-		evidenceIDs = append(evidenceIDs, item.EvidenceIDs...)
-	}
-	if len(evidenceIDs) == 0 {
-		return errors.New("at least one verified --evidence is required")
-	}
-	for _, evidenceID := range evidenceIDs {
-		evidence, readErr := readEvidence(root, evidenceID)
-		if readErr != nil {
-			return readErr
-		}
-		if evidence.WorkItemID != item.ID {
-			return fmt.Errorf("evidence %s belongs to %s", evidence.ID, evidence.WorkItemID)
-		}
-		if evidence.Result != "passed" || evidence.Trust == "unverified" {
-			return fmt.Errorf("evidence %s is not a trusted pass", evidence.ID)
-		}
-		logPath := filepath.Join(root, filepath.FromSlash(evidence.LogPath))
-		digest, hashErr := sha256File(logPath)
-		if hashErr != nil {
-			return fmt.Errorf("verify evidence %s: %w", evidence.ID, hashErr)
-		}
-		if digest != evidence.LogSHA256 {
-			return fmt.Errorf("evidence %s log hash mismatch", evidence.ID)
-		}
-		item.EvidenceIDs = uniqueAppend(item.EvidenceIDs, evidence.ID)
-	}
-	now := time.Now().UTC().Format(time.RFC3339)
-	item.Status = "done"
-	if item.RunID != nil {
-		run, readErr := readRun(root, *item.RunID)
-		if readErr != nil {
-			return readErr
-		}
-		run.Status = "completed"
-		run.Phase = "completed"
-		run.Revision++
-		run.UpdatedAt = now
-		run.CompletedAt = &now
-		if err := writeJSONAtomic(runPath(root, run.ID), &run); err != nil {
-			return err
-		}
-	}
-	if err := os.Remove(leasePath(root, item.ID)); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	return saveWorkMutation(root, &item, "work.completed", map[string]any{"evidence_ids": item.EvidenceIDs})
 }
 
 func runWorkCancel(args []string) error {

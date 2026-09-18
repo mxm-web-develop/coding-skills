@@ -121,9 +121,9 @@ cd coding-skills
 以下路径按选择的平台生成；不会为未选择的 IDE 创建 Skill 或入口文件。
 
 ```text
-.agents/skills/<15 core skills>/       # Codex
-.cursor/skills/<15 core skills>/       # Cursor
-.claude/skills/<15 core skills>/       # Claude Code
+.agents/skills/<16 core skills>/       # Codex
+.cursor/skills/<16 core skills>/       # Cursor
+.claude/skills/<16 core skills>/       # Claude Code
 .claude/skills/ai-flow/SKILL.md         # Claude /ai-flow 入口
 .cursor/rules/ai-flow.mdc
 .ai-flow/bin/flowctl[.exe]
@@ -250,7 +250,7 @@ git pull --ff-only
 ./install/install.sh update --target /path/to/project --source .
 ```
 
-平台参数采用“加入并同步”语义；例如在 Cursor 安装上运行 `update --codex` 会增加 Codex 支持，同时把 Cursor 和 Codex 的受管 Skill 刷新到相同版本。更新不会修改项目对象和人读看板。
+平台参数采用“加入并同步”语义；例如在 Cursor 安装上运行 `update --codex` 会增加 Codex 支持，同时把 Cursor 和 Codex 的受管 Skill 刷新到相同版本。同版本更新保留项目状态；跨版本更新会先备份、转换受管记录，再由 AI 核对并重建看板，详见[升级与恢复](upgrade.md)。
 
 ## 8. 卸载
 
@@ -282,7 +282,7 @@ git pull --ff-only
 检查内容：
 
 - 当前平台二进制。
-- 所选平台目录中的 15 个 Core Skills。
+- 所选平台目录中的 16 个 Core Skills。
 - 所选 Cursor、Codex 或 Claude Code 入口。
 - JSON Schema 安装数量。
 - 项目是否已经初始化。
@@ -321,3 +321,7 @@ git pull --ff-only
 ### `platforms OK` 但某个平台的 Skills 全部 missing
 
 这通常是旧安装只残留了 `AGENTS.md`、`CLAUDE.md`、Claude 入口或 Cursor Rule，但原生 Skill 目录已经被删除。`v0.2.5` 起，入口文件和完整的 14 个原生 Skills 必须同时存在才算已安装平台；单独残留的入口不会再污染 `.ai-flow/install/platforms`。重新执行所需平台的 `install` 即可修复。
+
+## v1.0.0 已有项目资料升级
+
+工具更新后仍需提取旧资料中的有效需求、恢复待确认事项并重新扫描项目，才能继续原计划。完整步骤和中断恢复见[升级与恢复](upgrade.md)。当前核心流程共 16 个，新增 `upgrade-ai-project`。

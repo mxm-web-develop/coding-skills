@@ -5,3 +5,8 @@
 # Local build artifacts
 /flowctl
 /flowctl.exe
+
+# This skill-pack source repository keeps its own delivery session local.
+# Consumer projects decide separately whether to version their project records.
+/.ai-flow/
+/docs/board/
